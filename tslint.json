@@ -1,0 +1,10 @@
+{
+  "defaultSeverity": "error",
+  "extends": ["tslint:latest"],
+  "jsRules": {},
+  "rules": {
+    "no-implicit-dependencies": false,
+    "quotemark": [true, "single"]
+  },
+  "rulesDirectory": []
+}
