@@ -1,3 +1,4 @@
+import { Matches } from 'class-validator';
 import {
   BaseEntity,
   Column,
@@ -23,6 +24,7 @@ export class Addr extends BaseEntity {
   public path: string;
 
   @Column()
+  @Matches(/\d(\/\d+)*/)
   public addr: string;
 
   @Column({ default: {}, type: 'jsonb' })

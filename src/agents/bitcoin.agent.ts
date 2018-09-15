@@ -175,7 +175,6 @@ export class BitcoinAgent extends CoinAgent {
 
   @Cron('* */10 * * * *', { startTime: new Date() })
   public async confirmCron(): Promise<void> {
-    // TODO
     // TODO 增加客户余额，注意事务性
     for (const d of await Deposit.find({
       coinSymbol: BTC,
@@ -203,9 +202,7 @@ export class BitcoinAgent extends CoinAgent {
       if (lW.length === 0) {
         return;
       }
-      // TODO handle fee
-      // TODO update client balance
-      // TODO test grammar
+      // TODO handle fee, update client balance
       const txHash = await this.rpc.sendMany(
         'braavo',
         lW.reduce((acc: { [_: string]: string }, cur) => {

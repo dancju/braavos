@@ -5,6 +5,7 @@ import BtcRpc from 'bitcoin-core';
 import { ConfigModule, ConfigService } from 'nestjs-config';
 import Web3 from 'web3';
 import { BitcoinAgent } from './agents/bitcoin.agent';
+import { CfcAgent } from './agents/cfc.agent';
 import { EtherAgent } from './agents/ether.agent';
 import { ClientController } from './client/client.controller';
 import { HttpStrategy } from './client/http.strategy';
@@ -31,8 +32,6 @@ import { Coin } from './entities/coin.entity';
   ],
   providers: [
     HttpStrategy,
-    BitcoinAgent,
-    EtherAgent,
     {
       inject: [ConfigService],
       provide: BtcRpc,
@@ -47,6 +46,9 @@ import { Coin } from './entities/coin.entity';
         return new Web3.providers.HttpProvider(config.get('ethereum.web3'));
       },
     },
+    BitcoinAgent,
+    EtherAgent,
+    CfcAgent,
   ],
 })
 export class ClientModule {}

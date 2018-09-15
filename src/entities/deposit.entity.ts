@@ -14,7 +14,7 @@ import { Client } from './client.entity';
 
 @Entity()
 export class Deposit extends BaseEntity {
-  @ApiModelProperty({ description: '标识符，可用作幂等键' })
+  @ApiModelProperty({ description: '标识符，可供客户端用作幂等键' })
   @PrimaryGeneratedColumn()
   public id: number;
 

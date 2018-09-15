@@ -24,6 +24,7 @@ import {
 } from '@nestjs/swagger';
 import { Matches } from 'class-validator';
 import { BitcoinAgent } from '../agents/bitcoin.agent';
+import { CfcAgent } from '../agents/cfc.agent';
 import { EtherAgent } from '../agents/ether.agent';
 import { Client } from '../entities/client.entity';
 import { Coin } from '../entities/coin.entity';
@@ -41,10 +42,15 @@ import { CreateWithdrawalDto } from './create-withdrawal.dto';
 export class ClientController {
   private coinAgents: { [k in CoinSymbol]?: CoinAgent };
 
-  constructor(bitcoinAgent: BitcoinAgent, etherAgent: EtherAgent) {
+  constructor(
+    bitcoinAgent: BitcoinAgent,
+    etherAgent: EtherAgent,
+    cfcAgent: CfcAgent,
+  ) {
     this.coinAgents = {
       [CoinSymbol.BTC]: bitcoinAgent,
       [CoinSymbol.ETH]: etherAgent,
+      [CoinSymbol.CFC]: cfcAgent,
     };
   }
 
@@ -55,11 +61,10 @@ export class ClientController {
     name: 'path',
   })
   @ApiOkResponse({ type: String })
-  @UsePipes(ValidationPipe)
   public async findAddr(
     @DClient() client: Client,
     @Query('coinSymbol') coinSymbol: CoinSymbol,
-    @Matches(/\d(\/\d+)*/i)
+    @Matches(/\d(\/\d+)*/)
     @Query('path')
     path: string,
   ): Promise<string> {
@@ -68,7 +73,6 @@ export class ClientController {
 
   @Get('deposits')
   @ApiOkResponse({ type: [Deposit] })
-  @UsePipes(ValidationPipe)
   public async findDeposits(
     @DClient() client: Client,
     @Query('limit') limit: number,
@@ -84,7 +88,6 @@ export class ClientController {
 
   @Get('withdrawals')
   @ApiOkResponse({ type: [Withdrawal] })
-  @UsePipes(ValidationPipe)
   public async findWithdrawals(
     @DClient() client: Client,
     @Query('limit') limit: number,
@@ -102,7 +105,6 @@ export class ClientController {
   @ApiCreatedResponse({ type: Withdrawal })
   @ApiBadRequestResponse({ description: '请求错误' })
   @ApiConflictResponse({ description: '幂等性冲突' })
-  @UsePipes(ValidationPipe)
   public async createWithdrawal(
     @DClient() client: Client,
     @Body() body: CreateWithdrawalDto,
@@ -134,7 +136,6 @@ export class ClientController {
   @ApiImplicitQuery({ name: 'coinSymbol', description: '熟悉货币符号' })
   @ApiOkResponse({ description: '数字货币详情', type: Coin })
   @ApiNotFoundResponse({ description: '货币符号不存在' })
-  @UsePipes(ValidationPipe)
   public async getCoins(@Query('coinSymbol') coinSymbol: CoinSymbol) {
     const coin = await Coin.findOne(coinSymbol);
     if (!coin) {
