@@ -1,11 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { NestSchedule } from 'nest-schedule';
-import { Withdrawal } from './withdrawal.entity';
+import { Coin } from '../entities/coin.entity';
+import { Withdrawal } from '../entities/withdrawal.entity';
 
 @Injectable()
 export abstract class CoinAgent extends NestSchedule {
-  public abstract getPrivateKey(clientId: number, accountPath: string): string;
-  public abstract getAddr(clientId: number, accountPath: string): string;
+  protected abstract coin: Promise<Coin>;
+  public abstract getAddr(clientId: number, accountId: string): Promise<string>;
   public abstract isValidAddress(addr: string): boolean;
-  public abstract createWithdrawal(withdrawal: Withdrawal);
+  public abstract createWithdrawal(withdrawal: Withdrawal): Promise<void>;
+  protected abstract getPrivateKey(derivePath: string): string;
 }

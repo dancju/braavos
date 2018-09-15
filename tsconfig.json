@@ -12,7 +12,9 @@
     "sourceMap": true,
     "allowJs": false,
     "outDir": "./dist",
-    "baseUrl": "./src"
+    "baseUrl": "./src",
+    "typeRoots": ["./src/types"],
+    "esModuleInterop": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "**/*.spec.ts"]

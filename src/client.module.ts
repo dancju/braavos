@@ -2,18 +2,19 @@ import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from 'nestjs-config';
-import { AppController } from './app.controller';
-import { BitcoinAgent } from './bitcoin/bitcoin.agent';
+import { BitcoinAgent } from './agents/bitcoin.agent';
+import { EtherAgent } from './agents/ether.agent';
+import { ClientController } from './client/client.controller';
 import { HttpStrategy } from './client/http.strategy';
-import { EtherAgent } from './ether/ether.agent';
+import { Coin } from './entities/coin.entity';
 
 @Module({
-  controllers: [AppController],
+  controllers: [ClientController],
   imports: [
     ConfigModule.load(),
     PassportModule.register({ defaultStrategy: 'bearer' }),
     TypeOrmModule.forRootAsync({
-      imports: [ConfigModule.load()],
+      imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (config: ConfigService) => ({
         ...config.get('pg'),
@@ -24,7 +25,8 @@ import { EtherAgent } from './ether/ether.agent';
         type: 'postgres',
       }),
     }),
+    TypeOrmModule.forFeature([Coin]),
   ],
   providers: [HttpStrategy, BitcoinAgent, EtherAgent],
 })
-export class AppModule {}
+export class ClientModule {}

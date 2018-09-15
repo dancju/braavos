@@ -1,4 +1,5 @@
 export default {
+  bech32: false,
   deposit: {
     confThreshold: 2,
     step: 8,
@@ -8,7 +9,8 @@ export default {
     txSizeKb: 0.4,
   },
   rpc: {
-    host: '104.199.186.15',
+    host: '35.229.211.83',
+    network: 'testnet',
     password: 'Ix8MohD4YzJtcpR-TKFZzeUo_W9fPwO2W9mB0GbDizs=',
     username: 'daniel',
   },

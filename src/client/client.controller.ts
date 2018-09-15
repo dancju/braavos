@@ -5,6 +5,7 @@ import {
   Controller,
   Get,
   Injectable,
+  NotFoundException,
   Put,
   Query,
   UseGuards,
@@ -17,37 +18,35 @@ import {
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
   ApiOkResponse,
+  ApiServiceUnavailableResponse,
 } from '@nestjs/swagger';
-import { InjectRepository } from '@nestjs/typeorm';
 import { Matches } from 'class-validator';
-import { Repository } from 'typeorm';
-import { BitcoinAgent } from './bitcoin/bitcoin.agent';
-import { DClient } from './client/client.decorator';
-import { Client } from './client/client.entity';
-import { EtherAgent } from './ether/ether.agent';
-import { CoinAgent } from './utils/coin-agent';
-import { CreateWithdrawalDto } from './utils/create-withdrawal.dto';
-import { CryptoSymbol } from './utils/crypto-symbol.enum';
-import { Deposit } from './utils/deposit.entity';
-import { Withdrawal } from './utils/withdrawal.entity';
+import { BitcoinAgent } from '../agents/bitcoin.agent';
+import { EtherAgent } from '../agents/ether.agent';
+import { Client } from '../entities/client.entity';
+import { Coin } from '../entities/coin.entity';
+import { Deposit } from '../entities/deposit.entity';
+import { Withdrawal } from '../entities/withdrawal.entity';
+import { CoinAgent } from '../utils/coin-agent';
+import { CoinSymbol } from '../utils/coin-symbol.enum';
+import { DClient } from './client.decorator';
+import { CreateWithdrawalDto } from './create-withdrawal.dto';
 
 @ApiBearerAuth()
 @Controller()
 @Injectable()
 @UseGuards(AuthGuard())
-export class AppController {
-  private coinAgents: { [k in CryptoSymbol]: CoinAgent };
+export class ClientController {
+  private coinAgents: { [k in CoinSymbol]?: CoinAgent };
 
-  constructor(
-    @InjectRepository(Deposit) private readonly deposits: Repository<Deposit>,
-    @InjectRepository(Withdrawal)
-    private readonly withdrawals: Repository<Withdrawal>,
-    bitcoinAgent: BitcoinAgent,
-    etherAgent: EtherAgent,
-  ) {
-    this.coinAgents[CryptoSymbol.BTC] = bitcoinAgent;
-    this.coinAgents[CryptoSymbol.ETH] = etherAgent;
+  constructor(bitcoinAgent: BitcoinAgent, etherAgent: EtherAgent) {
+    this.coinAgents = {
+      [CoinSymbol.BTC]: bitcoinAgent,
+      [CoinSymbol.ETH]: etherAgent,
+    };
   }
 
   @Get('addrs')
@@ -56,12 +55,12 @@ export class AppController {
   @UsePipes(ValidationPipe)
   public async findAddr(
     @DClient() client: Client,
-    @Query('cryptoSymbol') cryptoSymbol: CryptoSymbol,
+    @Query('coinSymbol') coinSymbol: CoinSymbol,
     @Matches(/\d(\/\d+)*/i)
     @Query('accountId')
     accountId: string,
   ): Promise<string> {
-    return;
+    return this.coinAgents[coinSymbol].getAddr(client.id, accountId);
   }
 
   @Get('deposits')
@@ -72,6 +71,7 @@ export class AppController {
     @Query('limit') limit: number,
     @Query('offset') offset: number,
   ): Promise<Deposit[]> {
+    // TODO
     return;
   }
 
@@ -83,12 +83,15 @@ export class AppController {
     @Query('limit') limit: number,
     @Query('offset') offset: number,
   ): Promise<Withdrawal[]> {
+    // TODO
     return;
   }
 
   @Put('withdrawals')
   @ApiCreatedResponse({ type: Withdrawal })
   @ApiConflictResponse({ description: '幂等性冲突' })
+  @ApiForbiddenResponse({ description: '客户余额不足' })
+  @ApiServiceUnavailableResponse({ description: '热钱包储备金不足' })
   @ApiBadRequestResponse({})
   @UsePipes(ValidationPipe)
   public async createWithdrawal(
@@ -96,34 +99,37 @@ export class AppController {
     @Body() body: CreateWithdrawalDto,
   ): Promise<Withdrawal> {
     // TODO lock table
-    const { cryptoSymbol, recipient } = body;
+    const { coinSymbol, recipient } = body;
     if (
-      await this.withdrawals.findOne({
+      await Withdrawal.findOne({
         clientId: client.id,
         key: body.key,
       })
     ) {
       throw new ConflictException();
     }
-    if (!this.coinAgents[cryptoSymbol].isValidAddress(recipient)) {
+    if (!this.coinAgents[coinSymbol].isValidAddress(recipient)) {
       throw new BadRequestException();
     }
-    const w = await this.withdrawals
-      .create({
-        amount: body.amount,
-        clientId: client.id,
-        cryptoSymbol,
-        recipient,
-      })
-      .save();
-    this.coinAgents[cryptoSymbol].createWithdrawal(w);
+    const w = await Withdrawal.create({
+      amount: body.amount,
+      clientId: client.id,
+      coinSymbol,
+      recipient,
+    }).save();
+    this.coinAgents[coinSymbol].createWithdrawal(w);
     return;
   }
 
-  @Get('cryptos')
+  @Get('coins')
   @ApiOkResponse({})
+  @ApiNotFoundResponse({ description: '货币符号不存在' })
   @UsePipes(ValidationPipe)
-  public async getCryptos(@Query('cryptoSymbol') cryptoSymbol: CryptoSymbol) {
-    return;
+  public async getCoins(@Query('coinSymbol') coinSymbol: CoinSymbol) {
+    const coin = await Coin.findOne(coinSymbol);
+    if (!coin) {
+      throw new NotFoundException();
+    }
+    return coin;
   }
 }

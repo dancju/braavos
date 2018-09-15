@@ -7,13 +7,17 @@ import {
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { CryptoSymbol } from './crypto-symbol.enum';
+import { Chain } from '../utils/chain.enum';
+import { CoinSymbol } from '../utils/coin-symbol.enum';
 
 @Entity()
-export class Crypto extends BaseEntity {
+export class Coin extends BaseEntity {
   @ApiModelProperty()
-  @PrimaryColumn({ enum: CryptoSymbol, type: 'enum' })
-  public symbol: CryptoSymbol;
+  @PrimaryColumn({ enum: CoinSymbol, type: 'enum' })
+  public symbol: CoinSymbol;
+
+  @Column()
+  public chain: Chain;
 
   @ApiModelProperty()
   @Column()

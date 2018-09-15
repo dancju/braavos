@@ -1,13 +1,13 @@
 import { ApiModelProperty, ApiModelPropertyOptional } from '@nestjs/swagger';
 
-import { CryptoSymbol } from './crypto-symbol.enum';
+import { CoinSymbol } from '../utils/coin-symbol.enum';
 
 export class CreateWithdrawalDto {
   @ApiModelProperty({ description: '幂等键' })
   public key: string;
 
   @ApiModelProperty({ description: '数字货币符号' })
-  public cryptoSymbol: CryptoSymbol;
+  public coinSymbol: CoinSymbol;
 
   @ApiModelProperty({ description: '收币地址／账户' })
   public recipient: string;

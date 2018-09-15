@@ -8,15 +8,19 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Client } from '../client/client.entity';
-import { CryptoSymbol } from './crypto-symbol.enum';
-import { WithdrawalStatus } from './withdrawal-status.enum';
+import { CoinSymbol } from '../utils/coin-symbol.enum';
+import { DepositStatus } from '../utils/deposit-status.enum';
+import { Client } from './client.entity';
 
 @Entity()
-export class Withdrawal extends BaseEntity {
+export class Deposit extends BaseEntity {
   @Exclude()
   @PrimaryGeneratedColumn()
   public id: number;
+
+  @ApiModelProperty()
+  @Column({ enum: CoinSymbol, type: 'enum' })
+  public coinSymbol: CoinSymbol;
 
   @Exclude()
   @Column()
@@ -24,19 +28,7 @@ export class Withdrawal extends BaseEntity {
 
   @ApiModelProperty()
   @Column()
-  public key: string;
-
-  @ApiModelProperty()
-  @Column({ type: 'enum', enum: CryptoSymbol })
-  public cryptoSymbol: CryptoSymbol;
-
-  @ApiModelProperty()
-  @Column()
-  public recipient: string;
-
-  @ApiModelProperty()
-  @Column()
-  public memo: string;
+  public accountPath: string;
 
   @ApiModelProperty()
   @Column({ precision: 16, scale: 8, type: 'decimal' })
@@ -44,11 +36,11 @@ export class Withdrawal extends BaseEntity {
 
   @ApiModelProperty()
   @Column({
-    default: WithdrawalStatus.created,
-    enum: WithdrawalStatus,
+    default: DepositStatus.unconfirmed,
+    enum: DepositStatus,
     type: 'enum',
   })
-  public status: WithdrawalStatus;
+  public status: DepositStatus;
 
   @ApiModelProperty()
   @Column({ nullable: true })
@@ -62,6 +54,6 @@ export class Withdrawal extends BaseEntity {
   @CreateDateColumn()
   public createdAt: Date;
 
-  @ManyToOne((type) => Client, (client) => client.withdrawals)
+  @ManyToOne((type) => Client)
   public client: Promise<Client>;
 }

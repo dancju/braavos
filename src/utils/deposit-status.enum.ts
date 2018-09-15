@@ -1,5 +1,5 @@
 export enum DepositStatus {
-  received = 'received',
+  unconfirmed = 'unconfirmed',
   confirmed = 'confirmed',
   attacked = 'attacked',
 }
