@@ -14,7 +14,7 @@ import { Client } from './client.entity';
 
 @Entity()
 export class Deposit extends BaseEntity {
-  @Exclude()
+  @ApiModelProperty()
   @PrimaryGeneratedColumn()
   public id: number;
 
@@ -28,11 +28,19 @@ export class Deposit extends BaseEntity {
 
   @ApiModelProperty()
   @Column()
-  public accountPath: string;
+  public addrPath: string;
 
   @ApiModelProperty()
   @Column({ precision: 16, scale: 8, type: 'decimal' })
   public amount: string;
+
+  @ApiModelProperty()
+  @Column()
+  public feeAmount: number;
+
+  @ApiModelProperty()
+  @Column({ type: 'enum', enum: CoinSymbol })
+  public feeSymbol: CoinSymbol;
 
   @ApiModelProperty()
   @Column({
@@ -54,6 +62,6 @@ export class Deposit extends BaseEntity {
   @CreateDateColumn()
   public createdAt: Date;
 
-  @ManyToOne((type) => Client)
+  @ManyToOne(() => Client)
   public client: Promise<Client>;
 }

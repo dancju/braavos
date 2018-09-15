@@ -6,7 +6,7 @@ import { Withdrawal } from '../entities/withdrawal.entity';
 @Injectable()
 export abstract class CoinAgent extends NestSchedule {
   protected abstract coin: Promise<Coin>;
-  public abstract getAddr(clientId: number, accountId: string): Promise<string>;
+  public abstract getAddr(clientId: number, path: string): Promise<string>;
   public abstract isValidAddress(addr: string): boolean;
   public abstract createWithdrawal(withdrawal: Withdrawal): Promise<void>;
   protected abstract getPrivateKey(derivePath: string): string;

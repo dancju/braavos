@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BIP32, fromBase58, fromSeed } from 'bip32';
 import BtcRpc from 'bitcoin-core';
@@ -23,6 +23,7 @@ import { DepositStatus } from '../utils/deposit-status.enum';
 import { WithdrawalStatus } from '../utils/withdrawal-status.enum';
 
 const { BTC } = CoinSymbol;
+const { bitcoin } = Chain;
 
 @Injectable()
 export class BitcoinAgent extends CoinAgent {
@@ -46,13 +47,13 @@ export class BitcoinAgent extends CoinAgent {
       .toBase58();
     this.bech32 = config.get('btc.bech32') as boolean;
     if ('boolean' !== typeof this.bech32) {
-      throw Error();
+      throw new InternalServerErrorException();
     }
     if (!xPrv.startsWith('xprv')) {
-      throw Error();
+      throw new InternalServerErrorException();
     }
     if (!xPub.startsWith('xpub')) {
-      throw Error();
+      throw new InternalServerErrorException();
     }
     this.coin = new Promise(async (resolve) => {
       let res = await Coin.findOne(BTC);
@@ -60,10 +61,12 @@ export class BitcoinAgent extends CoinAgent {
         resolve(res);
       } else {
         res = await Coin.create({
-          chain: Chain.bitcoin,
-          depositFee: 0,
+          chain: bitcoin,
+          depositFeeAmount: 0,
+          depositFeeSymbol: BTC,
           symbol: BTC,
-          withdrawalFee: 0,
+          withdrawalFeeAmount: 0,
+          withdrawalFeeSymbol: BTC,
         });
         res.info = { cursor: 0 };
         await res.save();
@@ -75,28 +78,25 @@ export class BitcoinAgent extends CoinAgent {
     this.rpc = new BtcRpc(config.get('btc.rpc'));
   }
 
-  public async getAddr(clientId: number, accountPath: string): Promise<string> {
-    const derivePath = clientId + '/' + accountPath;
+  public async getAddr(clientId: number, path0: string): Promise<string> {
+    const path1 = clientId + '/' + path0;
     const addr = this.bech32
-      ? this.getAddrP2sh(derivePath)
-      : this.getAddrP2wpkh(derivePath);
+      ? this.getAddrP2sh(path1)
+      : this.getAddrP2wpkh(path1);
     if (
       !(await Addr.findOne({
-        accountPath,
-        chain: Chain.bitcoin,
+        chain: bitcoin,
         clientId,
+        path: path1,
       }))
     ) {
       await Addr.create({
-        accountPath,
-        chain: Chain.bitcoin,
+        addr,
+        chain: bitcoin,
         clientId,
+        path: path1,
       }).save();
-      await this.rpc.importPrivKey(
-        this.getPrivateKey(derivePath),
-        'braavo',
-        false,
-      );
+      await this.rpc.importPrivKey(this.getPrivateKey(path1), 'braavo', false);
     }
     return addr;
   }
@@ -122,7 +122,7 @@ export class BitcoinAgent extends CoinAgent {
     await Promise.all([
       rpc.setTxFee(feeRate),
       (async () => {
-        coin.withdrawalFee = fee;
+        coin.withdrawalFeeAmount = fee;
         await coin.save();
       })(),
     ]);
@@ -150,13 +150,13 @@ export class BitcoinAgent extends CoinAgent {
         }
         const addr = await Addr.findOne({
           addr: tx.address,
-          chain: Chain.bitcoin,
+          chain: bitcoin,
         });
         if (!addr) {
           // TODO log warn
         }
         Deposit.create({
-          accountPath: addr.accountPath,
+          addrPath: addr.path,
           amount: String(tx.amount),
           clientId: addr.clientId,
           coinSymbol: BTC,
@@ -171,6 +171,7 @@ export class BitcoinAgent extends CoinAgent {
   @Cron('* */10 * * * *', { startTime: new Date() })
   public async confirmCron(): Promise<void> {
     // TODO
+    // TODO 增加客户余额，注意事务性
     for (const d of await Deposit.find({
       coinSymbol: BTC,
       status: DepositStatus.unconfirmed,
@@ -198,15 +199,14 @@ export class BitcoinAgent extends CoinAgent {
         return;
       }
       // TODO handle fee
-      // TODO checkout grammar
+      // TODO update client balance
+      // TODO test grammar
       const txHash = await this.rpc.sendMany(
         'braavo',
-        Object.assign(
-          {},
-          ...lW.map((d: { recipient: string; amount: string }) => ({
-            [d.recipient]: d.amount,
-          })),
-        ),
+        lW.reduce((acc: { [_: string]: string }, cur) => {
+          acc[cur.recipient] = cur.amount;
+          return acc;
+        }, {}),
       );
       await Withdrawal.update(lW.map((w) => w.id), {
         status: WithdrawalStatus.finished,

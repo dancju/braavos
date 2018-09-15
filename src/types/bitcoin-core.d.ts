@@ -1102,7 +1102,7 @@ declare module 'bitcoin-core' {
 
     public sendMany(
       fromaccount: string,
-      amounts: { address: string },
+      amounts: { [address: string]: string },
       minconf?: number,
       comment?: string,
       subtractfeefrom?: string[],

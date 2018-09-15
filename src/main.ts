@@ -4,9 +4,9 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ClientModule } from './client.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(ClientModule);
+  const clientApp = await NestFactory.create(ClientModule);
   const document = SwaggerModule.createDocument(
-    app,
+    clientApp,
     new DocumentBuilder()
       .setTitle('Braavos Client')
       .setDescription('')
@@ -15,8 +15,8 @@ async function bootstrap() {
       .addBearerAuth('Authorization', 'header')
       .build(),
   );
-  SwaggerModule.setup('api', app, document);
-  app.useGlobalPipes(new ValidationPipe());
-  await app.listen(app.get('ConfigService').get('express').port);
+  SwaggerModule.setup('api', clientApp, document);
+  clientApp.useGlobalPipes(new ValidationPipe());
+  await clientApp.listen(clientApp.get('ConfigService').get('express').port);
 }
 bootstrap();

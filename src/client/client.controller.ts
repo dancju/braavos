@@ -6,7 +6,7 @@ import {
   Get,
   Injectable,
   NotFoundException,
-  Put,
+  Post,
   Query,
   UseGuards,
   UsePipes,
@@ -18,10 +18,8 @@ import {
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
-  ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
-  ApiServiceUnavailableResponse,
 } from '@nestjs/swagger';
 import { Matches } from 'class-validator';
 import { BitcoinAgent } from '../agents/bitcoin.agent';
@@ -58,9 +56,9 @@ export class ClientController {
     @Query('coinSymbol') coinSymbol: CoinSymbol,
     @Matches(/\d(\/\d+)*/i)
     @Query('accountId')
-    accountId: string,
+    path: string,
   ): Promise<string> {
-    return this.coinAgents[coinSymbol].getAddr(client.id, accountId);
+    return this.coinAgents[coinSymbol].getAddr(client.id, path);
   }
 
   @Get('deposits')
@@ -71,8 +69,12 @@ export class ClientController {
     @Query('limit') limit: number,
     @Query('offset') offset: number,
   ): Promise<Deposit[]> {
-    // TODO
-    return;
+    return Deposit.createQueryBuilder()
+      .where({ clientId: client.id })
+      .orderBy('id')
+      .offset(offset)
+      .limit(limit)
+      .getMany();
   }
 
   @Get('withdrawals')
@@ -83,22 +85,23 @@ export class ClientController {
     @Query('limit') limit: number,
     @Query('offset') offset: number,
   ): Promise<Withdrawal[]> {
-    // TODO
-    return;
+    return Withdrawal.createQueryBuilder()
+      .where({ clientId: client.id })
+      .orderBy('id')
+      .offset(offset)
+      .limit(limit)
+      .getMany();
   }
 
-  @Put('withdrawals')
+  @Post('withdrawals')
   @ApiCreatedResponse({ type: Withdrawal })
   @ApiConflictResponse({ description: '幂等性冲突' })
-  @ApiForbiddenResponse({ description: '客户余额不足' })
-  @ApiServiceUnavailableResponse({ description: '热钱包储备金不足' })
-  @ApiBadRequestResponse({})
+  @ApiBadRequestResponse({ description: '请求错误' })
   @UsePipes(ValidationPipe)
   public async createWithdrawal(
     @DClient() client: Client,
     @Body() body: CreateWithdrawalDto,
   ): Promise<Withdrawal> {
-    // TODO lock table
     const { coinSymbol, recipient } = body;
     if (
       await Withdrawal.findOne({
@@ -115,6 +118,7 @@ export class ClientController {
       amount: body.amount,
       clientId: client.id,
       coinSymbol,
+      key: body.key,
       recipient,
     }).save();
     this.coinAgents[coinSymbol].createWithdrawal(w);

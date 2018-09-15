@@ -20,7 +20,7 @@ export class Addr extends BaseEntity {
   public clientId: number;
 
   @PrimaryColumn()
-  public accountPath: string;
+  public path: string;
 
   @Column()
   public addr: string;

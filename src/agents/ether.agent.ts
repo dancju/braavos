@@ -43,21 +43,32 @@ export class EtherAgent extends CoinAgent {
     if (!xPub.startsWith('xpub')) {
       throw Error();
     }
-    this.coin = Coin.create({
-      chain: Chain.ethereum,
-      depositFee: 0,
-      symbol: ETH,
-      withdrawalFee: 0,
-    }).save();
+    this.coin = new Promise(async (resolve) => {
+      let res = await Coin.findOne(ETH);
+      if (res) {
+        resolve(res);
+      } else {
+        res = await Coin.create({
+          chain: Chain.ethereum,
+          depositFeeAmount: 0,
+          depositFeeSymbol: ETH,
+          symbol: ETH,
+          withdrawalFeeAmount: 0,
+          withdrawalFeeSymbol: ETH,
+        });
+        await res.save();
+        resolve(res);
+      }
+    });
     this.prvNode = fromExtendedKey(xPrv);
     this.pubNode = fromExtendedKey(xPub);
   }
 
-  public async getAddr(clientId: number, accountPath: string): Promise<string> {
-    const derivePath = clientId + '/' + accountPath;
+  public async getAddr(clientId: number, path0: string): Promise<string> {
+    const path1 = clientId + '/' + path0;
     return toChecksumAddress(
       this.pubNode
-        .derivePath(derivePath)
+        .derivePath(path1)
         .getWallet()
         .getAddressString(),
     );

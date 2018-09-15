@@ -21,11 +21,19 @@ export class Coin extends BaseEntity {
 
   @ApiModelProperty()
   @Column()
-  public depositFee: number;
+  public depositFeeAmount: number;
+
+  @ApiModelProperty()
+  @Column({ enum: CoinSymbol, type: 'enum' })
+  public depositFeeSymbol: CoinSymbol;
 
   @ApiModelProperty()
   @Column()
-  public withdrawalFee: number;
+  public withdrawalFeeAmount: number;
+
+  @ApiModelProperty()
+  @Column({ enum: CoinSymbol, type: 'enum' })
+  public withdrawalFeeSymbol: CoinSymbol;
 
   @Exclude()
   @Column({ default: {}, type: 'jsonb' })

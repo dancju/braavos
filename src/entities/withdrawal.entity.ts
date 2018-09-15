@@ -5,6 +5,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
@@ -13,6 +14,7 @@ import { WithdrawalStatus } from '../utils/withdrawal-status.enum';
 import { Client } from './client.entity';
 
 @Entity()
+@Index(['clientId', 'key'], { unique: true })
 export class Withdrawal extends BaseEntity {
   @Exclude()
   @PrimaryGeneratedColumn()
@@ -43,6 +45,14 @@ export class Withdrawal extends BaseEntity {
   public amount: string;
 
   @ApiModelProperty()
+  @Column()
+  public feeAmount: number;
+
+  @ApiModelProperty()
+  @Column({ type: 'enum', enum: CoinSymbol })
+  public feeSymbol: CoinSymbol;
+
+  @ApiModelProperty()
   @Column({
     default: WithdrawalStatus.created,
     enum: WithdrawalStatus,
@@ -62,6 +72,6 @@ export class Withdrawal extends BaseEntity {
   @CreateDateColumn()
   public createdAt: Date;
 
-  @ManyToOne((type) => Client)
+  @ManyToOne(() => Client)
   public client: Promise<Client>;
 }
