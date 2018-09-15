@@ -18,6 +18,7 @@ import {
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiImplicitQuery,
   ApiNotFoundResponse,
   ApiOkResponse,
 } from '@nestjs/swagger';
@@ -48,14 +49,18 @@ export class ClientController {
   }
 
   @Get('addrs')
+  @ApiImplicitQuery({ name: 'coinSymbol', description: '数字货币符号' })
+  @ApiImplicitQuery({
+    description: '地址路径，由数字和斜杠组成且斜杠不能连续出现',
+    name: 'path',
+  })
   @ApiOkResponse({ type: String })
-  @ApiCreatedResponse({ type: String })
   @UsePipes(ValidationPipe)
   public async findAddr(
     @DClient() client: Client,
     @Query('coinSymbol') coinSymbol: CoinSymbol,
     @Matches(/\d(\/\d+)*/i)
-    @Query('accountId')
+    @Query('path')
     path: string,
   ): Promise<string> {
     return this.coinAgents[coinSymbol].getAddr(client.id, path);
@@ -72,8 +77,8 @@ export class ClientController {
     return Deposit.createQueryBuilder()
       .where({ clientId: client.id })
       .orderBy('id')
-      .offset(offset)
-      .limit(limit)
+      .skip(offset)
+      .take(limit)
       .getMany();
   }
 
@@ -88,15 +93,15 @@ export class ClientController {
     return Withdrawal.createQueryBuilder()
       .where({ clientId: client.id })
       .orderBy('id')
-      .offset(offset)
-      .limit(limit)
+      .skip(offset)
+      .take(limit)
       .getMany();
   }
 
   @Post('withdrawals')
   @ApiCreatedResponse({ type: Withdrawal })
-  @ApiConflictResponse({ description: '幂等性冲突' })
   @ApiBadRequestResponse({ description: '请求错误' })
+  @ApiConflictResponse({ description: '幂等性冲突' })
   @UsePipes(ValidationPipe)
   public async createWithdrawal(
     @DClient() client: Client,
@@ -126,7 +131,8 @@ export class ClientController {
   }
 
   @Get('coins')
-  @ApiOkResponse({})
+  @ApiImplicitQuery({ name: 'coinSymbol', description: '熟悉货币符号' })
+  @ApiOkResponse({ description: '数字货币详情', type: Coin })
   @ApiNotFoundResponse({ description: '货币符号不存在' })
   @UsePipes(ValidationPipe)
   public async getCoins(@Query('coinSymbol') coinSymbol: CoinSymbol) {

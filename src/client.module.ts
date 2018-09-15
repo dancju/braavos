@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import BtcRpc from 'bitcoin-core';
 import { ConfigModule, ConfigService } from 'nestjs-config';
+import Web3 from 'web3';
 import { BitcoinAgent } from './agents/bitcoin.agent';
 import { EtherAgent } from './agents/ether.agent';
 import { ClientController } from './client/client.controller';
@@ -27,6 +29,24 @@ import { Coin } from './entities/coin.entity';
     }),
     TypeOrmModule.forFeature([Coin]),
   ],
-  providers: [HttpStrategy, BitcoinAgent, EtherAgent],
+  providers: [
+    HttpStrategy,
+    BitcoinAgent,
+    EtherAgent,
+    {
+      inject: [ConfigService],
+      provide: BtcRpc,
+      useFactory: (config: ConfigService) => {
+        return new BtcRpc(config.get('bitcoin.rpc'));
+      },
+    },
+    {
+      inject: [ConfigService],
+      provide: Web3,
+      useFactory: (config: ConfigService) => {
+        return new Web3.providers.HttpProvider(config.get('ethereum.web3'));
+      },
+    },
+  ],
 })
 export class ClientModule {}

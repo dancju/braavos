@@ -17,6 +17,6 @@ async function bootstrap() {
   );
   SwaggerModule.setup('api', clientApp, document);
   clientApp.useGlobalPipes(new ValidationPipe());
-  await clientApp.listen(clientApp.get('ConfigService').get('express').port);
+  await clientApp.listen(clientApp.get('ConfigService').get('client').port);
 }
 bootstrap();

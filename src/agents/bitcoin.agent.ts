@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BIP32, fromBase58, fromSeed } from 'bip32';
 import BtcRpc from 'bitcoin-core';
@@ -27,15 +31,16 @@ const { bitcoin } = Chain;
 
 @Injectable()
 export class BitcoinAgent extends CoinAgent {
-  protected coin: Promise<Coin>;
-  private prvNode: BIP32;
-  private pubNode: BIP32;
-  private rpc: BtcRpc;
-  private bech32: boolean;
+  protected readonly coin: Promise<Coin>;
+  private readonly prvNode: BIP32;
+  private readonly pubNode: BIP32;
+  private readonly rpc: BtcRpc;
+  private readonly bech32: boolean;
 
   constructor(
     @InjectConfig() config: ConfigService,
     @InjectRepository(Coin) coins: Repository<Coin>,
+    @Inject(BtcRpc) rpc: BtcRpc,
   ) {
     super();
     const seed = config.get('crypto.seed')() as Buffer;
@@ -45,7 +50,7 @@ export class BitcoinAgent extends CoinAgent {
     const xPub = fromBase58(xPrv)
       .neutered()
       .toBase58();
-    this.bech32 = config.get('btc.bech32') as boolean;
+    this.bech32 = config.get('bitcoin.bech32') as boolean;
     if ('boolean' !== typeof this.bech32) {
       throw new InternalServerErrorException();
     }
@@ -75,7 +80,7 @@ export class BitcoinAgent extends CoinAgent {
     });
     this.prvNode = fromBase58(xPrv);
     this.pubNode = fromBase58(xPub);
-    this.rpc = new BtcRpc(config.get('btc.rpc'));
+    this.rpc = rpc;
   }
 
   public async getAddr(clientId: number, path0: string): Promise<string> {
@@ -112,9 +117,9 @@ export class BitcoinAgent extends CoinAgent {
   @Configurable()
   @Cron('* */10 * * * *', { startTime: new Date() })
   public async refreshFee(
-    @ConfigParam('btc.fee.confTarget') confTarget: number,
-    @ConfigParam('btc.fee.txSizeKb') txSizeKb: number,
-  ) {
+    @ConfigParam('bitcoin.fee.confTarget') confTarget: number,
+    @ConfigParam('bitcoin.fee.txSizeKb') txSizeKb: number,
+  ): Promise<void> {
     const coin = await this.coin;
     const rpc = this.rpc;
     const feeRate = (await rpc.estimateSmartFee(confTarget)).feerate!;
@@ -131,9 +136,9 @@ export class BitcoinAgent extends CoinAgent {
   @Configurable()
   @Cron('* */1 * * * *', { startTime: new Date() })
   public async depositCron(
-    @ConfigParam('btc.deposit.confThreshold') confThreshold: number,
-    @ConfigParam('btc.deposit.step') step: number,
-  ) {
+    @ConfigParam('bitcoin.deposit.confThreshold') confThreshold: number,
+    @ConfigParam('bitcoin.deposit.step') step: number,
+  ): Promise<void> {
     while (true) {
       const coin = await this.coin;
       const txs = await this.rpc.listTransactions(
@@ -183,7 +188,7 @@ export class BitcoinAgent extends CoinAgent {
   @Configurable()
   @Cron('* */10 * * * *', { startTime: new Date() })
   public async withdrawalCron(
-    @ConfigParam('btc.withdrawal.step') step: number,
+    @ConfigParam('bitcoin.withdrawal.step') step: number,
   ): Promise<void> {
     while (true) {
       // TODO handle idempotency

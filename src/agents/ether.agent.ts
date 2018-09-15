@@ -1,5 +1,5 @@
 // tslint:disable:no-submodule-imports
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { isValidChecksumAddress, toChecksumAddress } from 'ethereumjs-util';
 import {
@@ -19,17 +19,19 @@ import { CoinAgent } from '../utils/coin-agent';
 import { CoinSymbol } from '../utils/coin-symbol.enum';
 
 const { ETH } = CoinSymbol;
+const { ethereum } = Chain;
 
 @Injectable()
 export class EtherAgent extends CoinAgent {
-  protected coin: Promise<Coin>;
-  private prvNode: EthereumHDKey;
-  private pubNode: EthereumHDKey;
-  private web3: Web3;
+  protected readonly coin: Promise<Coin>;
+  private readonly prvNode: EthereumHDKey;
+  private readonly pubNode: EthereumHDKey;
+  private readonly web3: Web3;
 
   constructor(
     @InjectConfig() config: ConfigService,
     @InjectRepository(Coin) coins: Repository<Coin>,
+    @Inject(Web3) web3: Web3,
   ) {
     super();
     const seed = config.get('crypto.seed')() as Buffer;
@@ -49,7 +51,7 @@ export class EtherAgent extends CoinAgent {
         resolve(res);
       } else {
         res = await Coin.create({
-          chain: Chain.ethereum,
+          chain: ethereum,
           depositFeeAmount: 0,
           depositFeeSymbol: ETH,
           symbol: ETH,
@@ -62,6 +64,7 @@ export class EtherAgent extends CoinAgent {
     });
     this.prvNode = fromExtendedKey(xPrv);
     this.pubNode = fromExtendedKey(xPub);
+    this.web3 = web3;
   }
 
   public async getAddr(clientId: number, path0: string): Promise<string> {
@@ -90,14 +93,26 @@ export class EtherAgent extends CoinAgent {
   }
 
   // TODO
-  @Cron('* */1 * * * *', { startTime: new Date() })
-  public collectCron() {
+  @Cron('* */10 * * * *', { startTime: new Date() })
+  public refreshFee(): Promise<void> {
     return;
   }
 
   // TODO
   @Cron('* */1 * * * *', { startTime: new Date() })
-  public depositCron() {
+  public collectCron(): Promise<void> {
+    return;
+  }
+
+  // TODO
+  @Cron('* */1 * * * *', { startTime: new Date() })
+  public depositCron(): Promise<void> {
+    return;
+  }
+
+  // TODO
+  @Cron('* */1 * * * *', { startTime: new Date() })
+  public withdrawalCron(): Promise<void> {
     return;
   }
 

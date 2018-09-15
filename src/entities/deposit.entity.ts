@@ -14,11 +14,11 @@ import { Client } from './client.entity';
 
 @Entity()
 export class Deposit extends BaseEntity {
-  @ApiModelProperty()
+  @ApiModelProperty({ description: '标识符，可用作幂等键' })
   @PrimaryGeneratedColumn()
   public id: number;
 
-  @ApiModelProperty()
+  @ApiModelProperty({ description: '数字货币符号' })
   @Column({ enum: CoinSymbol, type: 'enum' })
   public coinSymbol: CoinSymbol;
 
@@ -26,23 +26,23 @@ export class Deposit extends BaseEntity {
   @Column()
   public clientId: number;
 
-  @ApiModelProperty()
+  @ApiModelProperty({ description: '地址路径' })
   @Column()
   public addrPath: string;
 
-  @ApiModelProperty()
+  @ApiModelProperty({ description: '充币数量' })
   @Column({ precision: 16, scale: 8, type: 'decimal' })
   public amount: string;
 
-  @ApiModelProperty()
+  @ApiModelProperty({ description: '手续费数量' })
   @Column()
   public feeAmount: number;
 
-  @ApiModelProperty()
+  @ApiModelProperty({ description: '手续费单位符号' })
   @Column({ type: 'enum', enum: CoinSymbol })
   public feeSymbol: CoinSymbol;
 
-  @ApiModelProperty()
+  @ApiModelProperty({ description: '状态' })
   @Column({
     default: DepositStatus.unconfirmed,
     enum: DepositStatus,
@@ -50,7 +50,7 @@ export class Deposit extends BaseEntity {
   })
   public status: DepositStatus;
 
-  @ApiModelProperty()
+  @ApiModelProperty({ description: '转账 hash，仅针对链上转账有效' })
   @Column({ nullable: true })
   public txHash: string;
 

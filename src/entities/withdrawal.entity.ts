@@ -24,35 +24,35 @@ export class Withdrawal extends BaseEntity {
   @Column()
   public clientId: number;
 
-  @ApiModelProperty()
+  @ApiModelProperty({ description: '客户端提供的幂等键' })
   @Column()
   public key: string;
 
-  @ApiModelProperty()
+  @ApiModelProperty({ description: '货币符号' })
   @Column({ type: 'enum', enum: CoinSymbol })
   public coinSymbol: CoinSymbol;
 
-  @ApiModelProperty()
+  @ApiModelProperty({ description: '收币者的地址或用户名' })
   @Column()
   public recipient: string;
 
-  @ApiModelProperty()
+  @ApiModelProperty({ description: '附言，仅针对 EOS 有效' })
   @Column()
   public memo: string;
 
-  @ApiModelProperty()
+  @ApiModelProperty({ description: '提币数量' })
   @Column({ precision: 16, scale: 8, type: 'decimal' })
   public amount: string;
 
-  @ApiModelProperty()
+  @ApiModelProperty({ description: '手续费数量' })
   @Column()
   public feeAmount: number;
 
-  @ApiModelProperty()
+  @ApiModelProperty({ description: '手续费单位符号' })
   @Column({ type: 'enum', enum: CoinSymbol })
   public feeSymbol: CoinSymbol;
 
-  @ApiModelProperty()
+  @ApiModelProperty({ description: '状态' })
   @Column({
     default: WithdrawalStatus.created,
     enum: WithdrawalStatus,
@@ -60,7 +60,7 @@ export class Withdrawal extends BaseEntity {
   })
   public status: WithdrawalStatus;
 
-  @ApiModelProperty()
+  @ApiModelProperty({ description: '转账 hash，仅针对链上转账有效' })
   @Column({ nullable: true })
   public txHash: string;
 

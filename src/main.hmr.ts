@@ -7,7 +7,7 @@ declare const module: any;
 async function bootstrap() {
   const app = await NestFactory.create(ClientModule);
   app.useGlobalPipes(new ValidationPipe());
-  await app.listen(app.get('ConfigService').get('express').port);
+  await app.listen(app.get('ConfigService').get('client').port);
 
   if (module.hot) {
     module.hot.accept();

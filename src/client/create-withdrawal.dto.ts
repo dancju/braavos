@@ -13,7 +13,7 @@ export class CreateWithdrawalDto {
   public recipient: string;
 
   @ApiModelPropertyOptional({
-    description: '附言，仅针对某些币种有效且是必须的',
+    description: '附言，仅针对 EOS 有效且是必须的',
   })
   public memo?: string;
 
