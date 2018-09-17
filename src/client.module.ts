@@ -8,14 +8,14 @@ import { BitcoinAgent } from './agents/bitcoin.agent';
 import { CfcAgent } from './agents/cfc.agent';
 import { EtherAgent } from './agents/ether.agent';
 import { ClientController } from './client/client.controller';
-import { HttpStrategy } from './client/http.strategy';
+import { SignatureStrategy } from './client/signature.strategy';
 import { Coin } from './entities/coin.entity';
 
 @Module({
   controllers: [ClientController],
   imports: [
     ConfigModule.load(),
-    PassportModule.register({ defaultStrategy: 'bearer' }),
+    PassportModule.register({ defaultStrategy: 'signature' }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -31,7 +31,7 @@ import { Coin } from './entities/coin.entity';
     TypeOrmModule.forFeature([Coin]),
   ],
   providers: [
-    HttpStrategy,
+    SignatureStrategy,
     {
       inject: [ConfigService],
       provide: BtcRpc,

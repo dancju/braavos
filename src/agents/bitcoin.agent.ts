@@ -269,10 +269,10 @@ export class BitcoinAgent extends CoinAgent {
         confThreshold,
         String(lW.slice(-1)[0].id),
       );
-      await Withdrawal.update(lW.map((w) => w.id), {
-        status: WithdrawalStatus.finished,
-        txHash,
-      });
+      // await Withdrawal.update(lW.map((w) => w.id), {
+      //   status: WithdrawalStatus.finished,
+      //   txHash,
+      // });
     }
     await coin.save();
   }

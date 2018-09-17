@@ -23,6 +23,7 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { Matches } from 'class-validator';
+import { getManager } from 'typeorm';
 import { BitcoinAgent } from '../agents/bitcoin.agent';
 import { CfcAgent } from '../agents/cfc.agent';
 import { EtherAgent } from '../agents/ether.agent';
@@ -35,11 +36,12 @@ import { CoinAgent } from '../utils/coin-agent';
 import { CoinSymbol } from '../utils/coin-symbol.enum';
 import { DClient } from './client.decorator';
 import { CreateWithdrawalDto } from './create-withdrawal.dto';
+import { SignatureGuard } from './signature.guard';
 
 @ApiBearerAuth()
 @Controller()
 @Injectable()
-@UseGuards(AuthGuard())
+@UseGuards(SignatureGuard)
 export class ClientController {
   private coinAgents: { [k in CoinSymbol]?: CoinAgent };
 
@@ -112,7 +114,7 @@ export class ClientController {
   @ApiCreatedResponse({ type: Withdrawal })
   @ApiBadRequestResponse({ description: '请求格式错误' })
   @ApiConflictResponse({ description: '幂等性冲突' })
-  @ApiResponse({ description: '客户端余额不足', status: 402 })
+  @ApiResponse({ description: '客户余额不足', status: 402 })
   public async createWithdrawal(
     @DClient() client: Client,
     @Body() body: CreateWithdrawalDto,
@@ -129,26 +131,39 @@ export class ClientController {
     if (!this.coinAgents[coinSymbol].isValidAddress(recipient)) {
       throw new BadRequestException();
     }
-    if (
-      Number(
-        (await Account.findOne({
+    await getManager().transaction(async (manager) => {
+      const account = await manager
+        .createQueryBuilder(Account, '')
+        .where({
           clientId: client.id,
           coinSymbol: body.coinSymbol,
-        })).balance,
-      ) <= 0
-    ) {
-      throw new HttpException('Payment Required', 402);
-    }
-    await this.coinAgents[coinSymbol].createWithdrawal(
-      await Withdrawal.create({
-        amount: body.amount,
-        clientId: client.id,
-        coinSymbol,
-        key: body.key,
-        recipient,
-      }).save(),
-    );
-    return;
+        })
+        .setLock('pessimistic_write')
+        .getOne();
+      if (Number(account.balance) < Number(body.amount)) {
+        throw new HttpException('Payment Required', 402);
+      }
+      account.balance = String(Number(account.balance) - Number(body.amount));
+      await account.save();
+      await manager
+        .createQueryBuilder()
+        .insert()
+        .into(Withdrawal)
+        .values({
+          amount: body.amount,
+          clientId: client.id,
+          coinSymbol,
+          key: body.key,
+          recipient,
+        })
+        .execute();
+    });
+    const res = await Withdrawal.findOne({
+      clientId: client.id,
+      key: body.key,
+    });
+    await this.coinAgents[coinSymbol].createWithdrawal(res);
+    return res;
   }
 
   @Get('coins')
