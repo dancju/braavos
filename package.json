@@ -53,6 +53,7 @@
     "jest": "^23.6.0",
     "nodemon": "^1.14.1",
     "prettier": "^1.11.1",
+    "superagent-http-signature": "^0.2.0",
     "supertest": "^3.0.0",
     "ts-jest": "^23.1.4",
     "ts-loader": "^5.1.0",

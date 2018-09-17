@@ -10,6 +10,8 @@ import {
   Put,
   Query,
   UseGuards,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
@@ -38,10 +40,13 @@ import { DClient } from './client.decorator';
 import { CreateWithdrawalDto } from './create-withdrawal.dto';
 import { SignatureGuard } from './signature.guard';
 
+// TODO add param-scoped pipes
+
 @ApiBearerAuth()
 @Controller()
 @Injectable()
 @UseGuards(SignatureGuard)
+@UsePipes(ValidationPipe)
 export class ClientController {
   private coinAgents: { [k in CoinSymbol]?: CoinAgent };
 
@@ -129,11 +134,16 @@ export class ClientController {
       throw new ConflictException();
     }
     if (!this.coinAgents[coinSymbol].isValidAddress(recipient)) {
-      throw new BadRequestException();
+      throw new BadRequestException('Bad Recipient');
     }
+    await Account.createQueryBuilder()
+      .insert()
+      .values({ clientId: client.id, coinSymbol })
+      .onConflict('("clientId", "coinSymbol") DO NOTHING')
+      .execute();
     await getManager().transaction(async (manager) => {
       const account = await manager
-        .createQueryBuilder(Account, '')
+        .createQueryBuilder(Account, 'account')
         .where({
           clientId: client.id,
           coinSymbol: body.coinSymbol,

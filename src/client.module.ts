@@ -15,7 +15,6 @@ import { Coin } from './entities/coin.entity';
   controllers: [ClientController],
   imports: [
     ConfigModule.load(),
-    PassportModule.register({ defaultStrategy: 'signature' }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

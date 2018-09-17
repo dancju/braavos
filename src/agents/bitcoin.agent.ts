@@ -211,7 +211,7 @@ export class BitcoinAgent extends CoinAgent {
         .insert()
         .into(Account)
         .values({ clientId: d.clientId, coinSymbol: BTC })
-        .onConflict('("id", "coinSymbol") DO NOTHING')
+        .onConflict('("clientId", "coinSymbol") DO NOTHING')
         .execute();
       await manager.increment(
         Account,

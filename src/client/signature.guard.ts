@@ -7,20 +7,19 @@ import { AuthGuard } from '@nestjs/passport';
 
 @Injectable()
 export class SignatureGuard extends AuthGuard('signature') {
-  public async canActivate(context: ExecutionContext): Promise<boolean> {
-    console.log(context.getArgByIndex(0).headers);
-    // return true;
-    const res = (await super.canActivate(context)) as boolean;
-    console.log('~~~~~~~~~~~~~');
-    console.log(res);
-    return res;
+  public canActivate(context: ExecutionContext): Promise<boolean> {
+    const headers = context.switchToHttp().getRequest().headers;
+    if (!headers.date) {
+      throw new UnauthorizedException('date header is required');
+    }
+    if (!headers['content-md5']) {
+      throw new UnauthorizedException('content-md5 header is required');
+    }
+    return super.canActivate(context) as Promise<boolean>;
   }
 
   public handleRequest(err: any, user: any, info: any) {
     if (err || !user) {
-      console.log(err);
-      console.log(user);
-      console.log(info);
       throw err || new UnauthorizedException();
     }
     return user;

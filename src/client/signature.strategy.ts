@@ -9,15 +9,11 @@ export class SignatureStrategy extends PassportStrategy(Strategy, 'signature') {
     keyId: string,
     done: (_: null, client: Client, publicKey: string) => void,
   ) {
-    console.log('---------------');
-    console.log(keyId);
-    console.log(done);
     const client = await Client.findOne({ name: keyId });
     if (!client) {
       throw new UnauthorizedException();
     }
-    const x = done(null, client, client.publicKey);
-    console.log(x);
+    done(null, client, client.publicKey);
     return client;
   }
 }
