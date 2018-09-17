@@ -11,6 +11,6 @@ export class Client extends BaseEntity {
   @Column()
   public publicKey: string;
 
-  @Column()
+  @Column({ nullable: true })
   public ip: string;
 }

@@ -94,8 +94,8 @@ export class BitcoinAgent extends CoinAgent {
   public async getAddr(clientId: number, path0: string): Promise<string> {
     const path1 = clientId + '/' + path0;
     const addr = this.bech32
-      ? this.getAddrP2sh(path1)
-      : this.getAddrP2wpkh(path1);
+      ? this.getAddrP2wpkh(path1)
+      : this.getAddrP2sh(path1);
     if (
       !(await Addr.findOne({
         chain: bitcoin,
@@ -283,6 +283,11 @@ export class BitcoinAgent extends CoinAgent {
   public async creditCron(
     @TransactionManager() manager: EntityManager,
   ): Promise<void> {
+    const lW = await manager
+      .createQueryBuilder(Withdrawal, 'w')
+      .where(`status = 'finished' AND "feeAmount" IS NULL`)
+      .take(64)
+      .getMany();
     // TODO handle fee, update client balance
     return;
   }

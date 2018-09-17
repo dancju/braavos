@@ -1,8 +1,20 @@
 // tslint:disable:max-classes-per-file
 
+declare module 'ethereumjs-wallet' {
+  export default class Wallet {
+    public static fromPrivateKey(key: Buffer): Wallet;
+    public static fromPublicKey(key: Buffer, nonstrict?: boolean): Wallet;
+    public static fromV3(json: string, password: string): Wallet;
+    public getPrivateKey(): Buffer;
+    public getPrivateKeyString(): string;
+    public getAddressString(): string;
+  }
+}
+
 declare module 'ethereumjs-wallet/hdkey' {
   class Wallet {
     public static fromPrivateKey(key: Buffer): Wallet;
+    public static fromPublicKey(key: Buffer, nonstrict?: boolean): Wallet;
     public static fromV3(json: string, password: string): Wallet;
     public getPrivateKey(): Buffer;
     public getPrivateKeyString(): string;
@@ -13,7 +25,7 @@ declare module 'ethereumjs-wallet/hdkey' {
     public privateExtendedKey(): string;
     public publicExtendedKey(): string;
     public derivePath(path: string): EthereumHDKey;
-    public deriveChild(index: number): EthereumHDKey;
+    public deriveChild(index: number | string): EthereumHDKey;
     public getWallet(): Wallet;
   }
 

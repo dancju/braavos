@@ -48,11 +48,11 @@ export class Withdrawal extends BaseEntity {
   public amount: string;
 
   @ApiModelProperty({ description: '手续费数量' })
-  @Column()
+  @Column({ nullable: true })
   public feeAmount: number;
 
   @ApiModelProperty({ description: '手续费单位符号' })
-  @Column({ type: 'enum', enum: CoinSymbol })
+  @Column({ enum: CoinSymbol, nullable: true, type: 'enum' })
   public feeSymbol: CoinSymbol;
 
   @ApiModelProperty({ description: '状态' })
