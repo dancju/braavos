@@ -17,7 +17,7 @@ export class Account extends BaseEntity {
   @PrimaryColumn()
   public clientId: number;
 
-  @Column({ default: 0, precision: 16, scale: 8, type: 'decimal' })
+  @Column({ default: 0, precision: 24, scale: 8, type: 'decimal' })
   public balance: string;
 
   @Column({ default: {}, type: 'jsonb' })
