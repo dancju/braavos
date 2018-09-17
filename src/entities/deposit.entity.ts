@@ -5,12 +5,15 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
+  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { CoinSymbol } from '../utils/coin-symbol.enum';
 import { DepositStatus } from '../utils/deposit-status.enum';
 import { Client } from './client.entity';
+import { Withdrawal } from './withdrawal.entity';
 
 @Entity()
 export class Deposit extends BaseEntity {
@@ -53,6 +56,11 @@ export class Deposit extends BaseEntity {
   @ApiModelProperty({ description: '转账 hash，仅针对链上转账有效' })
   @Column({ nullable: true })
   public txHash: string;
+
+  @Exclude()
+  @JoinColumn()
+  @OneToOne(() => Withdrawal, (w) => w.deposit, { nullable: true })
+  public withdrawal: Withdrawal;
 
   @Exclude()
   @Column({ default: {}, type: 'jsonb' })

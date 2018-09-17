@@ -373,14 +373,23 @@ acorn-dynamic-import@^3.0.0:
     acorn "^5.0.0"
 
 acorn-globals@^4.1.0:
-  version "4.1.0"
-  resolved "https://registry.yarnpkg.com/acorn-globals/-/acorn-globals-4.1.0.tgz#ab716025dbe17c54d3ef81d32ece2b2d99fe2538"
+  version "4.3.0"
+  resolved "https://registry.yarnpkg.com/acorn-globals/-/acorn-globals-4.3.0.tgz#e3b6f8da3c1552a95ae627571f7dd6923bb54103"
   dependencies:
-    acorn "^5.0.0"
+    acorn "^6.0.1"
+    acorn-walk "^6.0.1"
+
+acorn-walk@^6.0.1:
+  version "6.0.1"
+  resolved "https://registry.yarnpkg.com/acorn-walk/-/acorn-walk-6.0.1.tgz#c7827bdbb8e21aa97b609adfa225400d9ae348ba"
 
 acorn@^5.0.0, acorn@^5.5.3, acorn@^5.6.2:
   version "5.7.3"
   resolved "https://registry.yarnpkg.com/acorn/-/acorn-5.7.3.tgz#67aa231bf8812974b85235a96771eb6bd07ea279"
+
+acorn@^6.0.1:
+  version "6.0.1"
+  resolved "https://registry.yarnpkg.com/acorn/-/acorn-6.0.1.tgz#66e6147e1027704479dc6d9b20d884c572db3cc1"
 
 aes-js@3.0.0:
   version "3.0.0"
@@ -835,8 +844,8 @@ bitcoin-ops@^1.3.0, bitcoin-ops@^1.4.0:
   resolved "https://registry.yarnpkg.com/bitcoin-ops/-/bitcoin-ops-1.4.1.tgz#e45de620398e22fd4ca6023de43974ff42240278"
 
 bitcoinjs-lib@^4.0.1:
-  version "4.0.1"
-  resolved "https://registry.yarnpkg.com/bitcoinjs-lib/-/bitcoinjs-lib-4.0.1.tgz#0ce01f8eb25e5da6fb7db8550eb05ee7561f8439"
+  version "4.0.2"
+  resolved "https://registry.yarnpkg.com/bitcoinjs-lib/-/bitcoinjs-lib-4.0.2.tgz#84fc9d14774c07581ad1795f2444706fc3f7a666"
   dependencies:
     bech32 "^1.1.2"
     bip32 "^1.0.0"
@@ -1234,8 +1243,8 @@ chokidar@^2.0.2:
     fsevents "^1.2.2"
 
 chownr@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/chownr/-/chownr-1.0.1.tgz#e2a75042a9551908bebd25b8523d5f9769d79181"
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/chownr/-/chownr-1.1.1.tgz#54726b8b8fff4df053c42187e801fb4412df1494"
 
 chrome-trace-event@^1.0.0:
   version "1.0.0"
@@ -2003,8 +2012,8 @@ eslint-scope@^4.0.0:
     estraverse "^4.1.1"
 
 esm@^3.0.79:
-  version "3.0.82"
-  resolved "https://registry.yarnpkg.com/esm/-/esm-3.0.82.tgz#e8c4363a14e30936bedf49a44bf962e2c91866ff"
+  version "3.0.83"
+  resolved "https://registry.yarnpkg.com/esm/-/esm-3.0.83.tgz#a696272b47114dea65d969e4ab87bd39dc88797f"
 
 esprima@^3.1.3:
   version "3.1.3"
@@ -2678,8 +2687,8 @@ globals@^9.18.0:
   resolved "https://registry.yarnpkg.com/globals/-/globals-9.18.0.tgz#aa3896b3e69b487f17e31ed2143d69a8e30c2d8a"
 
 google-libphonenumber@^3.1.6:
-  version "3.1.12"
-  resolved "https://registry.yarnpkg.com/google-libphonenumber/-/google-libphonenumber-3.1.12.tgz#2f42df8bc4d6a6b6a10929840563fce27112f7f8"
+  version "3.1.13"
+  resolved "https://registry.yarnpkg.com/google-libphonenumber/-/google-libphonenumber-3.1.13.tgz#bfa20a15619a2bac1cb4f02de506ee8242df7f02"
 
 got@7.1.0, got@^7.1.0:
   version "7.1.0"
@@ -6073,8 +6082,8 @@ timers-ext@0.1, timers-ext@^0.1.5:
     next-tick "1"
 
 tiny-secp256k1@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/tiny-secp256k1/-/tiny-secp256k1-1.0.0.tgz#4a7fc0e83617058ce70f5e7926788d93ebcaf854"
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/tiny-secp256k1/-/tiny-secp256k1-1.0.1.tgz#fc6f96529c22b92be91e12de4040fdd9245f7835"
   dependencies:
     bindings "^1.3.0"
     bn.js "^4.11.8"
@@ -6163,8 +6172,8 @@ ts-jest@^23.1.4:
     lodash "^4.17.10"
 
 ts-loader@^5.1.0:
-  version "5.1.0"
-  resolved "https://registry.yarnpkg.com/ts-loader/-/ts-loader-5.1.0.tgz#ac13facb9360af4a4b072c851a120d17cbcaf1fa"
+  version "5.1.1"
+  resolved "https://registry.yarnpkg.com/ts-loader/-/ts-loader-5.1.1.tgz#361eeae3cc3c6f63d2e9f421dba90c4b14659aa6"
   dependencies:
     chalk "^2.3.0"
     enhanced-resolve "^4.0.0"
@@ -6820,8 +6829,8 @@ whatwg-encoding@^1.0.1, whatwg-encoding@^1.0.3:
     iconv-lite "0.4.23"
 
 whatwg-mimetype@^2.1.0:
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/whatwg-mimetype/-/whatwg-mimetype-2.1.0.tgz#f0f21d76cbba72362eb609dbed2a30cd17fcc7d4"
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/whatwg-mimetype/-/whatwg-mimetype-2.2.0.tgz#a3d58ef10b76009b042d03e25591ece89b88d171"
 
 whatwg-url@^6.4.1:
   version "6.5.0"

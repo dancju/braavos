@@ -2,8 +2,8 @@
   "name": "braavos",
   "private": true,
   "scripts": {
+    "postinstall": "sed -i 's/status: string;/status: boolean;/' ./node_modules/@types/web3/types.d.ts",
     "lint": "tslint --fix './{src,test}/**/*.ts' && prettier --write \"**/*.ts\"",
-    "start": "ts-node --files src/main.ts",
     "start:dev": "nodemon",
     "prestart:prod": "rm -rf dist && tsc",
     "start:prod": "node dist/main.js",

@@ -24,7 +24,7 @@ export class Addr extends BaseEntity {
   public path: string;
 
   @Column()
-  @Matches(/\d(\/\d+)*/)
+  @Matches(/^\d+(\/\d+)*$/)
   public addr: string;
 
   @Column({ default: {}, type: 'jsonb' })

@@ -6,12 +6,15 @@ import {
   CreateDateColumn,
   Entity,
   Index,
+  JoinColumn,
   ManyToOne,
+  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { CoinSymbol } from '../utils/coin-symbol.enum';
 import { WithdrawalStatus } from '../utils/withdrawal-status.enum';
 import { Client } from './client.entity';
+import { Deposit } from './deposit.entity';
 
 @Entity()
 @Index(['clientId', 'key'], { unique: true })
@@ -63,6 +66,11 @@ export class Withdrawal extends BaseEntity {
   @ApiModelProperty({ description: '转账 hash，仅针对链上转账有效' })
   @Column({ nullable: true })
   public txHash: string;
+
+  @Exclude()
+  @JoinColumn()
+  @OneToOne(() => Deposit, (d) => d.withdrawal, { nullable: true })
+  public deposit: Deposit;
 
   @Exclude()
   @Column({ default: {}, type: 'jsonb' })

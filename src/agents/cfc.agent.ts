@@ -6,7 +6,7 @@ import { Repository } from 'typeorm';
 import Web3 from 'web3';
 import { Coin } from '../entities/coin.entity';
 import { CoinSymbol } from '../utils/coin-symbol.enum';
-import { Erc20Agent } from '../utils/erc20-agent';
+import { Erc20Agent } from './erc20.agent';
 import { EtherAgent } from './ether.agent';
 
 const { CFC } = CoinSymbol;

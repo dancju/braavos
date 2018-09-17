@@ -3,13 +3,13 @@ import { Inject, Injectable, NotImplementedException } from '@nestjs/common';
 import { Cron } from 'nest-schedule';
 import { ConfigParam, ConfigService, InjectConfig } from 'nestjs-config';
 import Web3 from 'web3';
-import { EtherAgent } from '../agents/ether.agent';
 import { Coin } from '../entities/coin.entity';
 import { Deposit } from '../entities/deposit.entity';
 import { Withdrawal } from '../entities/withdrawal.entity';
 import { Chain } from '../utils/chain.enum';
 import { CoinAgent } from '../utils/coin-agent';
 import { CoinSymbol } from '../utils/coin-symbol.enum';
+import { EtherAgent } from './ether.agent';
 
 const { ETH } = CoinSymbol;
 const { ethereum } = Chain;
@@ -42,7 +42,7 @@ export abstract class Erc20Agent extends CoinAgent {
           withdrawalFeeAmount: 0,
           withdrawalFeeSymbol: ETH,
         });
-        res.info = { cursor: 0 };
+        res.info = { cursor: 0, fee: 0 };
         await res.save();
         resolve(res);
       }
@@ -63,8 +63,8 @@ export abstract class Erc20Agent extends CoinAgent {
   }
 
   // TODO
-  @Cron('* */10 * * * *', { startTime: new Date() })
-  public refreshFee(): Promise<void> {
+  @Cron('* */5 * * * *', { startTime: new Date() })
+  public async refreshFee(): Promise<void> {
     return;
   }
 

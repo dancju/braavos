@@ -14,7 +14,12 @@ import {
   Configurable,
   InjectConfig,
 } from 'nestjs-config';
-import { Repository } from 'typeorm';
+import {
+  EntityManager,
+  Repository,
+  Transaction,
+  TransactionManager,
+} from 'typeorm';
 import { Account } from '../entities/account.entity';
 import { Addr } from '../entities/addr.entity';
 import { Coin } from '../entities/coin.entity';
@@ -73,7 +78,10 @@ export class BitcoinAgent extends CoinAgent {
           withdrawalFeeAmount: 0,
           withdrawalFeeSymbol: BTC,
         });
-        res.info = { cursor: 0 };
+        res.info = {
+          depositCursor: 0,
+          withdrawalCursor: 0,
+        };
         await res.save();
         resolve(res);
       }
@@ -101,7 +109,7 @@ export class BitcoinAgent extends CoinAgent {
         clientId,
         path: path1,
       }).save();
-      await this.rpc.importPrivKey(this.getPrivateKey(path1), 'braavo', false);
+      await this.rpc.importPrivKey(this.getPrivateKey(path1), 'braavos', false);
     }
     return addr;
   }
@@ -111,7 +119,7 @@ export class BitcoinAgent extends CoinAgent {
   }
 
   public async createWithdrawal(withdrawal: Withdrawal): Promise<void> {
-    // this method is intentionally left empty
+    // TODO handle off-chain transactions
   }
 
   @Configurable()
@@ -121,11 +129,10 @@ export class BitcoinAgent extends CoinAgent {
     @ConfigParam('bitcoin.fee.txSizeKb') txSizeKb: number,
   ): Promise<void> {
     const coin = await this.coin;
-    const rpc = this.rpc;
-    const feeRate = (await rpc.estimateSmartFee(confTarget)).feerate!;
+    const feeRate = (await this.rpc.estimateSmartFee(confTarget)).feerate;
     const fee = txSizeKb * feeRate;
     await Promise.all([
-      rpc.setTxFee(feeRate),
+      this.rpc.setTxFee(feeRate),
       (async () => {
         coin.withdrawalFeeAmount = fee;
         await coin.save();
@@ -136,20 +143,22 @@ export class BitcoinAgent extends CoinAgent {
   @Configurable()
   @Cron('* */1 * * * *', { startTime: new Date() })
   public async depositCron(
-    @ConfigParam('bitcoin.deposit.confThreshold') confThreshold: number,
     @ConfigParam('bitcoin.deposit.step') step: number,
   ): Promise<void> {
+    const coin = await Coin.createQueryBuilder()
+      .where({ symbol: BTC })
+      .setLock('pessimistic_write')
+      .getOne();
     while (true) {
-      const coin = await this.coin;
       const txs = await this.rpc.listTransactions(
-        'coinfair',
+        'braavos',
         step,
-        coin.info.cursor,
+        coin.info.depositCursor,
       );
       if (txs.length === 0) {
-        return;
+        break;
       }
-      for (const tx of txs) {
+      for (const tx of txs.filter((t) => t.category === 'receive')) {
         if (await Deposit.findOne({ coinSymbol: BTC, txHash: tx.txid })) {
           continue;
         }
@@ -157,64 +166,125 @@ export class BitcoinAgent extends CoinAgent {
           addr: tx.address,
           chain: bitcoin,
         });
-        if (!addr) {
-          // TODO log warn
+        if (addr) {
+          Deposit.create({
+            addrPath: addr.path,
+            amount: String(tx.amount),
+            clientId: addr.clientId,
+            coinSymbol: BTC,
+            txHash: tx.txid,
+          }).save();
         }
-        Deposit.create({
-          addrPath: addr.path,
-          amount: String(tx.amount),
-          clientId: addr.clientId,
-          coinSymbol: BTC,
-          txHash: tx.txid,
-        }).save();
       }
-      coin.info.cursor += txs.length;
-      await coin.save();
+      coin.info.depositCursor += txs.length;
     }
+    await coin.save();
   }
 
+  @Configurable()
   @Cron('* */10 * * * *', { startTime: new Date() })
-  public async confirmCron(): Promise<void> {
-    // TODO 增加客户余额，注意事务性
-    for (const d of await Deposit.find({
-      coinSymbol: BTC,
-      status: DepositStatus.unconfirmed,
-    })) {
-      this.rpc.getTransactionByHash(d.txHash);
+  @Transaction()
+  public async debitCron(
+    @ConfigParam('bitcoin.confThreshold') confThreshold: number,
+    @TransactionManager() manager: EntityManager,
+  ): Promise<void> {
+    for (const d of await manager
+      .createQueryBuilder()
+      .select()
+      .from(Deposit, 'deposit')
+      .where({ coinSymbol: BTC, status: DepositStatus.unconfirmed })
+      .setLock('pessimistic_write')
+      .getMany()) {
+      if (
+        (await this.rpc.getTransaction(d.txHash)).confirmations < confThreshold
+      ) {
+        continue;
+      }
+      await manager
+        .createQueryBuilder()
+        .update(Deposit)
+        .set({ status: DepositStatus.confirmed })
+        .where({ id: d.id })
+        .execute();
+      await manager
+        .createQueryBuilder()
+        .insert()
+        .into(Account)
+        .values({ clientId: d.clientId, coinSymbol: BTC })
+        .onConflict('("id", "coinSymbol") DO NOTHING')
+        .execute();
+      await manager.increment(
+        Account,
+        { clientId: d.clientId, coinSymbol: BTC },
+        'balance',
+        Number(d.amount),
+      );
     }
   }
 
   @Configurable()
   @Cron('* */10 * * * *', { startTime: new Date() })
   public async withdrawalCron(
+    @ConfigParam('bitcoin.confThreshold') confThreshold: number,
     @ConfigParam('bitcoin.withdrawal.step') step: number,
   ): Promise<void> {
+    const coin = await Coin.createQueryBuilder()
+      .where({ symbol: BTC })
+      .setLock('pessimistic_write')
+      .getOne();
     while (true) {
-      // TODO handle idempotency
       const lW = await Withdrawal.createQueryBuilder()
         .where({
           coinSymbol: BTC,
           status: WithdrawalStatus.created,
         })
-        .orderBy('id')
+        .orderBy('id', 'ASC')
         .limit(step)
         .getMany();
       if (lW.length === 0) {
-        return;
+        break;
       }
-      // TODO handle fee, update client balance
+      while (true) {
+        const txs = await this.rpc.listTransactions(
+          'braavos',
+          64,
+          coin.info.withdrawalCursor,
+        );
+        if (txs.length === 0) {
+          break;
+        }
+        for (const tx of txs.filter((t) => t.category === 'send')) {
+          if (Number(tx.comment) >= lW[0].id) {
+            return;
+          }
+        }
+        coin.info.withdrawalCursor += txs.length;
+      }
       const txHash = await this.rpc.sendMany(
-        'braavo',
+        'braavos',
         lW.reduce((acc: { [_: string]: string }, cur) => {
           acc[cur.recipient] = cur.amount;
           return acc;
         }, {}),
+        confThreshold,
+        String(lW.slice(-1)[0].id),
       );
       await Withdrawal.update(lW.map((w) => w.id), {
         status: WithdrawalStatus.finished,
         txHash,
       });
     }
+    await coin.save();
+  }
+
+  @Configurable()
+  @Cron('* */10 * * * *', { startTime: new Date() })
+  @Transaction()
+  public async creditCron(
+    @TransactionManager() manager: EntityManager,
+  ): Promise<void> {
+    // TODO handle fee, update client balance
+    return;
   }
 
   protected getPrivateKey(derivePath: string): string {

@@ -1,6 +1,6 @@
 // tslint:disable:no-submodule-imports
 import { Inject, Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { isValidChecksumAddress, toChecksumAddress } from 'ethereumjs-util';
 import {
   EthereumHDKey,
@@ -8,15 +8,24 @@ import {
   fromMasterSeed,
 } from 'ethereumjs-wallet/hdkey';
 import { Cron } from 'nest-schedule';
-import { ConfigParam, ConfigService, InjectConfig } from 'nestjs-config';
-import { Repository } from 'typeorm';
+import {
+  ConfigParam,
+  ConfigService,
+  Configurable,
+  InjectConfig,
+} from 'nestjs-config';
+import { EntityManager, Repository } from 'typeorm';
 import Web3 from 'web3';
+import { Signature } from 'web3/eth/accounts';
+import { Account } from '../entities/account.entity';
+import { Addr } from '../entities/addr.entity';
 import { Coin } from '../entities/coin.entity';
 import { Deposit } from '../entities/deposit.entity';
 import { Withdrawal } from '../entities/withdrawal.entity';
 import { Chain } from '../utils/chain.enum';
 import { CoinAgent } from '../utils/coin-agent';
 import { CoinSymbol } from '../utils/coin-symbol.enum';
+import { DepositStatus } from '../utils/deposit-status.enum';
 
 const { ETH } = CoinSymbol;
 const { ethereum } = Chain;
@@ -69,12 +78,24 @@ export class EtherAgent extends CoinAgent {
 
   public async getAddr(clientId: number, path0: string): Promise<string> {
     const path1 = clientId + '/' + path0;
-    return toChecksumAddress(
+    const addr = toChecksumAddress(
       this.pubNode
         .derivePath(path1)
         .getWallet()
         .getAddressString(),
     );
+    await Addr.createQueryBuilder()
+      .insert()
+      .into(Addr)
+      .values({
+        addr,
+        chain: ethereum,
+        clientId,
+        path: path1,
+      })
+      .onConflict('("chain", "clientId", "path") DO NOTHING')
+      .execute();
+    return addr;
   }
 
   public isValidAddress(addr: string): boolean {
@@ -87,27 +108,120 @@ export class EtherAgent extends CoinAgent {
     }
   }
 
-  // TODO
   public async createWithdrawal(withdrawal: Withdrawal) {
-    return;
+    // TODO handle off-chain transactions
   }
 
-  // TODO
-  @Cron('* */10 * * * *', { startTime: new Date() })
-  public refreshFee(): Promise<void> {
-    return;
+  @Cron('* */5 * * * *', { startTime: new Date() })
+  public async refreshFee(): Promise<void> {
+    const gasPrice = await this.web3.eth.getGasPrice();
+    const txFee = (21000 * gasPrice).toString();
+    const value = this.web3.utils.fromWei(txFee, 'ether');
+    const coin = await this.coin;
+    coin.info.fee = value;
+    await coin.save();
   }
 
   // TODO
   @Cron('* */1 * * * *', { startTime: new Date() })
-  public collectCron(): Promise<void> {
+  public async collectCron(
+    @ConfigParam('ethereum.ether.collect.confThreshold') confThreshold: number,
+    @InjectEntityManager() manager: EntityManager,
+  ): Promise<void> {
     return;
   }
 
-  // TODO
+  @Configurable()
   @Cron('* */1 * * * *', { startTime: new Date() })
-  public depositCron(): Promise<void> {
-    return;
+  public async depositCron(
+    @ConfigParam('ethereum.ether.deposit.collectThreshold')
+    collectThreshold: number,
+    @ConfigParam('ethereum.ether.deposit.pocketAddr') pocketAddr: string,
+    @ConfigParam('ethereum.ether.deposit.step') step: number,
+  ): Promise<void> {
+    const coin = await this.coin;
+    /**
+     * query blockIndex from db
+     * @param blockIndex already handled block
+     */
+    let blockIndex = coin.info.cursor;
+    // add 1 to be the first unhandled block
+    blockIndex = blockIndex + 1;
+    let height = await this.web3.eth.getBlockNumber();
+    height = height - 3;
+    if (height < blockIndex) {
+      // logger.warn('Ethereum full node is lower than db');
+      return;
+    }
+    height = Math.min(height, blockIndex + step - 1);
+    // handle block
+    for (; blockIndex <= height; blockIndex++) {
+      // query & update unconfirmed transactions
+      // logger.debug('blockIndex: ' + blockIndex);
+      // handle transactions
+      const block = await this.web3.eth.getBlock(blockIndex, true);
+      await Promise.all(
+        block.transactions.map(async (tx) => {
+          const receipt = await this.web3.eth.getTransactionReceipt(tx.hash);
+          if (receipt.status === false) {
+            return;
+          }
+          const user = await Addr.findOne({ addr: tx.to, chain: ethereum });
+          if (!user) {
+            return;
+          }
+          /**
+           * pocket address send ether to this address
+           * in order to pay erc20 transfer fee
+           */
+          if (tx.from === pocketAddr) {
+            return;
+          }
+          /* tiny deposit, ignore it */
+          if (
+            this.web3.utils
+              .toBN(tx.value)
+              .lt(this.web3.utils.toBN(collectThreshold))
+          ) {
+            return;
+          }
+          const checkTx = await Deposit.findOne({
+            coinSymbol: ETH,
+            txHash: tx.hash,
+          });
+          if (!checkTx) {
+            const amount = await this.web3.utils.fromWei(tx.value, 'ether');
+            // logger.info(`
+            //   blockHash: ${block.hash}
+            //   blockNumber: ${block.number}
+            //   txHash: ${tx.hash}
+            //   userId: ${user.user_id}
+            //   recipientAddr: ${tx.to}
+            //   amount: ${amount}
+            // `);
+            const d = await Deposit.create({
+              addrPath: user.path,
+              amount: String(amount),
+              clientId: user.clientId,
+              coinSymbol: ETH,
+              status: DepositStatus.unconfirmed,
+              txHash: tx.hash,
+            });
+            d.info = {
+              blockHash: block.hash,
+              blockHeight: block.number,
+              recipientAddr: tx.to,
+              senderAddr: tx.from,
+            };
+            await d.save();
+          } else {
+            return;
+          }
+        }),
+      );
+      coin.info.cursor = blockIndex;
+      await coin.save();
+    }
   }
 
   // TODO

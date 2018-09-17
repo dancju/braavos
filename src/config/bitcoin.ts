@@ -1,7 +1,7 @@
 export default {
   bech32: false,
+  confThreshold: 2,
   deposit: {
-    confThreshold: 2,
     step: 8,
   },
   fee: {
@@ -15,6 +15,6 @@ export default {
     username: 'daniel',
   },
   withdrawal: {
-    step: 8,
+    step: 512,
   },
 };
