@@ -1,12 +1,10 @@
 // tslint:disable:no-submodule-imports
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
+import { BIP32, fromBase58, fromSeed } from 'bip32';
 import { isValidChecksumAddress, toChecksumAddress } from 'ethereumjs-util';
-import {
-  EthereumHDKey,
-  fromExtendedKey,
-  fromMasterSeed,
-} from 'ethereumjs-wallet/hdkey';
+import Wallet from 'ethereumjs-wallet';
+import { fromExtendedKey } from 'ethereumjs-wallet/hdkey';
 import { Cron } from 'nest-schedule';
 import {
   ConfigParam,
@@ -33,8 +31,8 @@ const { ethereum } = Chain;
 @Injectable()
 export class EtherAgent extends CoinAgent {
   protected readonly coin: Promise<Coin>;
-  private readonly prvNode: EthereumHDKey;
-  private readonly pubNode: EthereumHDKey;
+  private readonly prvNode: BIP32;
+  private readonly pubNode: BIP32;
   private readonly web3: Web3;
 
   constructor(
@@ -44,9 +42,9 @@ export class EtherAgent extends CoinAgent {
   ) {
     super();
     const seed = config.get('crypto.seed')() as Buffer;
-    const xPrv = fromMasterSeed(seed)
+    const xPrv = fromSeed(seed)
       .derivePath(`m/44'/60'/0'/0`)
-      .privateExtendedKey();
+      .toBase58();
     const xPub = fromExtendedKey(xPrv).publicExtendedKey();
     if (!xPrv.startsWith('xprv')) {
       throw Error();
@@ -71,18 +69,18 @@ export class EtherAgent extends CoinAgent {
         resolve(res);
       }
     });
-    this.prvNode = fromExtendedKey(xPrv);
-    this.pubNode = fromExtendedKey(xPub);
+    this.prvNode = fromBase58(xPrv);
+    this.pubNode = fromBase58(xPub);
     this.web3 = web3;
   }
 
   public async getAddr(clientId: number, path0: string): Promise<string> {
     const path1 = clientId + '/' + path0;
     const addr = toChecksumAddress(
-      this.pubNode
-        .derivePath(path1)
-        .getWallet()
-        .getAddressString(),
+      Wallet.fromPublicKey(
+        this.pubNode.derivePath(path1).publicKey,
+        true,
+      ).getAddressString(),
     );
     await Addr.createQueryBuilder()
       .insert()
@@ -115,7 +113,7 @@ export class EtherAgent extends CoinAgent {
   @Cron('* */5 * * * *', { startTime: new Date() })
   public async refreshFee(): Promise<void> {
     const gasPrice = await this.web3.eth.getGasPrice();
-    const txFee = (21000 * gasPrice).toString();
+    const txFee = String(21000 * gasPrice);
     const value = this.web3.utils.fromWei(txFee, 'ether');
     const coin = await this.coin;
     coin.info.fee = value;
@@ -128,6 +126,10 @@ export class EtherAgent extends CoinAgent {
     @ConfigParam('ethereum.ether.collect.confThreshold') confThreshold: number,
     @InjectEntityManager() manager: EntityManager,
   ): Promise<void> {
+    const collectAddr = Wallet.fromPublicKey(
+      this.pubNode.derive(0).publicKey,
+      true,
+    ).getAddressString();
     return;
   }
 
@@ -231,9 +233,6 @@ export class EtherAgent extends CoinAgent {
   }
 
   protected getPrivateKey(derivePath: string): string {
-    return this.prvNode
-      .derivePath(derivePath)
-      .getWallet()
-      .getPrivateKeyString();
+    return this.prvNode.derivePath(derivePath).toWIF();
   }
 }

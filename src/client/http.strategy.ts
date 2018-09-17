@@ -6,7 +6,7 @@ import { Client } from '../entities/client.entity';
 @Injectable()
 export class HttpStrategy extends PassportStrategy(Strategy) {
   public async validate(token: string) {
-    const client = await Client.findOne(token);
+    const client = await Client.findOne({ name: token });
     if (!client) {
       throw new UnauthorizedException();
     }
