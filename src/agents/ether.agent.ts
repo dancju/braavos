@@ -19,7 +19,6 @@ import {
   Transaction,
   TransactionManager,
 } from 'typeorm';
-import { WithdrawalStatus } from 'utils/withdrawal-status.enum';
 import Web3 from 'web3';
 import { Signature } from 'web3/eth/accounts';
 import { Account } from '../entities/account.entity';
@@ -32,12 +31,13 @@ import { Chain } from '../utils/chain.enum';
 import { CoinAgent } from '../utils/coin-agent';
 import { CoinSymbol } from '../utils/coin-symbol.enum';
 import { DepositStatus } from '../utils/deposit-status.enum';
+import { WithdrawalStatus } from '../utils/withdrawal-status.enum';
 
 const { ETH } = CoinSymbol;
 const { ethereum } = Chain;
 
 @Injectable()
-export abstract class EtherAgent extends CoinAgent {
+export class EtherAgent extends CoinAgent {
   protected readonly coin: Promise<Coin>;
   private readonly prvNode: BIP32;
   private readonly pubNode: BIP32;
@@ -122,8 +122,7 @@ export abstract class EtherAgent extends CoinAgent {
   public async confirmCron(
     @ConfigParam('ethereum.ether.collect.confThreshold') confThreshold: number,
   ): Promise<void> {
-    const uu = await Deposit
-      .createQueryBuilder()
+    const uu = await Deposit.createQueryBuilder()
       .select()
       .where({ CoinSymbol: CoinSymbol.ETH, status: DepositStatus.unconfirmed })
       .orderBy('id')
@@ -157,7 +156,8 @@ export abstract class EtherAgent extends CoinAgent {
             Number(tx.amount),
           );
         });
-    }));
+      }),
+    );
   }
 
   @Cron('* */5 * * * *', { startTime: new Date() })
@@ -172,19 +172,19 @@ export abstract class EtherAgent extends CoinAgent {
 
   // TODO
   @Cron('* */1 * * * *', { startTime: new Date() })
-  public async collectCron(
-  ): Promise<void> {
-    const unconfTxs = await Deposit
-      .createQueryBuilder()
+  public async collectCron(): Promise<void> {
+    const unconfTxs = await Deposit.createQueryBuilder()
       .select()
-      .where({ CoinSymbol: CoinSymbol.ETH,  status: DepositStatus.confirmed })
+      .where({ CoinSymbol: CoinSymbol.ETH, status: DepositStatus.confirmed })
       .execute();
     if (unconfTxs.length <= 0) {
       return;
     }
     await Promise.all(
       unconfTxs.map(async (tx: Deposit) => {
-        const fullNodeNonce = await this.web3.eth.getTransactionCount(tx.info.recipientAddr);
+        const fullNodeNonce = await this.web3.eth.getTransactionCount(
+          tx.info.recipientAddr,
+        );
         let dbNonce: any;
         if (tx.info.nonce === undefined || tx.info.nonce === null) {
           await getManager().transaction(async (manager) => {
@@ -192,7 +192,11 @@ export abstract class EtherAgent extends CoinAgent {
               .createQueryBuilder()
               .update(Addr)
               .set({ 'info.nonce': `to_json(info.nonce::text::integer + 1)` })
-              .where({ chain: Chain.ethereum, clientId: tx.clientId, path: tx.addrPath })
+              .where({
+                chain: Chain.ethereum,
+                clientId: tx.clientId,
+                path: tx.addrPath,
+              })
               .returning('info.nonce')
               .execute();
             dbNonce = dbNonce - 1;
@@ -224,7 +228,9 @@ export abstract class EtherAgent extends CoinAgent {
           const balance = await this.web3.eth.getBalance(thisAddr);
           const prv = this.getPrivateKey(`${tx.clientId}/${tx.addrPath}`);
           const realGasPrice = await this.web3.eth.getGasPrice();
-          const thisGasPrice = this.web3.utils.toBN(realGasPrice).add(this.web3.utils.toBN(30000000000));
+          const thisGasPrice = this.web3.utils
+            .toBN(realGasPrice)
+            .add(this.web3.utils.toBN(30000000000));
           const txFee = this.web3.utils.toBN(21000).mul(thisGasPrice);
           let value = this.web3.utils.toBN(balance);
           value = value.sub(txFee);
@@ -243,8 +249,7 @@ export abstract class EtherAgent extends CoinAgent {
             await this.web3.eth
               .sendSignedTransaction(signTx.rawTransaction)
               .on('transactionHash', async (hash) => {
-                await Deposit
-                  .createQueryBuilder()
+                await Deposit.createQueryBuilder()
                   .update()
                   .set({ status: DepositStatus.finished })
                   .where({ coinSymbol: CoinSymbol.ETH, txHash: tx.txHash })
@@ -254,7 +259,8 @@ export abstract class EtherAgent extends CoinAgent {
             // logger.error
           }
         }
-    }));
+      }),
+    );
     return;
   }
 
@@ -348,8 +354,7 @@ export abstract class EtherAgent extends CoinAgent {
 
   // TODO
   @Cron('* */1 * * * *', { startTime: new Date() })
-  public async withdrawalCron(
-  ): Promise<void> {
+  public async withdrawalCron(): Promise<void> {
     const collectAddr = Wallet.fromPublicKey(
       this.pubNode.derive(0).publicKey,
       true,
@@ -411,19 +416,23 @@ export abstract class EtherAgent extends CoinAgent {
             .toBN(realGasPrice)
             .add(this.web3.utils.toBN(30000000000))
             .toString();
-          const value = this.web3.utils.toBN(this.web3.utils.toWei(wd[i].amount, 'ether'));
+          const value = this.web3.utils.toBN(
+            this.web3.utils.toWei(wd[i].amount, 'ether'),
+          );
           const balance = await this.web3.eth.getBalance(collectAddr);
           if (this.web3.utils.toBN(balance).lte(value)) {
             // logger.error('wallet balance is not enough');
             return;
           }
-          const signTx = (await this.web3.eth.accounts.signTransaction({
-            gas: 22000,
-            gasPrice: thisGasPrice,
-            nonce: dbNonce,
-            to: wd[i].recipient,
-            value: value.toString(),
-          }, prv,
+          const signTx = (await this.web3.eth.accounts.signTransaction(
+            {
+              gas: 22000,
+              gasPrice: thisGasPrice,
+              nonce: dbNonce,
+              to: wd[i].recipient,
+              value: value.toString(),
+            },
+            prv,
           )) as Signature;
           // logger.info(`signTx gasPrice: ${thisGasPrice} rawTransaction: ${signTx.rawTransaction}`);
           try {
@@ -431,8 +440,7 @@ export abstract class EtherAgent extends CoinAgent {
               .sendSignedTransaction(signTx.rawTransaction)
               .on('transactionHash', async (hash) => {
                 // logger.info('withdrawTxHash: ' + hash);
-                await Withdrawal
-                  .createQueryBuilder()
+                await Withdrawal.createQueryBuilder()
                   .update()
                   .set({ txHash: hash, status: WithdrawalStatus.finished })
                   .where({ id: wd[i].id })
