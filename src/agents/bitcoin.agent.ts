@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BIP32, fromBase58, fromSeed } from 'bip32';
-import BtcRpc from 'bitcoin-core';
+import BtcRpc, { ListTransactionsResult } from 'bitcoin-core';
 import BtcLib from 'bitcoinjs-lib';
 import { Cron } from 'nest-schedule';
 import {
@@ -224,16 +224,20 @@ export class BitcoinAgent extends CoinAgent {
 
   @Configurable()
   @Cron('* */10 * * * *', { startTime: new Date() })
+  @Transaction()
   public async withdrawalCron(
     @ConfigParam('bitcoin.confThreshold') confThreshold: number,
     @ConfigParam('bitcoin.withdrawal.step') step: number,
+    @TransactionManager() manager: EntityManager,
   ): Promise<void> {
-    const coin = await Coin.createQueryBuilder()
+    const coin = await manager
+      .createQueryBuilder(Coin, 'c')
       .where({ symbol: BTC })
       .setLock('pessimistic_write')
       .getOne();
-    while (true) {
-      const lW = await Withdrawal.createQueryBuilder()
+    const broadcast = async () => {
+      const ws = await manager
+        .createQueryBuilder(Withdrawal, 'w')
         .where({
           coinSymbol: BTC,
           status: WithdrawalStatus.created,
@@ -241,8 +245,47 @@ export class BitcoinAgent extends CoinAgent {
         .orderBy('id', 'ASC')
         .limit(step)
         .getMany();
-      if (lW.length === 0) {
-        break;
+      await this.rpc.sendMany(
+        'braavos',
+        ws.reduce((acc: { [_: string]: string }, cur) => {
+          acc[cur.recipient] = cur.amount;
+          return acc;
+        }, {}),
+        confThreshold,
+        String(ws.slice(-1)[0].id),
+      );
+    };
+    const credit = async (tx: ListTransactionsResult) => {
+      return async () => {
+        const ws = await manager
+          .createQueryBuilder(Withdrawal, 'w')
+          .where(`coinSymbol = 'BTC' AND status = 'created' AND id <= :key`, {
+            key: Number(tx.comment),
+          })
+          .setLock('pessimistic_write')
+          .getMany();
+        const txs = await this.rpc.listTransactions(
+          'braavos',
+          64,
+          coin.info.withdrawalCursor,
+        );
+        // TODO update status, credit fee
+        console.log(ws);
+        console.log(txs);
+      };
+    };
+    const taskSelector = async (): Promise<(() => Promise<void>)> => {
+      // find unhandled withdrawal with minimal id
+      const w = await manager
+        .createQueryBuilder(Withdrawal, 'w')
+        .where({
+          status: WithdrawalStatus.created,
+          symbol: BTC,
+        })
+        .orderBy('id', 'ASC')
+        .getOne();
+      if (!w) {
+        return null;
       }
       while (true) {
         const txs = await this.rpc.listTransactions(
@@ -251,45 +294,24 @@ export class BitcoinAgent extends CoinAgent {
           coin.info.withdrawalCursor,
         );
         if (txs.length === 0) {
-          break;
+          return broadcast;
         }
         for (const tx of txs.filter((t) => t.category === 'send')) {
-          if (Number(tx.comment) >= lW[0].id) {
-            return;
+          // assure the comment being number and positive
+          if (!(Number(tx.comment) > 0)) {
+            throw new Error();
+          }
+          if (Number(tx.comment) >= w.id) {
+            return credit(tx);
           }
         }
         coin.info.withdrawalCursor += txs.length;
       }
-      const txHash = await this.rpc.sendMany(
-        'braavos',
-        lW.reduce((acc: { [_: string]: string }, cur) => {
-          acc[cur.recipient] = cur.amount;
-          return acc;
-        }, {}),
-        confThreshold,
-        String(lW.slice(-1)[0].id),
-      );
-      // await Withdrawal.update(lW.map((w) => w.id), {
-      //   status: WithdrawalStatus.finished,
-      //   txHash,
-      // });
+    };
+    const task = await taskSelector();
+    if (task) {
+      await task();
     }
-    await coin.save();
-  }
-
-  @Configurable()
-  @Cron('* */10 * * * *', { startTime: new Date() })
-  @Transaction()
-  public async creditCron(
-    @TransactionManager() manager: EntityManager,
-  ): Promise<void> {
-    const lW = await manager
-      .createQueryBuilder(Withdrawal, 'w')
-      .where(`status = 'finished' AND "feeAmount" IS NULL`)
-      .take(64)
-      .getMany();
-    // TODO handle fee, update client balance
-    return;
   }
 
   protected getPrivateKey(derivePath: string): string {

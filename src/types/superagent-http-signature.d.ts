@@ -1,3 +1,5 @@
 declare module 'superagent-http-signature' {
-  export default function signature(_: any): any;
+  import { Plugin } from 'superagent';
+
+  export default function signature(_: any): Plugin;
 }

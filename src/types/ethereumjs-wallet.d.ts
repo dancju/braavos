@@ -12,14 +12,7 @@ declare module 'ethereumjs-wallet' {
 }
 
 declare module 'ethereumjs-wallet/hdkey' {
-  class Wallet {
-    public static fromPrivateKey(key: Buffer): Wallet;
-    public static fromPublicKey(key: Buffer, nonstrict?: boolean): Wallet;
-    public static fromV3(json: string, password: string): Wallet;
-    public getPrivateKey(): Buffer;
-    public getPrivateKeyString(): string;
-    public getAddressString(): string;
-  }
+  import Wallet from 'ethereumjs-wallet';
 
   class EthereumHDKey {
     public privateExtendedKey(): string;

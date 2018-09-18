@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-http-signature';
 import { Client } from '../entities/client.entity';
@@ -9,9 +9,19 @@ export class SignatureStrategy extends PassportStrategy(Strategy, 'signature') {
     keyId: string,
     done: (_: null, client: Client, publicKey: string) => void,
   ) {
-    const client = await Client.findOne({ name: keyId });
+    const { name, fingerprint } = (await new Promise((resolve, reject) => {
+      keyId.replace(
+        /^\/(\w+)\/keys\/([0-9a-f:]+)$/,
+        (_: string, n: string, f: string): string => {
+          resolve({ name: n, fingerprint: f });
+          return '';
+        },
+      );
+      reject(new BadRequestException('Bad keyId Format'));
+    })) as { name: string; fingerprint: string };
+    const client = await Client.findOne({ name });
     if (!client) {
-      throw new UnauthorizedException();
+      throw new NotFoundException('Client Name Not Found');
     }
     done(null, client, client.publicKey);
     return client;

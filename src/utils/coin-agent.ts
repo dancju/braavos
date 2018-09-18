@@ -1,4 +1,3 @@
-import { Injectable } from '@nestjs/common';
 import { NestSchedule } from 'nest-schedule';
 import { Coin } from '../entities/coin.entity';
 import { Withdrawal } from '../entities/withdrawal.entity';
