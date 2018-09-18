@@ -118,10 +118,46 @@ export abstract class EtherAgent extends CoinAgent {
     // TODO handle off-chain transactions
   }
 
-  // TBD
   @Cron('* */1 * * * *', { startTime: new Date() })
-  public async confirmCron(): Promise<void> {
-    // todo
+  public async confirmCron(
+    @ConfigParam('ethereum.ether.collect.confThreshold') confThreshold: number,
+  ): Promise<void> {
+    const uu = await Deposit
+      .createQueryBuilder()
+      .select()
+      .where({ CoinSymbol: CoinSymbol.ETH, status: DepositStatus.unconfirmed })
+      .orderBy('id')
+      .execute();
+    if (uu.length <= 0) {
+      return;
+    }
+    const height = await this.web3.eth.getBlockNumber();
+    await Promise.all(
+      uu.map(async (tx: Deposit) => {
+        const blockHeight = tx.info.blockHeight;
+        if (height - blockHeight < confThreshold) {
+          return;
+        }
+        await getManager().transaction(async (manager) => {
+          await manager
+            .createQueryBuilder()
+            .update(Deposit)
+            .set({ status: DepositStatus.confirmed })
+            .where({ id: tx.id })
+            .execute();
+          await manager
+            .createQueryBuilder(Account, 'account')
+            .where({ clientId: tx.clientId, coinSymbol: CoinSymbol.ETH })
+            .setLock('pessimistic_write')
+            .getOne();
+          await manager.increment(
+            Account,
+            { clientId: tx.clientId, coinSymbol: CoinSymbol.ETH },
+            'balance',
+            Number(tx.amount),
+          );
+        });
+    }));
   }
 
   @Cron('* */5 * * * *', { startTime: new Date() })
@@ -137,12 +173,11 @@ export abstract class EtherAgent extends CoinAgent {
   // TODO
   @Cron('* */1 * * * *', { startTime: new Date() })
   public async collectCron(
-    @ConfigParam('ethereum.ether.collect.confThreshold') confThreshold: number,
   ): Promise<void> {
     const unconfTxs = await Deposit
       .createQueryBuilder()
       .select()
-      .where({ feeSymbol: 'ETH',  status: 'confirmed' })
+      .where({ CoinSymbol: CoinSymbol.ETH,  status: DepositStatus.confirmed })
       .execute();
     if (unconfTxs.length <= 0) {
       return;
