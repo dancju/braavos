@@ -139,11 +139,6 @@ export abstract class EtherAgent extends CoinAgent {
   public async collectCron(
     @ConfigParam('ethereum.ether.collect.confThreshold') confThreshold: number,
   ): Promise<void> {
-    const collectAddr = Wallet.fromPublicKey(
-      this.pubNode.derive(0).publicKey,
-      true,
-    ).getAddressString();
-    const fullNodeHeight = await this.web3.eth.getBlockNumber();
     const unconfTxs = await Deposit
       .createQueryBuilder()
       .select()
