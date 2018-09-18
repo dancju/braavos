@@ -9,7 +9,6 @@ export default {
       step: 60,
     },
     withdraw: {
-      step: 1,
     },
   },
   web3: 'http://35.196.123.227:8547',
