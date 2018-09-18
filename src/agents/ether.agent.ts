@@ -31,6 +31,7 @@ import { Chain } from '../utils/chain.enum';
 import { CoinAgent } from '../utils/coin-agent';
 import { CoinSymbol } from '../utils/coin-symbol.enum';
 import { DepositStatus } from '../utils/deposit-status.enum';
+import { WithdrawalStatus } from '../utils/withdrawal-status.enum';
 
 const { ETH } = CoinSymbol;
 const { ethereum } = Chain;
@@ -117,6 +118,48 @@ export class EtherAgent extends CoinAgent {
     // TODO handle off-chain transactions
   }
 
+  @Cron('* */1 * * * *', { startTime: new Date() })
+  public async confirmCron(
+    @ConfigParam('ethereum.ether.collect.confThreshold') confThreshold: number,
+  ): Promise<void> {
+    const uu = await Deposit.createQueryBuilder()
+      .select()
+      .where({ CoinSymbol: CoinSymbol.ETH, status: DepositStatus.unconfirmed })
+      .orderBy('id')
+      .execute();
+    if (uu.length <= 0) {
+      return;
+    }
+    const height = await this.web3.eth.getBlockNumber();
+    await Promise.all(
+      uu.map(async (tx: Deposit) => {
+        const blockHeight = tx.info.blockHeight;
+        if (height - blockHeight < confThreshold) {
+          return;
+        }
+        await getManager().transaction(async (manager) => {
+          await manager
+            .createQueryBuilder()
+            .update(Deposit)
+            .set({ status: DepositStatus.confirmed })
+            .where({ id: tx.id })
+            .execute();
+          await manager
+            .createQueryBuilder(Account, 'account')
+            .where({ clientId: tx.clientId, coinSymbol: CoinSymbol.ETH })
+            .setLock('pessimistic_write')
+            .getOne();
+          await manager.increment(
+            Account,
+            { clientId: tx.clientId, coinSymbol: CoinSymbol.ETH },
+            'balance',
+            Number(tx.amount),
+          );
+        });
+      }),
+    );
+  }
+
   @Cron('* */5 * * * *', { startTime: new Date() })
   public async refreshFee(): Promise<void> {
     const gasPrice = await this.web3.eth.getGasPrice();
@@ -129,14 +172,95 @@ export class EtherAgent extends CoinAgent {
 
   // TODO
   @Cron('* */1 * * * *', { startTime: new Date() })
-  public async collectCron(
-    @ConfigParam('ethereum.ether.collect.confThreshold') confThreshold: number,
-    @InjectEntityManager() manager: EntityManager,
-  ): Promise<void> {
-    const collectAddr = Wallet.fromPublicKey(
-      this.pubNode.derive(0).publicKey,
-      true,
-    ).getAddressString();
+  public async collectCron(): Promise<void> {
+    const unconfTxs = await Deposit.createQueryBuilder()
+      .select()
+      .where({ CoinSymbol: CoinSymbol.ETH, status: DepositStatus.confirmed })
+      .execute();
+    if (unconfTxs.length <= 0) {
+      return;
+    }
+    await Promise.all(
+      unconfTxs.map(async (tx: Deposit) => {
+        const fullNodeNonce = await this.web3.eth.getTransactionCount(
+          tx.info.recipientAddr,
+        );
+        let dbNonce: any;
+        if (tx.info.nonce === undefined || tx.info.nonce === null) {
+          await getManager().transaction(async (manager) => {
+            dbNonce = await manager
+              .createQueryBuilder()
+              .update(Addr)
+              .set({ 'info.nonce': `to_json(info.nonce::text::integer + 1)` })
+              .where({
+                chain: Chain.ethereum,
+                clientId: tx.clientId,
+                path: tx.addrPath,
+              })
+              .returning('info.nonce')
+              .execute();
+            dbNonce = dbNonce - 1;
+            await manager
+              .createQueryBuilder()
+              .update(Deposit)
+              .set({ 'info.nonce': dbNonce })
+              .where({ coinSymbol: CoinSymbol.ETH, txHash: tx.txHash })
+              .execute();
+          });
+        } else {
+          dbNonce = tx.info.nonce;
+        }
+        /* compare nonce db - fullNode */
+        if (dbNonce < fullNodeNonce) {
+          // logger.fatal(`db nonce is less than full node nonce db info: ${tx}`);
+          return;
+        } else if (dbNonce > fullNodeNonce) {
+          // logger.info(`still have some txs to be handled | eth`);
+          return;
+        } else {
+          /* dbNonce === fullNodeNonce, broadcast transaction */
+          const txHash = tx.txHash;
+          const collectAddr = Wallet.fromPublicKey(
+            this.pubNode.derive(0).publicKey,
+            true,
+          ).getAddressString();
+          const thisAddr = await this.getAddr(tx.clientId, tx.addrPath);
+          const balance = await this.web3.eth.getBalance(thisAddr);
+          const prv = this.getPrivateKey(`${tx.clientId}/${tx.addrPath}`);
+          const realGasPrice = await this.web3.eth.getGasPrice();
+          const thisGasPrice = this.web3.utils
+            .toBN(realGasPrice)
+            .add(this.web3.utils.toBN(30000000000));
+          const txFee = this.web3.utils.toBN(21000).mul(thisGasPrice);
+          let value = this.web3.utils.toBN(balance);
+          value = value.sub(txFee);
+          const signTx = (await this.web3.eth.accounts.signTransaction(
+            {
+              gas: 21000,
+              gasPrice: thisGasPrice.toString(),
+              nonce: dbNonce,
+              to: collectAddr,
+              value: value.toString(),
+            },
+            prv,
+          )) as Signature;
+
+          try {
+            await this.web3.eth
+              .sendSignedTransaction(signTx.rawTransaction)
+              .on('transactionHash', async (hash) => {
+                await Deposit.createQueryBuilder()
+                  .update()
+                  .set({ status: DepositStatus.finished })
+                  .where({ coinSymbol: CoinSymbol.ETH, txHash: tx.txHash })
+                  .execute();
+              });
+          } catch (err) {
+            // logger.error
+          }
+        }
+      }),
+    );
     return;
   }
 
@@ -230,8 +354,7 @@ export class EtherAgent extends CoinAgent {
 
   // TODO
   @Cron('* */1 * * * *', { startTime: new Date() })
-  public async withdrawalCron(
-  ): Promise<void> {
+  public async withdrawalCron(): Promise<void> {
     const collectAddr = Wallet.fromPublicKey(
       this.pubNode.derive(0).publicKey,
       true,
@@ -241,7 +364,7 @@ export class EtherAgent extends CoinAgent {
       const wd = await Withdrawal.createQueryBuilder()
         .where({
           coinSymbol: 'ETH',
-          status: 'created',
+          status: WithdrawalStatus.created,
           txHash: null,
         })
         .orderBy(`info->'nonce'`)
@@ -293,19 +416,23 @@ export class EtherAgent extends CoinAgent {
             .toBN(realGasPrice)
             .add(this.web3.utils.toBN(30000000000))
             .toString();
-          const value = this.web3.utils.toBN(this.web3.utils.toWei(wd[i].amount, 'ether'));
+          const value = this.web3.utils.toBN(
+            this.web3.utils.toWei(wd[i].amount, 'ether'),
+          );
           const balance = await this.web3.eth.getBalance(collectAddr);
           if (this.web3.utils.toBN(balance).lte(value)) {
             // logger.error('wallet balance is not enough');
             return;
           }
-          const signTx = (await this.web3.eth.accounts.signTransaction({
-            gas: 22000,
-            gasPrice: thisGasPrice,
-            nonce: dbNonce,
-            to: wd[i].recipient,
-            value: value.toString(),
-          }, prv,
+          const signTx = (await this.web3.eth.accounts.signTransaction(
+            {
+              gas: 22000,
+              gasPrice: thisGasPrice,
+              nonce: dbNonce,
+              to: wd[i].recipient,
+              value: value.toString(),
+            },
+            prv,
           )) as Signature;
           // logger.info(`signTx gasPrice: ${thisGasPrice} rawTransaction: ${signTx.rawTransaction}`);
           try {
@@ -313,10 +440,9 @@ export class EtherAgent extends CoinAgent {
               .sendSignedTransaction(signTx.rawTransaction)
               .on('transactionHash', async (hash) => {
                 // logger.info('withdrawTxHash: ' + hash);
-                await Withdrawal
-                  .createQueryBuilder()
+                await Withdrawal.createQueryBuilder()
                   .update()
-                  .set({ txHash: hash, status: 'finished' })
+                  .set({ txHash: hash, status: WithdrawalStatus.finished })
                   .where({ id: wd[i].id })
                   .execute();
                 // logger.info('Finish update db');

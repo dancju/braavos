@@ -8,8 +8,7 @@ export default {
       pocketAddr: '0x55F71854c4094d659A1c303A6E507A77ce727509',
       step: 60,
     },
-    withdraw: {
-    },
+    withdraw: {},
   },
   web3: 'http://35.196.123.227:8547',
 };
