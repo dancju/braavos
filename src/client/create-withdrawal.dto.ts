@@ -1,6 +1,7 @@
 import { ApiModelProperty, ApiModelPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsString } from 'class-validator';
 import { CoinSymbol } from '../utils/coin-symbol.enum';
+import { WithdrawalMemoValidator } from '../utils/withdrawal-memo.validator';
 
 export class CreateWithdrawalDto {
   @ApiModelProperty({ description: '幂等键' })
@@ -18,8 +19,7 @@ export class CreateWithdrawalDto {
   @ApiModelPropertyOptional({
     description: '附言，仅针对 EOS 有效且是必须的',
   })
-  @IsOptional()
-  @IsString()
+  @WithdrawalMemoValidator()
   public memo?: string;
 
   @ApiModelProperty({ description: '数量' })

@@ -12,6 +12,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { CoinSymbol } from '../utils/coin-symbol.enum';
+import { WithdrawalMemoValidator } from '../utils/withdrawal-memo.validator';
 import { WithdrawalStatus } from '../utils/withdrawal-status.enum';
 import { Client } from './client.entity';
 import { Deposit } from './deposit.entity';
@@ -40,7 +41,8 @@ export class Withdrawal extends BaseEntity {
   public recipient: string;
 
   @ApiModelProperty({ description: '附言，仅针对 EOS 有效' })
-  @Column()
+  @Column({ nullable: true })
+  @WithdrawalMemoValidator()
   public memo: string;
 
   @ApiModelProperty({ description: '提币数量' })

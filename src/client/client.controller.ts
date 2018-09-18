@@ -13,7 +13,6 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -144,17 +143,18 @@ export class ClientController {
     await getManager().transaction(async (manager) => {
       const account = await manager
         .createQueryBuilder(Account, 'account')
-        .where({
-          clientId: client.id,
-          coinSymbol: body.coinSymbol,
-        })
+        .where({ clientId: client.id, coinSymbol: body.coinSymbol })
         .setLock('pessimistic_write')
         .getOne();
       if (Number(account.balance) < Number(body.amount)) {
         throw new HttpException('Payment Required', 402);
       }
-      account.balance = String(Number(account.balance) - Number(body.amount));
-      await account.save();
+      await manager.decrement(
+        Account,
+        { clientId: client.id, coinSymbol: body.coinSymbol },
+        'balance',
+        Number(body.amount),
+      );
       await manager
         .createQueryBuilder()
         .insert()

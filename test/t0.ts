@@ -43,6 +43,6 @@ const putWithdrawal = async () => {
       );
     console.log(res.body);
   } catch (err) {
-    console.log(err.response);
+    console.log(err);
   }
 };
