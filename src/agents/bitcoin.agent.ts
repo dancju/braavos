@@ -198,6 +198,9 @@ export class BitcoinAgent extends CoinAgent {
       .where({ coinSymbol: BTC, status: DepositStatus.unconfirmed })
       .setLock('pessimistic_write')
       .getMany()) {
+      if (!d.txHash) {
+        throw new Error();
+      }
       if (
         (await this.rpc.getTransaction(d.txHash)).confirmations < confThreshold
       ) {

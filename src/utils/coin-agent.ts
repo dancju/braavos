@@ -1,6 +1,7 @@
 import { NestSchedule } from 'nest-schedule';
 import { Coin } from '../entities/coin.entity';
 import { Withdrawal } from '../entities/withdrawal.entity';
+import { Deposit } from 'entities/deposit.entity';
 
 export abstract class CoinAgent extends NestSchedule {
   protected abstract coin: Promise<Coin>;
@@ -8,4 +9,6 @@ export abstract class CoinAgent extends NestSchedule {
   public abstract isValidAddress(addr: string): boolean;
   public abstract createWithdrawal(withdrawal: Withdrawal): Promise<void>;
   protected abstract getPrivateKey(derivePath: string): string;
+  protected async pushDeposit(deposit: Deposit): Promise<void> {}
+  protected async pushWithdrawal(withdrawal: Withdrawal): Promise<void> {}
 }
