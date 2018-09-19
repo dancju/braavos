@@ -170,7 +170,6 @@ export class EtherAgent extends CoinAgent {
     await coin.save();
   }
 
-  // TODO
   @Cron('* */1 * * * *', { startTime: new Date() })
   public async collectCron(): Promise<void> {
     const unconfTxs = await Deposit.createQueryBuilder()
