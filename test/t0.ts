@@ -14,7 +14,7 @@ const getAddr = async () => {
           algorithm: 'rsa-sha256',
           headers: ['(request-target)', 'date', 'content-md5'],
           key,
-          keyId: 'test',
+          keyId: '/test/keys/34:2f',
         }),
       );
     console.log(res.text);
@@ -46,3 +46,5 @@ const putWithdrawal = async () => {
     console.log(err);
   }
 };
+
+getAddr();

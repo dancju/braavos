@@ -81,7 +81,11 @@ export class ClientController {
     @Query('path')
     path: string,
   ): Promise<string> {
-    return this.coinAgents[coinSymbol].getAddr(client.id, path);
+    const agent = this.coinAgents[coinSymbol];
+    if (!agent) {
+      throw new Error();
+    }
+    return agent.getAddr(client.id, path);
   }
 
   @Get('deposits')
@@ -132,7 +136,11 @@ export class ClientController {
     ) {
       throw new ConflictException();
     }
-    if (!this.coinAgents[coinSymbol].isValidAddress(recipient)) {
+    const agent = this.coinAgents[coinSymbol];
+    if (!agent) {
+      throw new Error();
+    }
+    if (!agent.isValidAddress(recipient)) {
       throw new BadRequestException('Bad Recipient');
     }
     await Account.createQueryBuilder()
@@ -146,6 +154,9 @@ export class ClientController {
         .where({ clientId: client.id, coinSymbol: body.coinSymbol })
         .setLock('pessimistic_write')
         .getOne();
+      if (!account) {
+        throw new Error();
+      }
       if (Number(account.balance) < Number(body.amount)) {
         throw new HttpException('Payment Required', 402);
       }
@@ -168,11 +179,11 @@ export class ClientController {
         })
         .execute();
     });
-    const res = await Withdrawal.findOne({
+    const res = (await Withdrawal.findOne({
       clientId: client.id,
       key: body.key,
-    });
-    await this.coinAgents[coinSymbol].createWithdrawal(res);
+    }))!;
+    await agent.createWithdrawal(res);
     return res;
   }
 

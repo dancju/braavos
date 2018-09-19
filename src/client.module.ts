@@ -23,7 +23,6 @@ import { Coin } from './entities/coin.entity';
         bigNumberStrings: true,
         entities: [__dirname + '/../**/*.entity.ts'],
         supportBigNumbers: true,
-        synchronize: true,
         type: 'postgres',
       }),
     }),

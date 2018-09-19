@@ -1,0 +1,7 @@
+- bitcoin rpc idempotency
+- query validator
+- swagger interceptor
+- e2e test with docker-compose
+- dashboard
+- limit response size
+- migrations

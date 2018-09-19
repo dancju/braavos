@@ -1,0 +1,29 @@
+version: '3'
+services:
+  master:
+    build: .
+    ports:
+      - 3000:3000
+    environment:
+      - NODE_ENV=test
+      - PORT=3000
+      - MNEMONIC="一 一 一"
+      - OMNICORED_HOST=localhost
+      - OMNICORED_NETWORK=regtest
+      - OMNICORED_PASSWORD=J2fqb-r8YdvESyLK8DkMQCJBOyEhlRWI3VuYrul8bYI=
+      - OMNICORED_USERNAME=test
+      - WEB3=
+      - DB_NAME=braavos
+      - DB_HOST=localhost
+      - DB_PASSWORD=
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+  pg:
+    image: postgres:11-alpine
+    ports:
+      - 5432:5432
+  omnicored:
+    image: mpugach/omnicored
+    ports:
+      - 18332:18332
+    command: '-server -regtest -txindex -rpcauth=test:d420a6feb7865b5827725ec037f039c8$$52fe47e079807f05b5108b301c329423dce7c30132f9df010cb07d36ff22469f -rpcallowip=172.0.0.1'

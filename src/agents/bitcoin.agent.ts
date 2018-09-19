@@ -125,11 +125,11 @@ export class BitcoinAgent extends CoinAgent {
   @Configurable()
   @Cron('* */10 * * * *', { startTime: new Date() })
   public async refreshFee(
-    @ConfigParam('bitcoin.fee.confTarget') confTarget: number,
-    @ConfigParam('bitcoin.fee.txSizeKb') txSizeKb: number,
+    @ConfigParam('bitcoin.btc.fee.confTarget') confTarget: number,
+    @ConfigParam('bitcoin.btc.fee.txSizeKb') txSizeKb: number,
   ): Promise<void> {
     const coin = await this.coin;
-    const feeRate = (await this.rpc.estimateSmartFee(confTarget)).feerate;
+    const feeRate = (await this.rpc.estimateSmartFee(confTarget)).feerate!;
     const fee = txSizeKb * feeRate;
     await Promise.all([
       this.rpc.setTxFee(feeRate),
@@ -143,12 +143,15 @@ export class BitcoinAgent extends CoinAgent {
   @Configurable()
   @Cron('* */1 * * * *', { startTime: new Date() })
   public async depositCron(
-    @ConfigParam('bitcoin.deposit.step') step: number,
+    @ConfigParam('bitcoin.btc.deposit.step') step: number,
   ): Promise<void> {
     const coin = await Coin.createQueryBuilder()
       .where({ symbol: BTC })
       .setLock('pessimistic_write')
       .getOne();
+    if (!coin) {
+      throw new Error();
+    }
     while (true) {
       const txs = await this.rpc.listTransactions(
         'braavos',
@@ -185,7 +188,7 @@ export class BitcoinAgent extends CoinAgent {
   @Cron('* */10 * * * *', { startTime: new Date() })
   @Transaction()
   public async debitCron(
-    @ConfigParam('bitcoin.confThreshold') confThreshold: number,
+    @ConfigParam('bitcoin.btc.confThreshold') confThreshold: number,
     @TransactionManager() manager: EntityManager,
   ): Promise<void> {
     for (const d of await manager
@@ -226,8 +229,8 @@ export class BitcoinAgent extends CoinAgent {
   @Cron('* */10 * * * *', { startTime: new Date() })
   @Transaction()
   public async withdrawalCron(
-    @ConfigParam('bitcoin.confThreshold') confThreshold: number,
-    @ConfigParam('bitcoin.withdrawal.step') step: number,
+    @ConfigParam('bitcoin.btc.confThreshold') confThreshold: number,
+    @ConfigParam('bitcoin.btc.withdrawal.step') step: number,
     @TransactionManager() manager: EntityManager,
   ): Promise<void> {
     const coin = await manager
@@ -235,6 +238,9 @@ export class BitcoinAgent extends CoinAgent {
       .where({ symbol: BTC })
       .setLock('pessimistic_write')
       .getOne();
+    if (!coin) {
+      throw new Error();
+    }
     const broadcast = async () => {
       const ws = await manager
         .createQueryBuilder(Withdrawal, 'w')
@@ -274,7 +280,7 @@ export class BitcoinAgent extends CoinAgent {
         console.log(txs);
       };
     };
-    const taskSelector = async (): Promise<(() => Promise<void>)> => {
+    const taskSelector = async (): Promise<(() => Promise<void>) | null> => {
       // find unhandled withdrawal with minimal id
       const w = await manager
         .createQueryBuilder(Withdrawal, 'w')

@@ -16,7 +16,6 @@ import { DashboardController } from './dashboard/dashboard.controller';
         bigNumberStrings: true,
         entities: [__dirname + '/../**/*.entity.ts'],
         supportBigNumbers: true,
-        synchronize: true,
         type: 'postgres',
       }),
     }),
