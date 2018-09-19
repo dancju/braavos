@@ -19,5 +19,10 @@ export default {
       decimals: 8,
     },
   },
+  bmart: {
+    bmartHost: "https://api.bmart.io/",
+    bmartKey: "a171c650b67e647e7a35052b8b5d4e64d",
+    bmartSecret: "5aaf0b7d9b4ea9c52f6a70bbffec779a"
+  },
   web3: 'http://35.196.123.227:8547',
 };

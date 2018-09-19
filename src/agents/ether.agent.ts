@@ -351,7 +351,7 @@ export class EtherAgent extends CoinAgent {
     }
   }
 
-  // TODO
+  @Configurable()
   @Cron('* */1 * * * *', { startTime: new Date() })
   public async withdrawalCron(): Promise<void> {
     const collectAddr = Wallet.fromPublicKey(

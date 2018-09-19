@@ -175,6 +175,7 @@ export class ClientController {
           clientId: client.id,
           coinSymbol,
           key: body.key,
+          memo: body.memo,
           recipient,
         })
         .execute();
