@@ -5,23 +5,27 @@ services:
     ports:
       - 3000:3000
     environment:
-      - NODE_ENV=test
-      - PORT=3000
-      - MNEMONIC="一 一 一"
-      - OMNICORED_HOST=localhost
-      - OMNICORED_NETWORK=regtest
-      - OMNICORED_PASSWORD=J2fqb-r8YdvESyLK8DkMQCJBOyEhlRWI3VuYrul8bYI=
-      - OMNICORED_USERNAME=test
-      - WEB3=
-      - DB_NAME=braavos
-      - DB_HOST=localhost
-      - DB_PASSWORD=
-      - DB_PORT=5432
-      - DB_USERNAME=postgres
+      - NODE_ENV = test
+      - PORT = 3000
+      - MNEMONIC = "一 一 一"
+      - OMNICORED_HOST = omnicored
+      - OMNICORED_NETWORK = regtest
+      - OMNICORED_PASSWORD = J2fqb-r8YdvESyLK8DkMQCJBOyEhlRWI3VuYrul8bYI=
+      - OMNICORED_USERNAME = test
+      - TYPEORM_CONNECTION = postgres
+      - TYPEORM_HOST = pg
+      - TYPEORM_USERNAME = postgres
+      - TYPEORM_PASSWORD = postgres_password
+      - TYPEORM_DATABASE = braavos
+      - TYPEORM_PORT = 5432
+      - TYPEORM_MIGRATIONS_DIR = src/migrations
+      - WEB3 =
   pg:
     image: postgres:11-alpine
     ports:
       - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: postgres_password
   omnicored:
     image: mpugach/omnicored
     ports:

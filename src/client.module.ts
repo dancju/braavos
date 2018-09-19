@@ -23,17 +23,18 @@ import { Coin } from './entities/coin.entity';
         bigNumberStrings: true,
         entities: [__dirname + '/../**/*.entity.ts'],
         supportBigNumbers: true,
-        type: 'postgres',
       }),
     }),
     TypeOrmModule.forFeature([Coin]),
   ],
   providers: [
     SignatureStrategy,
+    // TODO add agentRepo provider
     {
       inject: [ConfigService],
       provide: BtcRpc,
       useFactory: (config: ConfigService) => {
+        // TODO test connection
         return new BtcRpc(config.get('bitcoin.rpc'));
       },
     },
@@ -41,6 +42,7 @@ import { Coin } from './entities/coin.entity';
       inject: [ConfigService],
       provide: Web3,
       useFactory: (config: ConfigService) => {
+        // TODO test connection
         return new Web3.providers.HttpProvider(config.get('ethereum.web3'));
       },
     },
