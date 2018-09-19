@@ -16,9 +16,9 @@
     "outDir": "./dist",
     "removeComments": true,
     "sourceMap": true,
-    "strict": true,
     "strictFunctionTypes": true,
     "strictNullChecks": true,
+    "strictPropertyInitialization": true,
     "target": "es6",
     "typeRoots": ["./src/types"]
   },
