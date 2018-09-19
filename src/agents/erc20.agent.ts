@@ -1,4 +1,3 @@
-// tslint:disable:no-submodule-imports
 import { Inject, Injectable, NotImplementedException } from '@nestjs/common';
 import { Cron } from 'nest-schedule';
 import { ConfigParam, ConfigService, InjectConfig } from 'nestjs-config';
@@ -14,17 +13,17 @@ import { EtherAgent } from './ether.agent';
 const { ETH } = CoinSymbol;
 const { ethereum } = Chain;
 
-@Injectable()
 export abstract class Erc20Agent extends CoinAgent {
   protected readonly coin: Promise<Coin>;
   private readonly web3: Web3;
   private readonly etherAgent: EtherAgent;
 
   constructor(
-    @InjectConfig() config: ConfigService,
-    @Inject(Web3) web3: Web3,
-    @Inject(EtherAgent) etherAgent: EtherAgent,
+    config: ConfigService,
+    web3: Web3,
+    etherAgent: EtherAgent,
     coinSymbol: CoinSymbol,
+    abi: any,
   ) {
     super();
     this.web3 = web3;
