@@ -12,20 +12,20 @@ import { Client } from './client.entity';
 @Entity()
 export class Account extends BaseEntity {
   @PrimaryColumn({ enum: CoinSymbol, type: 'enum' })
-  public coinSymbol: CoinSymbol;
+  public coinSymbol!: CoinSymbol;
 
   @PrimaryColumn()
-  public clientId: number;
+  public clientId!: number;
 
   @Column({ default: 0, precision: 24, scale: 8, type: 'decimal' })
-  public balance: string;
+  public balance!: string;
 
   @Column({ default: {}, type: 'jsonb' })
   public info: any;
 
   @UpdateDateColumn()
-  public updatedAt: Date;
+  public updatedAt!: Date;
 
   @ManyToOne(() => Client)
-  public client: Client;
+  public client!: Client;
 }

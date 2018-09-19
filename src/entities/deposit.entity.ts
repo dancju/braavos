@@ -55,12 +55,12 @@ export class Deposit extends BaseEntity {
 
   @ApiModelProperty({ description: '转账 hash，仅针对链上转账有效' })
   @Column({ nullable: true })
-  public txHash!: string;
+  public txHash?: string;
 
   @Exclude()
   @JoinColumn()
   @OneToOne(() => Withdrawal, (w) => w.deposit, { nullable: true })
-  public withdrawal!: Withdrawal;
+  public withdrawal?: Withdrawal;
 
   @Exclude()
   @Column({ default: {}, type: 'jsonb' })

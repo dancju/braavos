@@ -15,24 +15,24 @@ import { Client } from './client.entity';
 @Index(['chain', 'addr'], { unique: true })
 export class Addr extends BaseEntity {
   @PrimaryColumn({ enum: Chain, type: 'enum' })
-  public chain: Chain;
+  public chain!: Chain;
 
   @PrimaryColumn()
-  public clientId: number;
+  public clientId!: number;
 
   @PrimaryColumn()
-  public path: string;
+  public path!: string;
 
   @Column()
   @Matches(/^\d+(\/\d+)*$/)
-  public addr: string;
+  public addr!: string;
 
   @Column({ default: {}, type: 'jsonb' })
   public info: any;
 
   @CreateDateColumn()
-  public createdAt: Date;
+  public createdAt!: Date;
 
   @ManyToOne(() => Client)
-  public client: Client;
+  public client!: Client;
 }

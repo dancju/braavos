@@ -14,27 +14,27 @@ import { CoinSymbol } from '../utils/coin-symbol.enum';
 export class Coin extends BaseEntity {
   @ApiModelProperty({ description: '数字货币符号' })
   @PrimaryColumn({ enum: CoinSymbol, type: 'enum' })
-  public symbol: CoinSymbol;
+  public symbol!: CoinSymbol;
 
   @Exclude()
   @Column()
-  public chain: Chain;
+  public chain!: Chain;
 
   @ApiModelProperty({ description: '充币手续费数量' })
   @Column()
-  public depositFeeAmount: number;
+  public depositFeeAmount!: number;
 
   @ApiModelProperty({ description: '充币手续费单位符号' })
   @Column({ enum: CoinSymbol, type: 'enum' })
-  public depositFeeSymbol: CoinSymbol;
+  public depositFeeSymbol!: CoinSymbol;
 
   @ApiModelProperty({ description: '提币手续费数量' })
   @Column()
-  public withdrawalFeeAmount: number;
+  public withdrawalFeeAmount!: number;
 
   @ApiModelProperty({ description: '提币手续费单位符号' })
   @Column({ enum: CoinSymbol, type: 'enum' })
-  public withdrawalFeeSymbol: CoinSymbol;
+  public withdrawalFeeSymbol!: CoinSymbol;
 
   @Exclude()
   @Column({ default: {}, type: 'jsonb' })
@@ -42,5 +42,5 @@ export class Coin extends BaseEntity {
 
   @ApiModelProperty()
   @UpdateDateColumn()
-  public updatedAt: Date;
+  public updatedAt!: Date;
 }
