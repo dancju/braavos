@@ -21,39 +21,39 @@ import { Deposit } from './deposit.entity';
 export class Withdrawal extends BaseEntity {
   @Exclude()
   @PrimaryGeneratedColumn()
-  public id: number;
+  public id!: number;
 
   @Exclude()
   @Column()
-  public clientId: number;
+  public clientId!: number;
 
   @ApiModelProperty({ description: '客户端提供的幂等键' })
   @Column()
-  public key: string;
+  public key!: string;
 
   @ApiModelProperty({ description: '货币符号' })
   @Column({ type: 'enum', enum: CoinSymbol })
-  public coinSymbol: CoinSymbol;
+  public coinSymbol!: CoinSymbol;
 
   @ApiModelProperty({ description: '收币者的地址或用户名' })
   @Column()
-  public recipient: string;
+  public recipient!: string;
 
   @ApiModelProperty({ description: '附言，仅针对 EOS 有效' })
   @Column({ nullable: true })
-  public memo: string;
+  public memo!: string;
 
   @ApiModelProperty({ description: '提币数量' })
   @Column({ precision: 16, scale: 8, type: 'decimal' })
-  public amount: string;
+  public amount!: string;
 
   @ApiModelProperty({ description: '手续费数量' })
   @Column({ nullable: true })
-  public feeAmount: number;
+  public feeAmount!: number;
 
   @ApiModelProperty({ description: '手续费单位符号' })
   @Column({ enum: CoinSymbol, nullable: true, type: 'enum' })
-  public feeSymbol: CoinSymbol;
+  public feeSymbol!: CoinSymbol;
 
   @ApiModelProperty({ description: '状态' })
   @Column({
@@ -61,16 +61,16 @@ export class Withdrawal extends BaseEntity {
     enum: WithdrawalStatus,
     type: 'enum',
   })
-  public status: WithdrawalStatus;
+  public status!: WithdrawalStatus;
 
   @ApiModelProperty({ description: '转账 hash，仅针对链上转账有效' })
   @Column({ nullable: true })
-  public txHash: string;
+  public txHash!: string;
 
   @Exclude()
   @JoinColumn()
   @OneToOne(() => Deposit, (d) => d.withdrawal, { nullable: true })
-  public deposit: Deposit;
+  public deposit!: Deposit;
 
   @Exclude()
   @Column({ default: {}, type: 'jsonb' })
@@ -78,8 +78,8 @@ export class Withdrawal extends BaseEntity {
 
   @ApiModelProperty()
   @CreateDateColumn()
-  public createdAt: Date;
+  public createdAt!: Date;
 
   @ManyToOne(() => Client)
-  public client: Promise<Client>;
+  public client!: Promise<Client>;
 }
