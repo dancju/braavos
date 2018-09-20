@@ -174,7 +174,7 @@ export class EtherAgent extends CoinAgent {
   public async collectCron(): Promise<void> {
     const unconfTxs = await Deposit.createQueryBuilder()
       .select()
-      .where({ CoinSymbol: CoinSymbol.ETH, status: DepositStatus.confirmed })
+      .where({ coinSymbol: CoinSymbol.ETH, status: DepositStatus.confirmed })
       .execute();
     if (unconfTxs.length <= 0) {
       return;

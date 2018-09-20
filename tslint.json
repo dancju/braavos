@@ -4,8 +4,8 @@
   "jsRules": {},
   "rules": {
     "no-implicit-dependencies": false,
-    "quotemark": [true, "single"],
     "no-submodule-imports": false,
+    "quotemark": [true, "single"]
   },
   "rulesDirectory": []
 }
