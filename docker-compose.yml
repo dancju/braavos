@@ -45,4 +45,4 @@ services:
     image: mpugach/omnicored:v0.3.0-alpine
     ports:
       - 18332:18332
-    command: '-server -regtest -txindex -rpcauth=test:d420a6feb7865b5827725ec037f039c8$$52fe47e079807f05b5108b301c329423dce7c30132f9df010cb07d36ff22469f -rpcallowip=172.0.0.1'
+    command: '-server -regtest -txindex -rpcauth=test:d420a6feb7865b5827725ec037f039c8$$52fe47e079807f05b5108b301c329423dce7c30132f9df010cb07d36ff22469f -rpcallowip=0.0.0.0/0 -printtoconsole'

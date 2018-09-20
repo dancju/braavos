@@ -15,7 +15,7 @@ export default {
   },
   rpc: {
     host: process.env.OMNICORED_HOST || 'localhost',
-    network: process.env.OMNICORED_NETWORK || 'testnet',
+    network: process.env.OMNICORED_NETWORK || 'regtest',
     password:
       process.env.OMNICORED_PASSWORD ||
       'J2fqb-r8YdvESyLK8DkMQCJBOyEhlRWI3VuYrul8bYI=',

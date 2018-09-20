@@ -6,10 +6,6 @@ import signature from 'superagent-http-signature';
 import request from 'supertest';
 import { EntityManager } from 'typeorm';
 import { Client } from '../src/entities/client.entity';
-import { Coin } from '../src/entities/coin.entity';
-import { Deposit } from '../src/entities/deposit.entity';
-import { CoinSymbol } from '../src/utils/coin-symbol.enum';
-import { DepositStatus } from '../src/utils/deposit-status.enum';
 import { ClientModule } from './../src/client.module';
 
 describe('Client Controller (e2e)', () => {
@@ -32,18 +28,12 @@ describe('Client Controller (e2e)', () => {
   });
 
   it('should have the test client', async (done) => {
-    await manager
-      .createQueryBuilder()
-      .insert()
-      .into(Client)
-      .values({
-        name: 'test',
-        publicKey: fs.readFileSync(__dirname + '/fixtures/public.pem', 'ascii'),
-      })
-      .onConflict('("name") DO NOTHING')
-      .execute();
+    const key = fs.readFileSync(__dirname + '/fixtures/public.pem', 'ascii');
+    await manager.query(
+      `insert into client (id, name, "publicKey") values (0, 'test', '${key}')`,
+    );
     const client = await manager.findOne(Client, { name: 'test' });
-    expect(client!.id).toStrictEqual(1);
+    expect(client!.id).toStrictEqual(0);
     done();
   });
 
@@ -85,14 +75,14 @@ describe('Client Controller (e2e)', () => {
     request(app.getHttpServer())
       .get('/addrs?coinSymbol=BTC&path=0')
       .use(signer)
-      .expect(200, '37qqBVABoa5B7TXGHRR8Pf2MjHWLF3nAdj', done);
+      .expect(200, '3BAgZXJzTogswV16nnZcxAxtsJpCiGUFPJ', done);
   });
 
   it('GET /addrs?coinSymbol=CFC&path=0', (done) => {
     request(app.getHttpServer())
       .get('/addrs?coinSymbol=CFC&path=0')
       .use(signer)
-      .expect(200, '0xC6D5937073aa6FE236ee6bEA0165867d9f7a84F5', done);
+      .expect(200, '0x577E5592a9DE963f1DC0260bC6EB58f6eAbAA1BD', done);
   });
 
   it('should push ', async (done) => {
@@ -110,12 +100,15 @@ describe('Client Controller (e2e)', () => {
   });
 
   afterAll(async () => {
-    await manager
-      .createQueryBuilder()
-      .delete()
-      .from(Client)
-      .where('id = 0')
-      .execute();
+    await manager.transaction(async (transactionalManager) => {
+      await transactionalManager.query(
+        'DELETE FROM account WHERE "clientId" = 0;',
+      );
+      await transactionalManager.query(
+        'DELETE FROM addr WHERE "clientId" = 0;',
+      );
+      await transactionalManager.query('DELETE FROM client WHERE id = 0;');
+    });
     await app.close();
   });
 });

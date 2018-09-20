@@ -1,7 +1,6 @@
-- migrations
+- review nestjs-amqp, https://github.com/nestjs-community/nestjs-amqp/issues/15#issuecomment-423100933
 - e2e test with docker-compose
 - bitcoin rpc idempotency
 - query validator
   - limit response size
-- swagger interceptor
 - dashboard
