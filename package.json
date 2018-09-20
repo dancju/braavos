@@ -7,6 +7,7 @@
     "postinstall-2": "sed -i.bak '10s/message: string;/messageHash: string;/' ./node_modules/@types/web3/eth/accounts.d.ts",
     "postinstall-3": "sed -i.bak '11s/hash: string;/rawTransaction: string;/' ./node_modules/@types/web3/eth/accounts.d.ts",
     "lint": "tslint --fix './{src,test}/**/*.ts' && prettier --write \"**/*.ts\"",
+    "prestart:dev": "ts-node --files ./node_modules/.bin/typeorm migration:run",
     "start:dev": "nodemon",
     "prestart:prod": "rm -rf dist && tsc",
     "start:prod": "node --harmony dist/main.js",

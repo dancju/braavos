@@ -4,31 +4,45 @@ services:
     build: .
     ports:
       - 3000:3000
+    volumes:
+      - .:/app
     environment:
       NODE_ENV: test
       PORT: 3000
       MNEMONIC: '一 一 一'
-      OMNICORED_HOST: omnicored
-      OMNICORED_NETWORK: regtest
-      OMNICORED_PASSWORD: J2fqb-r8YdvESyLK8DkMQCJBOyEhlRWI3VuYrul8bYI=
-      OMNICORED_USERNAME: test
       TYPEORM_CONNECTION: postgres
-      TYPEORM_HOST: pg
+      TYPEORM_ENTITIES: ./**/*.entity.ts
+      TYPEORM_HOST: postgresql
       TYPEORM_USERNAME: postgres
       TYPEORM_PASSWORD: postgres_password
       TYPEORM_DATABASE: braavos
       TYPEORM_PORT: 5432
+      TYPEORM_MIGRATIONS: ./**/*.migration.ts
       TYPEORM_MIGRATIONS_DIR: src/migrations
+      AMQP: amqp://rabbitmq
+      OMNICORED_HOST: omnicored
+      OMNICORED_NETWORK: regtest
+      OMNICORED_PASSWORD: J2fqb-r8YdvESyLK8DkMQCJBOyEhlRWI3VuYrul8bYI=
+      OMNICORED_USERNAME: test
       WEB3: ''
-  pg:
+    depends_on:
+      - postgresql
+      - rabbitmq
+      - omnicored
+  postgresql:
     image: postgres:11-alpine
     ports:
       - 5432:5432
     environment:
       POSTGRES_DB: braavos
       POSTGRES_PASSWORD: postgres_password
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - 5672:5672
+      - 15672:15672
   omnicored:
-    image: mpugach/omnicored
+    image: mpugach/omnicored:v0.3.0-alpine
     ports:
       - 18332:18332
     command: '-server -regtest -txindex -rpcauth=test:d420a6feb7865b5827725ec037f039c8$$52fe47e079807f05b5108b301c329423dce7c30132f9df010cb07d36ff22469f -rpcallowip=172.0.0.1'

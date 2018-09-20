@@ -1,5 +1,5 @@
 import { NestSchedule } from 'nest-schedule';
-import { AmqpService } from '../amqp/amqp.service';
+import { AmqpService } from '../client/amqp.service';
 import { Coin } from '../entities/coin.entity';
 import { Deposit } from '../entities/deposit.entity';
 import { Withdrawal } from '../entities/withdrawal.entity';

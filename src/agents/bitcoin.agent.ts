@@ -20,7 +20,7 @@ import {
   Transaction,
   TransactionManager,
 } from 'typeorm';
-import { AmqpService } from '../amqp/amqp.service';
+import { AmqpService } from '../client/amqp.service';
 import { Account } from '../entities/account.entity';
 import { Addr } from '../entities/addr.entity';
 import { Coin } from '../entities/coin.entity';

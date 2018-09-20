@@ -7,8 +7,8 @@ import Web3 from 'web3';
 import { BitcoinAgent } from './agents/bitcoin.agent';
 import { CfcAgent } from './agents/cfc.agent';
 import { EtherAgent } from './agents/ether.agent';
-import { AmqpService } from './amqp/amqp.service';
-import { ClientController } from './client/client.controller';
+import { AmqpService } from './client/amqp.service';
+import { ClientController } from './client/http.controller';
 import { SignatureStrategy } from './client/signature.strategy';
 import { Coin } from './entities/coin.entity';
 
@@ -33,8 +33,7 @@ import { Coin } from './entities/coin.entity';
     {
       inject: [ConfigService],
       provide: 'amqp-connection',
-      useFactory: async (config: ConfigService) =>
-        amqp.connect(config.get('amqp')),
+      useFactory: (config: ConfigService) => amqp.connect(config.get('amqp')),
     },
     // TODO add agentRepo provider
     {

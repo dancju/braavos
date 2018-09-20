@@ -5,7 +5,7 @@ import { ConfigService, InjectConfig } from 'nestjs-config';
 import path from 'path';
 import { Repository } from 'typeorm';
 import Web3 from 'web3';
-import { AmqpService } from '../../amqp/amqp.service';
+import { AmqpService } from '../../client/amqp.service';
 import { Coin } from '../../entities/coin.entity';
 import { CoinSymbol } from '../../utils/coin-symbol.enum';
 import { Erc20Agent } from '../erc20.agent';

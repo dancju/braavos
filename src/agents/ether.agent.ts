@@ -21,7 +21,7 @@ import {
 } from 'typeorm';
 import Web3 from 'web3';
 import { Signature } from 'web3/eth/accounts';
-import { AmqpService } from '../amqp/amqp.service';
+import { AmqpService } from '../client/amqp.service';
 import { Account } from '../entities/account.entity';
 import { Addr } from '../entities/addr.entity';
 import { Coin } from '../entities/coin.entity';
@@ -120,6 +120,7 @@ export class EtherAgent extends CoinAgent {
     // TODO handle off-chain transactions
   }
 
+  @Configurable()
   @Cron('* */1 * * * *', { startTime: new Date() })
   public async confirmCron(
     @ConfigParam('ethereum.ether.collect.confThreshold') confThreshold: number,
