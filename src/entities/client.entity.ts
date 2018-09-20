@@ -12,11 +12,5 @@ export class Client extends BaseEntity {
   public publicKey!: string;
 
   @Column({ nullable: true })
-  public depositEndpoint?: string;
-
-  @Column({ nullable: true })
-  public withdrawalEndpoint?: string;
-
-  @Column({ nullable: true })
   public ip?: string;
 }

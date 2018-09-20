@@ -99,7 +99,7 @@ export class EtherAgent extends CoinAgent {
         addr,
         chain: ethereum,
         clientId,
-        path: path1,
+        path: path0,
       })
       .onConflict('("chain", "clientId", "path") DO NOTHING')
       .execute();
@@ -185,9 +185,7 @@ export class EtherAgent extends CoinAgent {
     await Promise.all(
       unconfTxs.map(async (tx: Deposit) => {
         const thisAddr = await this.getAddr(tx.clientId, tx.addrPath);
-        const fullNodeNonce = await this.web3.eth.getTransactionCount(
-          thisAddr,
-        );
+        const fullNodeNonce = await this.web3.eth.getTransactionCount(thisAddr);
         let dbNonce: any;
         if (tx.info.nonce === undefined || tx.info.nonce === null) {
           await getManager().transaction(async (manager) => {

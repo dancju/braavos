@@ -102,14 +102,14 @@ export class BitcoinAgent extends CoinAgent {
       !(await Addr.findOne({
         chain: bitcoin,
         clientId,
-        path: path1,
+        path: path0,
       }))
     ) {
       await Addr.create({
         addr,
         chain: bitcoin,
         clientId,
-        path: path1,
+        path: path0,
       }).save();
       await this.rpc.importPrivKey(this.getPrivateKey(path1), 'braavos', false);
     }

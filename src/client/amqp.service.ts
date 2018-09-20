@@ -33,7 +33,7 @@ export class AmqpService {
     const queue = 'withdrawal_update';
     await channel.assertQueue(queue);
     // TODO
-    channel.sendToQueue(queue, new Buffer('something to do'));
+    channel.sendToQueue(queue, Buffer.from('something to do'));
   }
 
   public async createDeposit(deposit: Deposit): Promise<void> {

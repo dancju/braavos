@@ -14,12 +14,12 @@ export default {
     },
   },
   rpc: {
-    host: process.env.OMNICORED_HOST || '35.229.211.83',
+    host: process.env.OMNICORED_HOST || 'localhost',
     network: process.env.OMNICORED_NETWORK || 'testnet',
     password:
       process.env.OMNICORED_PASSWORD ||
-      'Ix8MohD4YzJtcpR-TKFZzeUo_W9fPwO2W9mB0GbDizs=',
-    username: process.env.OMNICORED_USERNAME || 'daniel',
+      'J2fqb-r8YdvESyLK8DkMQCJBOyEhlRWI3VuYrul8bYI=',
+    username: process.env.OMNICORED_USERNAME || 'test',
   },
   usdt: {},
 };

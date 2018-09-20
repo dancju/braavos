@@ -18,6 +18,7 @@ export abstract class CoinAgent extends NestSchedule {
   public abstract createWithdrawal(withdrawal: Withdrawal): Promise<void>;
   protected abstract getPrivateKey(derivePath: string): string;
 
-  protected async pushDeposit(deposit: Deposit): Promise<void> {}
-  protected async pushWithdrawal(withdrawal: Withdrawal): Promise<void> {}
+  protected async pushDepositCreation(deposit: Deposit): Promise<void> {}
+  protected async pushDepositUpdate(deposit: Deposit): Promise<void> {}
+  protected async pushWithdrawalUpdate(withdrawal: Withdrawal): Promise<void> {}
 }

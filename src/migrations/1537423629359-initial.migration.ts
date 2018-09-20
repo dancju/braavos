@@ -19,7 +19,8 @@ export class InitialMigration1537423629359 implements MigrationInterface {
         "id" SERIAL PRIMARY KEY,
         "name" character varying NOT NULL,
         "publicKey" character varying NOT NULL,
-        "ip" character varying
+        "ip" character varying,
+        UNIQUE ("name")
       )
     `);
     await queryRunner.query(`
@@ -40,12 +41,10 @@ export class InitialMigration1537423629359 implements MigrationInterface {
         "addr" character varying NOT NULL,
         "info" jsonb NOT NULL DEFAULT '{}',
         "createdAt" TIMESTAMP NOT NULL DEFAULT now(),
-        PRIMARY KEY ("chain", "clientId", "path")
+        PRIMARY KEY ("chain", "clientId", "path"),
+        UNIQUE ("chain", "addr")
       )
     `);
-    await queryRunner.query(
-      `CREATE UNIQUE INDEX "IDX_c933e799c61bbcdd5d1b46778f" ON "addr"("chain", "addr") `,
-    );
     await queryRunner.query(`
       CREATE TABLE "coin" (
         "symbol" "coin_symbol_enum" PRIMARY KEY,
@@ -74,12 +73,10 @@ export class InitialMigration1537423629359 implements MigrationInterface {
         "info" jsonb NOT NULL DEFAULT '{}',
         "createdAt" TIMESTAMP NOT NULL DEFAULT now(),
         "depositId" integer,
-        UNIQUE ("depositId")
+        UNIQUE ("depositId"),
+        UNIQUE ("clientId", "key")
       )
     `);
-    await queryRunner.query(
-      `CREATE UNIQUE INDEX "IDX_e1aa36abaa7395716032baff96" ON "withdrawal"("clientId", "key")`,
-    );
     await queryRunner.query(`
       CREATE TABLE "deposit" (
         "id" SERIAL PRIMARY KEY,
@@ -151,10 +148,8 @@ export class InitialMigration1537423629359 implements MigrationInterface {
     await queryRunner.query(`ALTER TABLE "account" DROP CONSTRAINT "FK_861667d82d42bf6617f423f537b"`);
     await queryRunner.query(`DROP TABLE "kv_pair"`);
     await queryRunner.query(`DROP TABLE "deposit"`);
-    await queryRunner.query(`DROP INDEX "IDX_e1aa36abaa7395716032baff96"`);
     await queryRunner.query(`DROP TABLE "withdrawal"`);
     await queryRunner.query(`DROP TABLE "coin"`);
-    await queryRunner.query(`DROP INDEX "IDX_c933e799c61bbcdd5d1b46778f"`);
     await queryRunner.query(`DROP TABLE "addr"`);
     await queryRunner.query(`DROP TABLE "account"`);
     await queryRunner.query(`DROP TABLE "client"`);
