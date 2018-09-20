@@ -2,10 +2,11 @@
   "name": "braavos",
   "private": true,
   "scripts": {
-    "postinstall": "yarn postinstall-1; yarn postinstall-2; yarn postinstall-3",
+    "postinstall": "yarn postinstall-1; yarn postinstall-2; yarn postinstall-3; yarn postinstall-4",
     "postinstall-1": "sed -i.bak 's/status: string;/status: boolean;/' ./node_modules/@types/web3/types.d.ts",
     "postinstall-2": "sed -i.bak '10s/message: string;/messageHash: string;/' ./node_modules/@types/web3/eth/accounts.d.ts",
     "postinstall-3": "sed -i.bak '11s/hash: string;/rawTransaction: string;/' ./node_modules/@types/web3/eth/accounts.d.ts",
+    "postinstall-4": "sed -i.bak 's/var scryptNative = require(\".\\/build\\/Release\\/scrypt\")/var scryptNative = require(\"scrypt\")/' ./node_modules/scrypt/index.js",
     "lint": "tslint --fix './{src,test}/**/*.ts' && prettier --write \"**/*.ts\"",
     "prestart:dev": "ts-node --files ./node_modules/.bin/typeorm migration:run",
     "start:dev": "nodemon",
