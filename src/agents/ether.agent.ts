@@ -21,6 +21,7 @@ import {
 } from 'typeorm';
 import Web3 from 'web3';
 import { Signature } from 'web3/eth/accounts';
+import { AmqpService } from '../amqp/amqp.service';
 import { Account } from '../entities/account.entity';
 import { Addr } from '../entities/addr.entity';
 import { Coin } from '../entities/coin.entity';
@@ -47,8 +48,9 @@ export class EtherAgent extends CoinAgent {
     @InjectConfig() config: ConfigService,
     @InjectRepository(Coin) coins: Repository<Coin>,
     @Inject(Web3) web3: Web3,
+    amqpService: AmqpService,
   ) {
-    super();
+    super(amqpService);
     const seed = config.get('crypto.seed')() as Buffer;
     const xPrv = fromSeed(seed)
       .derivePath(`m/44'/60'/0'/0`)

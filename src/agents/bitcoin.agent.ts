@@ -20,6 +20,7 @@ import {
   Transaction,
   TransactionManager,
 } from 'typeorm';
+import { AmqpService } from '../amqp/amqp.service';
 import { Account } from '../entities/account.entity';
 import { Addr } from '../entities/addr.entity';
 import { Coin } from '../entities/coin.entity';
@@ -46,8 +47,9 @@ export class BitcoinAgent extends CoinAgent {
     @InjectConfig() config: ConfigService,
     @InjectRepository(Coin) coins: Repository<Coin>,
     @Inject(BtcRpc) rpc: BtcRpc,
+    amqpService: AmqpService,
   ) {
-    super();
+    super(amqpService);
     const seed = config.get('crypto.seed')() as Buffer;
     const xPrv = fromSeed(seed)
       .derivePath(`m/84'/0'/0'/0`)

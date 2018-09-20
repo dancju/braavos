@@ -1,12 +1,13 @@
 import { Module } from '@nestjs/common';
-import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import amqp from 'amqplib';
 import BtcRpc from 'bitcoin-core';
 import { ConfigModule, ConfigService } from 'nestjs-config';
 import Web3 from 'web3';
 import { BitcoinAgent } from './agents/bitcoin.agent';
 import { CfcAgent } from './agents/cfc.agent';
 import { EtherAgent } from './agents/ether.agent';
+import { AmqpService } from './amqp/amqp.service';
 import { ClientController } from './client/client.controller';
 import { SignatureStrategy } from './client/signature.strategy';
 import { Coin } from './entities/coin.entity';
@@ -29,6 +30,12 @@ import { Coin } from './entities/coin.entity';
   ],
   providers: [
     SignatureStrategy,
+    {
+      inject: [ConfigService],
+      provide: 'amqp-connection',
+      useFactory: async (config: ConfigService) =>
+        amqp.connect(config.get('amqp')),
+    },
     // TODO add agentRepo provider
     {
       inject: [ConfigService],
@@ -46,6 +53,7 @@ import { Coin } from './entities/coin.entity';
         return new Web3.providers.HttpProvider(config.get('ethereum.web3'));
       },
     },
+    AmqpService,
     BitcoinAgent,
     EtherAgent,
     CfcAgent,
