@@ -15,6 +15,7 @@ import request from 'superagent';
 import { getManager } from 'typeorm';
 import Web3 from 'web3';
 import { Signature } from 'web3/eth/accounts';
+import { AmqpService } from '../client/amqp.service';
 import { Account } from '../entities/account.entity';
 import { Addr } from '../entities/addr.entity';
 import { Coin } from '../entities/coin.entity';
@@ -46,8 +47,9 @@ export abstract class Erc20Agent extends CoinAgent {
     etherAgent: EtherAgent,
     coinSymbol: CoinSymbol,
     abi: any,
+    amqpService: AmqpService,
   ) {
-    super();
+    super(amqpService);
     const seed = config.get('crypto.seed')() as Buffer;
     const xPrv = fromSeed(seed)
       .derivePath(`m/44'/60'/0'/0'`)

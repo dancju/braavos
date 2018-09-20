@@ -1,7 +1,7 @@
+- migrations
+- e2e test with docker-compose
 - bitcoin rpc idempotency
 - query validator
+  - limit response size
 - swagger interceptor
-- e2e test with docker-compose
 - dashboard
-- limit response size
-- migrations
