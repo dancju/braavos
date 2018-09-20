@@ -41,7 +41,7 @@ export class Withdrawal extends BaseEntity {
 
   @ApiModelProperty({ description: '附言，仅针对 EOS 有效' })
   @Column({ nullable: true })
-  public memo!: string;
+  public memo?: string;
 
   @ApiModelProperty({ description: '提币数量' })
   @Column({ precision: 16, scale: 8, type: 'decimal' })
@@ -49,11 +49,11 @@ export class Withdrawal extends BaseEntity {
 
   @ApiModelProperty({ description: '手续费数量' })
   @Column({ nullable: true })
-  public feeAmount!: number;
+  public feeAmount?: number;
 
   @ApiModelProperty({ description: '手续费单位符号' })
   @Column({ enum: CoinSymbol, nullable: true, type: 'enum' })
-  public feeSymbol!: CoinSymbol;
+  public feeSymbol?: CoinSymbol;
 
   @ApiModelProperty({ description: '状态' })
   @Column({
@@ -65,12 +65,12 @@ export class Withdrawal extends BaseEntity {
 
   @ApiModelProperty({ description: '转账 hash，仅针对链上转账有效' })
   @Column({ nullable: true })
-  public txHash!: string;
+  public txHash?: string;
 
   @Exclude()
   @JoinColumn()
   @OneToOne(() => Deposit, (d) => d.withdrawal, { nullable: true })
-  public deposit!: Deposit;
+  public deposit?: Deposit;
 
   @Exclude()
   @Column({ default: {}, type: 'jsonb' })
