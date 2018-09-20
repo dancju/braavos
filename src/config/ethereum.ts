@@ -4,7 +4,7 @@ export default {
       confThreshold: 10,
     },
     deposit: {
-      collectThreshold: 20000000000000000, // 0.02 ether
+      minimumThreshold: 20000000000000000, // 0.02 ether
       pocketAddr: '0x55F71854c4094d659A1c303A6E507A77ce727509',
       step: 60,
     },

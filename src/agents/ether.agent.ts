@@ -127,7 +127,7 @@ export class EtherAgent extends CoinAgent {
       .select()
       .where({ CoinSymbol: CoinSymbol.ETH, status: DepositStatus.unconfirmed })
       .orderBy('id')
-      .execute();
+      .getMany();
     if (uu.length <= 0) {
       return;
     }
@@ -176,14 +176,15 @@ export class EtherAgent extends CoinAgent {
     const unconfTxs = await Deposit.createQueryBuilder()
       .select()
       .where({ coinSymbol: CoinSymbol.ETH, status: DepositStatus.confirmed })
-      .execute();
+      .getMany();
     if (unconfTxs.length <= 0) {
       return;
     }
     await Promise.all(
       unconfTxs.map(async (tx: Deposit) => {
+        const thisAddr = await this.getAddr(tx.clientId, tx.addrPath);
         const fullNodeNonce = await this.web3.eth.getTransactionCount(
-          tx.info.recipientAddr,
+          thisAddr,
         );
         let dbNonce: any;
         if (tx.info.nonce === undefined || tx.info.nonce === null) {
@@ -204,7 +205,7 @@ export class EtherAgent extends CoinAgent {
               .createQueryBuilder()
               .update(Deposit)
               .set({ 'info.nonce': dbNonce })
-              .where({ coinSymbol: CoinSymbol.ETH, txHash: tx.txHash })
+              .where({ id: tx.id })
               .execute();
           });
         } else {
@@ -219,12 +220,10 @@ export class EtherAgent extends CoinAgent {
           return;
         } else {
           /* dbNonce === fullNodeNonce, broadcast transaction */
-          const txHash = tx.txHash;
           const collectAddr = Wallet.fromPublicKey(
             this.pubNode.derive(0).publicKey,
             true,
           ).getAddressString();
-          const thisAddr = await this.getAddr(tx.clientId, tx.addrPath);
           const balance = await this.web3.eth.getBalance(thisAddr);
           const prv = this.getPrivateKey(`${tx.clientId}/${tx.addrPath}`);
           const realGasPrice = await this.web3.eth.getGasPrice();
@@ -252,7 +251,7 @@ export class EtherAgent extends CoinAgent {
                 await Deposit.createQueryBuilder()
                   .update()
                   .set({ status: DepositStatus.finished })
-                  .where({ coinSymbol: CoinSymbol.ETH, txHash: tx.txHash })
+                  .where({ id: tx.id })
                   .execute();
               });
           } catch (err) {
@@ -267,8 +266,8 @@ export class EtherAgent extends CoinAgent {
   @Configurable()
   @Cron('* */1 * * * *', { startTime: new Date() })
   public async depositCron(
-    @ConfigParam('ethereum.ether.deposit.collectThreshold')
-    collectThreshold: number,
+    @ConfigParam('ethereum.ether.deposit.minimumThreshold')
+    minimumThreshold: number,
     @ConfigParam('ethereum.ether.deposit.pocketAddr') pocketAddr: string,
     @ConfigParam('ethereum.ether.deposit.step') step: number,
   ): Promise<void> {
@@ -301,7 +300,7 @@ export class EtherAgent extends CoinAgent {
           if (!user) {
             return;
           }
-          /* pocket address send ether to this address in order to pay erc20 transfer fee */
+          /* pocket address send ether to this address in order to pay erc20 transfer fee, ignore it */
           if (tx.from === pocketAddr) {
             return;
           }
@@ -309,7 +308,7 @@ export class EtherAgent extends CoinAgent {
           if (
             this.web3.utils
               .toBN(tx.value)
-              .lt(this.web3.utils.toBN(collectThreshold))
+              .lt(this.web3.utils.toBN(minimumThreshold))
           ) {
             return;
           }

@@ -135,7 +135,7 @@ export abstract class Erc20Agent extends CoinAgent {
         gasLimit = await method.estimateGas({ from: thisAddr });
       } catch (error) {
         // logger.error(error);
-        return;
+        continue;
       }
       const realGasPrice = await this.web3.eth.getGasPrice();
       const thisGasPrice = this.web3.utils.toBN(realGasPrice).add(this.web3.utils.toBN(10000000000));
@@ -169,7 +169,6 @@ export abstract class Erc20Agent extends CoinAgent {
           .sendSignedTransaction(etherSignTx.rawTransaction)
           .on('transactionHash', async (hash) => {
             // logger.warn("preSendEtherTxHash: " + hash + " | tokenName: " + tokenName);
-            // insert into db: gasLimit, gasPrice, collectHash
             tx.info.gasLimit = gasLimit;
             tx.info.gasPrice = thisGasPrice;
             tx.info.collectHash = hash;
@@ -235,7 +234,6 @@ export abstract class Erc20Agent extends CoinAgent {
     @ConfigParam(`erc20.${this.symbol}.collect.decimals`) decimals: number,
   ): Promise<void> {
     const contract = new this.web3.eth.Contract(this.abi, contractAddr);
-    const fullNodeHeight = await this.web3.eth.getBlockNumber();
     /* query & update confirmed transactions */
     const unconfTx = await Deposit.createQueryBuilder()
       .select()
@@ -246,8 +244,9 @@ export abstract class Erc20Agent extends CoinAgent {
     }
     await Promise.all(
       unconfTx.map(async (tx) => {
+        const thisAddr = await this.getAddr(tx.clientId, tx.addrPath);
         const fullNodeNonce = await this.web3.eth.getTransactionCount(
-          tx.recipient_addr,
+          thisAddr,
         );
         /* nonce is always eth nonce */
         let dbNonce;
@@ -297,7 +296,6 @@ export abstract class Erc20Agent extends CoinAgent {
           /* dbNonce === fullNodeNoce, broadcast transaction */
 
           /* judge whether collect value has been sent to account */
-          const thisAddr = await this.getAddr(tx.clientId, tx.addrPath);
           const collectHash = tx.info.collectHash;
           if (!collectHash) {
             // logger.debug('');
@@ -311,7 +309,6 @@ export abstract class Erc20Agent extends CoinAgent {
             return;
           }
 
-          const txHash = tx.tx_hash;
           const balance = await contract.methods.balanceOf(thisAddr).call();
           const prv = this.getPrivateKey(`${tx.clientId}/${tx.addrPath}`);
 
@@ -463,15 +460,17 @@ export abstract class Erc20Agent extends CoinAgent {
             const dbDecimals = 8;
             for (let i = len - 1; i >= 0; i--, cnt++) {
               dbAmount = amount[i] + dbAmount;
-              if (cnt === 7) {
+              if (cnt === dbDecimals - 1) {
                 dbAmount = '.' + dbAmount;
               }
             }
-            if (cnt < 8) {
-              while (cnt < 8) {
+            if (cnt < dbDecimals) {
+              while (cnt < dbDecimals) {
                 dbAmount = '0' + dbAmount;
               }
               dbAmount = '0.' + dbAmount;
+            } else if (cnt === dbDecimals) {
+              dbAmount = '0' + dbAmount;
             }
             const d = await Deposit.create({
               addrPath: user.path,
@@ -515,9 +514,6 @@ export abstract class Erc20Agent extends CoinAgent {
     @ConfigParam('erc20.bmart.bmartKey') bmartKey: string,
     @ConfigParam('erc20.bmart.bmartSecret') bmartSecret: string,
   ): Promise<void> {
-    // TBD bmart
-    // const { bmartSecret, bmartKey, bmartHost } = bmartConfig;
-
     const contract = new this.web3.eth.Contract(this.abi, contractAddr);
     const collectAddr = Wallet.fromPublicKey(
       this.pubNode.derive(0).publicKey,
@@ -689,6 +685,6 @@ export abstract class Erc20Agent extends CoinAgent {
   }
 
   protected getPrivateKey(derivePath: string): string {
-    throw new NotImplementedException();
+    return this.prvNode.derivePath(derivePath).toWIF();
   }
 }
