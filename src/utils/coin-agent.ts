@@ -1,7 +1,7 @@
+import { Deposit } from 'entities/deposit.entity';
 import { NestSchedule } from 'nest-schedule';
 import { Coin } from '../entities/coin.entity';
 import { Withdrawal } from '../entities/withdrawal.entity';
-import { Deposit } from 'entities/deposit.entity';
 
 export abstract class CoinAgent extends NestSchedule {
   protected abstract coin: Promise<Coin>;

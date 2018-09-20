@@ -15,6 +15,7 @@ import request from 'superagent';
 import { getManager } from 'typeorm';
 import Web3 from 'web3';
 import { Signature } from 'web3/eth/accounts';
+import { Account } from '../entities/account.entity';
 import { Addr } from '../entities/addr.entity';
 import { Coin } from '../entities/coin.entity';
 import { Deposit } from '../entities/deposit.entity';
@@ -103,14 +104,131 @@ export abstract class Erc20Agent extends CoinAgent {
     return;
   }
 
-  // TBD
-  @Cron('* */1 * * * *', { startTime: new Date() })
-  public async confirmCron(): Promise<void> {
+  @Configurable()
+  @Cron('* */5 * * * *', { startTime: new Date() })
+  public async payPreFee(
+    @ConfigParam(`erc20.${this.symbol}.collect.contractAddr`)
+    contractAddr: string,
+    @ConfigParam(`erc20.${this.symbol}.collect.pocketAddr`) pocketAddr: string,
+    @ConfigParam(`erc20.${this.symbol}.collect.pocketPrv`) pocketPrv: string,
+  ): Promise<void> {
+    const uu = await Deposit.createQueryBuilder()
+      .select()
+      .where({ coinSymbol: this.symbol, status: DepositStatus.confirmed })
+      .getMany();
+    if (uu.length <= 0) {
+      return;
+    }
+    const contract = new this.web3.eth.Contract(this.abi, contractAddr);
+    const collectAddr = Wallet.fromPublicKey(
+      this.pubNode.derive(0).publicKey,
+      true,
+    ).getAddressString();
+    for (const tx of uu) {
+      const collectValue = tx.amount;
+      const thisAddr = await this.getAddr(tx.clientId, tx.addrPath);
+      const method = contract.methods.transfer(collectAddr, collectValue);
+      let txData;
+      let gasLimit;
+      try {
+        txData = await method.encodeABI();
+        gasLimit = await method.estimateGas({ from: thisAddr });
+      } catch (error) {
+        // logger.error(error);
+        return;
+      }
+      const realGasPrice = await this.web3.eth.getGasPrice();
+      const thisGasPrice = this.web3.utils.toBN(realGasPrice).add(this.web3.utils.toBN(10000000000));
+
+      /* check if balance of pocket address is enough to pay this fee */
+      const gasFee = this.web3.utils
+        .toBN(gasLimit)
+        .mul(this.web3.utils.toBN(thisGasPrice));
+      const pocketBalance = this.web3.utils.toBN(
+        await this.web3.eth.getBalance(pocketAddr),
+      );
+      if (pocketBalance.lt(gasFee)) {
+        // logger.error("pocket wallet balance is not enough");
+        return;
+      }
+
+      /* send ether to address to pay erc20 transfer fee */
+      const prePayGasPrice = this.web3.utils.toBN(realGasPrice).add(this.web3.utils.toBN(10000000000));
+      const etherSignTx = (await this.web3.eth.accounts.signTransaction(
+        {
+          gas: 21000,
+          gasPrice: prePayGasPrice.toString(),
+          to: thisAddr,
+          value: gasFee.toString(),
+        },
+        pocketPrv,
+      )) as Signature;
+
+      try {
+        await this.web3.eth
+          .sendSignedTransaction(etherSignTx.rawTransaction)
+          .on('transactionHash', async (hash) => {
+            // logger.warn("preSendEtherTxHash: " + hash + " | tokenName: " + tokenName);
+            // insert into db: gasLimit, gasPrice, collectHash
+            tx.info.gasLimit = gasLimit;
+            tx.info.gasPrice = thisGasPrice;
+            tx.info.collectHash = hash;
+            await tx.save();
+          });
+      } catch (error) {
+        // logger.error(error);
+      }
+    }
+
     return;
   }
 
   @Configurable()
   @Cron('* */1 * * * *', { startTime: new Date() })
+  public async confirmCron(
+    @ConfigParam(`erc20.${this.symbol}.collect.confThreshold`)
+    confThreshold: number,
+  ): Promise<void> {
+    const uu = await Deposit.createQueryBuilder()
+      .select()
+      .where({ coinSymbol: this.symbol, status: DepositStatus.unconfirmed })
+      .getMany();
+    if (uu.length <= 0) {
+      return;
+    }
+    const height = await this.web3.eth.getBlockNumber();
+    await Promise.all(
+      uu.map(async (tx: Deposit) => {
+        const blockHeight = tx.info.blockHeight;
+        if (height - blockHeight < confThreshold) {
+          return;
+        }
+        await getManager().transaction(async (manager) => {
+          await manager
+            .createQueryBuilder()
+            .update(Deposit)
+            .set({ status: DepositStatus.confirmed })
+            .where({ id: tx.id })
+            .execute();
+          await manager
+            .createQueryBuilder(Account, 'account')
+            .where({ clientId: tx.clientId, coinSymbol: this.symbol })
+            .setLock('pessimistic_write')
+            .getOne();
+          await manager.increment(
+            Account,
+            { clientId: tx.clientId, coinSymbol: this.symbol },
+            'balance',
+            Number(tx.amount),
+          );
+        });
+      }),
+    );
+    return;
+  }
+
+  @Configurable()
+  @Cron('* */5 * * * *', { startTime: new Date() })
   public async collectCron(
     @ConfigParam(`erc20.${this.symbol}.collect.contractAddr`)
     contractAddr: string,
@@ -118,10 +236,10 @@ export abstract class Erc20Agent extends CoinAgent {
   ): Promise<void> {
     const contract = new this.web3.eth.Contract(this.abi, contractAddr);
     const fullNodeHeight = await this.web3.eth.getBlockNumber();
-    /* query & updage unconfirmed transactions */
+    /* query & update confirmed transactions */
     const unconfTx = await Deposit.createQueryBuilder()
       .select()
-      .where({ coinSymbol: CoinSymbol.CFC, status: DepositStatus.confirmed })
+      .where({ coinSymbol: this.symbol, status: DepositStatus.confirmed })
       .execute();
     if (unconfTx.length <= 0) {
       return;
@@ -135,6 +253,17 @@ export abstract class Erc20Agent extends CoinAgent {
         let dbNonce;
         if (tx.info.nonce === undefined || tx.info.nonce === null) {
           await getManager().transaction(async (manager) => {
+            await manager
+              .createQueryBuilder()
+              .select()
+              .from(Addr, 'addr')
+              .where({
+                chain: Chain.ethereum,
+                clientId: tx.clientId,
+                path: tx.addrPath,
+              })
+              .setLock('pessimistic_write')
+              .getOne();
             dbNonce = await manager
               .createQueryBuilder()
               .update(Addr)
@@ -171,7 +300,7 @@ export abstract class Erc20Agent extends CoinAgent {
           const thisAddr = await this.getAddr(tx.clientId, tx.addrPath);
           const collectHash = tx.info.collectHash;
           if (!collectHash) {
-            // logger.error('');
+            // logger.debug('');
             return;
           }
           const collectBalance = this.web3.utils.toBN(
@@ -186,22 +315,23 @@ export abstract class Erc20Agent extends CoinAgent {
           const balance = await contract.methods.balanceOf(thisAddr).call();
           const prv = this.getPrivateKey(`${tx.clientId}/${tx.addrPath}`);
 
-          const stringAmount = tx.amount.split('.');
-          const preAmount = this.web3.utils.toBN(
-            stringAmount[0] + stringAmount[1],
-          );
+          // const stringAmount = tx.amount.split('.');
+          // const preAmount = this.web3.utils.toBN(
+          //   stringAmount[0] + stringAmount[1],
+          // );
 
-          let collectValue: string;
-          /* check whether real erc20 balance is more than db record */
-          if (decimals <= 8) {
-            collectValue = preAmount
-              .div(this.web3.utils.toBN(Math.pow(10, 8 - decimals)))
-              .toString();
-          } else {
-            collectValue = preAmount
-              .mul(this.web3.utils.toBN(Math.pow(10, decimals - 8)))
-              .toString();
-          }
+          // let collectValue: string;
+          // /* check whether real erc20 balance is more than db record */
+          // if (decimals <= 8) {
+          //   collectValue = preAmount
+          //     .div(this.web3.utils.toBN(Math.pow(10, 8 - decimals)))
+          //     .toString();
+          // } else {
+          //   collectValue = preAmount
+          //     .mul(this.web3.utils.toBN(Math.pow(10, decimals - 8)))
+          //     .toString();
+          // }
+          const collectValue: string = tx.amount;
           if (
             this.web3.utils.toBN(balance).lt(this.web3.utils.toBN(collectValue))
           ) {

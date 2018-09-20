@@ -118,6 +118,7 @@ export class EtherAgent extends CoinAgent {
     // TODO handle off-chain transactions
   }
 
+  @Configurable()
   @Cron('* */1 * * * *', { startTime: new Date() })
   public async confirmCron(
     @ConfigParam('ethereum.ether.collect.confThreshold') confThreshold: number,
