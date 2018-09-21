@@ -10,7 +10,6 @@ import { Client } from '../src/entities/client.entity';
 
 describe('Client Controller (e2e)', () => {
   let app: INestApplication;
-  let manager: EntityManager;
   const signer = signature({
     algorithm: 'rsa-sha256',
     headers: ['(request-target)', 'date', 'content-md5'],
@@ -24,10 +23,10 @@ describe('Client Controller (e2e)', () => {
     }).compile();
     app = moduleFixture.createNestApplication();
     await app.init();
-    manager = app.get(EntityManager);
   });
 
   it('should have the test client', async (done) => {
+    const manager = app.get(EntityManager);
     const key = fs.readFileSync(__dirname + '/fixtures/public.pem', 'ascii');
     await manager.query(
       `insert into client (id, name, "publicKey") values (0, 'test', '${key}')`,
@@ -62,6 +61,7 @@ describe('Client Controller (e2e)', () => {
   });
 
   afterAll(async () => {
+    const manager = app.get(EntityManager);
     await manager.transaction(async (transactionalManager) => {
       await transactionalManager.query(
         'DELETE FROM account WHERE "clientId" = 0;',
