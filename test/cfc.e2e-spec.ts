@@ -5,8 +5,8 @@ import 'jest';
 import signature from 'superagent-http-signature';
 import request from 'supertest';
 import { EntityManager } from 'typeorm';
+import { ClientModule } from '../src/client.module';
 import { Client } from '../src/entities/client.entity';
-import { ClientModule } from './../src/client.module';
 
 describe('Client Controller (e2e)', () => {
   let app: INestApplication;
@@ -37,23 +37,6 @@ describe('Client Controller (e2e)', () => {
     done();
   });
 
-  it('GET /coins?coinSymbol=BTC', (done) => {
-    request(app.getHttpServer())
-      .get('/coins?coinSymbol=BTC')
-      .use(signer)
-      .expect(200)
-      .end((err, res) => {
-        if (err) {
-          done(err);
-        }
-        expect(res.body.chain).toStrictEqual('bitcoin');
-        expect(res.body.symbol).toStrictEqual('BTC');
-        expect(res.body.depositFeeSymbol).toStrictEqual('BTC');
-        expect(res.body.withdrawalFeeSymbol).toStrictEqual('BTC');
-        done();
-      });
-  });
-
   it('GET /coins?coinSymbol=CFC', (done) => {
     request(app.getHttpServer())
       .get('/coins?coinSymbol=CFC')
@@ -71,32 +54,11 @@ describe('Client Controller (e2e)', () => {
       });
   });
 
-  it('GET /addrs?coinSymbol=BTC&path=0', (done) => {
-    request(app.getHttpServer())
-      .get('/addrs?coinSymbol=BTC&path=0')
-      .use(signer)
-      .expect(200, '3BAgZXJzTogswV16nnZcxAxtsJpCiGUFPJ', done);
-  });
-
   it('GET /addrs?coinSymbol=CFC&path=0', (done) => {
     request(app.getHttpServer())
       .get('/addrs?coinSymbol=CFC&path=0')
       .use(signer)
       .expect(200, '0x577E5592a9DE963f1DC0260bC6EB58f6eAbAA1BD', done);
-  });
-
-  it('should push ', async (done) => {
-    // const deposit = await Deposit.create({
-    //   addrPath: '1',
-    //   amount: '1',
-    //   clientId: 1,
-    //   coinSymbol: CoinSymbol.CFC,
-    //   feeAmount: 0.1,
-    //   feeSymbol: CoinSymbol.ETH,
-    //   status: DepositStatus.unconfirmed,
-    //   txHash: '0x98098fdaf8b8b99a3564',
-    // }).save();
-    done();
   });
 
   afterAll(async () => {
