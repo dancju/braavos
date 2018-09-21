@@ -7,34 +7,34 @@ import {
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Chain } from '../utils/chain.enum';
-import { CoinSymbol } from '../utils/coin-symbol.enum';
+import { ChainEnum } from '../chains/chain.enum';
+import { CoinEnum } from '../coins/coin.enum';
 
 @Entity()
 export class Coin extends BaseEntity {
   @ApiModelProperty({ description: '数字货币符号' })
-  @PrimaryColumn({ enum: CoinSymbol, type: 'enum' })
-  public symbol!: CoinSymbol;
+  @PrimaryColumn({ enum: CoinEnum, type: 'enum' })
+  public symbol!: CoinEnum;
 
   @Exclude()
   @Column()
-  public chain!: Chain;
+  public chain!: ChainEnum;
 
   @ApiModelProperty({ description: '充币手续费数量' })
   @Column()
   public depositFeeAmount!: number;
 
   @ApiModelProperty({ description: '充币手续费单位符号' })
-  @Column({ enum: CoinSymbol, type: 'enum' })
-  public depositFeeSymbol!: CoinSymbol;
+  @Column({ enum: CoinEnum, type: 'enum' })
+  public depositFeeSymbol!: CoinEnum;
 
   @ApiModelProperty({ description: '提币手续费数量' })
   @Column()
   public withdrawalFeeAmount!: number;
 
   @ApiModelProperty({ description: '提币手续费单位符号' })
-  @Column({ enum: CoinSymbol, type: 'enum' })
-  public withdrawalFeeSymbol!: CoinSymbol;
+  @Column({ enum: CoinEnum, type: 'enum' })
+  public withdrawalFeeSymbol!: CoinEnum;
 
   @Exclude()
   @Column({ default: {}, type: 'jsonb' })

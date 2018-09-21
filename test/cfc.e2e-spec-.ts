@@ -5,10 +5,10 @@ import 'jest';
 import signature from 'superagent-http-signature';
 import request from 'supertest';
 import { EntityManager } from 'typeorm';
-import { ClientModule } from '../src/client.module';
 import { Client } from '../src/entities/client.entity';
+import { HttpModule } from '../src/http/http.module';
 
-describe('Client Controller (e2e)', () => {
+describe('CFC (e2e)', () => {
   let app: INestApplication;
   const signer = signature({
     algorithm: 'rsa-sha256',
@@ -19,7 +19,7 @@ describe('Client Controller (e2e)', () => {
 
   beforeAll(async () => {
     const moduleFixture = await Test.createTestingModule({
-      imports: [ClientModule],
+      imports: [HttpModule],
     }).compile();
     app = moduleFixture.createNestApplication();
     await app.init();

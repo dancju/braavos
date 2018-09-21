@@ -40,14 +40,6 @@
     path-to-regexp "2.2.1"
     uuid "3.3.2"
 
-"@nestjs/microservices@^5.3.6":
-  version "5.3.7"
-  resolved "https://registry.yarnpkg.com/@nestjs/microservices/-/microservices-5.3.7.tgz#d5b41fa3052aec7f75a81e79cb63ec3b63dcadbd"
-  dependencies:
-    iterare "0.0.8"
-    json-socket "^0.2.1"
-    optional "0.1.4"
-
 "@nestjs/passport@^5.0.2":
   version "5.1.0"
   resolved "https://registry.yarnpkg.com/@nestjs/passport/-/passport-5.1.0.tgz#abbf028290800092724238f5a2c5b68ae035ce86"
@@ -3824,10 +3816,6 @@ json-schema-traverse@^0.4.1:
 json-schema@0.2.3:
   version "0.2.3"
   resolved "https://registry.yarnpkg.com/json-schema/-/json-schema-0.2.3.tgz#b480c892e59a2f05954ce727bd3f2a4e882f9e13"
-
-json-socket@^0.2.1:
-  version "0.2.1"
-  resolved "https://registry.yarnpkg.com/json-socket/-/json-socket-0.2.1.tgz#26e7ed8cc131f17aa0136c32068f473b5dbefb22"
 
 json-stringify-safe@~5.0.1:
   version "5.0.1"

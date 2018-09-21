@@ -1,14 +1,76 @@
 version: '3'
 services:
-  master:
-    build: .
+  http:
+    image: node:10-alpine
+    command: yarn run start:http
     ports:
       - 3000:3000
     volumes:
       - .:/app
+    working_dir: /app
     environment:
       NODE_ENV: test
       PORT: 3000
+      MNEMONIC: '一 一 一'
+      TYPEORM_CONNECTION: postgres
+      TYPEORM_ENTITIES: ./**/*.entity.ts
+      TYPEORM_HOST: postgresql
+      TYPEORM_USERNAME: postgres
+      TYPEORM_PASSWORD: postgres_password
+      TYPEORM_DATABASE: braavos
+      TYPEORM_PORT: 5432
+      TYPEORM_MIGRATIONS: ./**/*.migration.ts
+      TYPEORM_MIGRATIONS_DIR: src/migrations
+      AMQP: amqp://rabbitmq
+      OMNICORED_HOST: omnicored
+      OMNICORED_NETWORK: regtest
+      OMNICORED_PASSWORD: J2fqb-r8YdvESyLK8DkMQCJBOyEhlRWI3VuYrul8bYI=
+      OMNICORED_USERNAME: test
+      WEB3: ''
+    depends_on:
+      - postgresql
+      - rabbitmq
+      - omnicored
+  crons:
+    image: node:10-alpine
+    command: yarn run start:crons
+    volumes:
+      - .:/app
+    working_dir: /app
+    environment:
+      NODE_ENV: test
+      PORT: 3000
+      MNEMONIC: '一 一 一'
+      TYPEORM_CONNECTION: postgres
+      TYPEORM_ENTITIES: ./**/*.entity.ts
+      TYPEORM_HOST: postgresql
+      TYPEORM_USERNAME: postgres
+      TYPEORM_PASSWORD: postgres_password
+      TYPEORM_DATABASE: braavos
+      TYPEORM_PORT: 5432
+      TYPEORM_MIGRATIONS: ./**/*.migration.ts
+      TYPEORM_MIGRATIONS_DIR: src/migrations
+      AMQP: amqp://rabbitmq
+      OMNICORED_HOST: omnicored
+      OMNICORED_NETWORK: regtest
+      OMNICORED_PASSWORD: J2fqb-r8YdvESyLK8DkMQCJBOyEhlRWI3VuYrul8bYI=
+      OMNICORED_USERNAME: test
+      WEB3: ''
+    depends_on:
+      - postgresql
+      - rabbitmq
+      - omnicored
+  dashboard:
+    image: node:10-alpine
+    command: yarn run start:dashboard
+    ports:
+      - 3001:3001
+    volumes:
+      - .:/app
+    working_dir: /app
+    environment:
+      NODE_ENV: test
+      PORT: 3001
       MNEMONIC: '一 一 一'
       TYPEORM_CONNECTION: postgres
       TYPEORM_ENTITIES: ./**/*.entity.ts

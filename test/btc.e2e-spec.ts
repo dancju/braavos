@@ -1,17 +1,22 @@
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { Connection } from 'amqplib';
+import { connect, Connection } from 'amqplib';
+import BtcRpc from 'bitcoin-core';
 import fs from 'fs';
 import 'jest';
+import { InjectAmqpConnection } from 'nestjs-amqp';
+import { ConfigModule, ConfigService } from 'nestjs-config';
 import signature from 'superagent-http-signature';
 import request from 'supertest';
 import { EntityManager } from 'typeorm';
-import { ClientModule } from '../src/client.module';
 import { Client } from '../src/entities/client.entity';
+import { HttpModule } from '../src/http/http.module';
 
-describe('Client Controller (e2e)', () => {
+describe('BTC (e2e)', () => {
   let app: INestApplication;
   let manager: EntityManager;
+  let amqp: Connection;
+  let rpc: BtcRpc;
   const signer = signature({
     algorithm: 'rsa-sha256',
     headers: ['(request-target)', 'date', 'content-md5'],
@@ -21,25 +26,35 @@ describe('Client Controller (e2e)', () => {
 
   beforeAll(async () => {
     const moduleFixture = await Test.createTestingModule({
-      imports: [ClientModule],
+      imports: [HttpModule],
     }).compile();
     app = moduleFixture.createNestApplication();
     await app.init();
     manager = app.get(EntityManager);
-    expect(app).toBeDefined();
-    expect(manager).toBeDefined();
+    await manager.query(`
+      insert into client (
+        id, name, "publicKey"
+      ) values (
+        0, 'test', '${fs.readFileSync(__dirname + '/fixtures/public.pem')}'
+      )
+    `);
+    amqp = await connect(app.get(ConfigService).get('amqp'));
+    rpc = app.get(BtcRpc);
+    rpc.generate(101);
   });
 
-  it('should have the test client', async (done) => {
+  it('should be initialised', async (done) => {
     expect(app).toBeDefined();
     expect(manager).toBeDefined();
-    // const manager = app.get(EntityManager);
-    const key = fs.readFileSync(__dirname + '/fixtures/public.pem', 'ascii');
-    await manager.query(
-      `insert into client (id, name, "publicKey") values (0, 'test', '${key}')`,
+    expect((await manager.findOne(Client, { name: 'test' }))!.id).toStrictEqual(
+      0,
     );
-    const client = await manager.findOne(Client, { name: 'test' });
-    expect(client!.id).toStrictEqual(0);
+    expect(app.get(ConfigService).get('master.environment')).toStrictEqual(
+      'test',
+    );
+    expect((await rpc.getBlockchainInfo()).chain).toStrictEqual('regtest');
+    expect(await rpc.getBlockCount()).toBeGreaterThanOrEqual(1);
+    expect(await rpc.getBalance()).toBeGreaterThanOrEqual(50);
     done();
   });
 
@@ -64,30 +79,62 @@ describe('Client Controller (e2e)', () => {
     request(app.getHttpServer())
       .get('/addrs?coinSymbol=BTC&path=0')
       .use(signer)
-      .expect(200, '3BAgZXJzTogswV16nnZcxAxtsJpCiGUFPJ', done);
+      .expect(200, '2NCmoukMBbhnir5X2HQkVxtK2zRsL62FDxw', done);
   });
 
-  it('should consume withdrawal creation', async (done) => {
-    const queue = 'withdrawal_creation';
-    const connection = app.get('amqp-connection') as Connection;
-    const channel = await connection.createChannel();
-    await channel.assertQueue(queue);
-    channel.sendToQueue(
-      queue,
-      Buffer.from(
-        JSON.stringify({
-          amount: '1',
-          coinSymbol: 'BTC',
-          key: '0',
-          recipient: '3PcRdHdFX8qm6rh6CHhSzR1w8XCBArJg86',
-        }),
-      ),
-    );
-    done();
+  it('should publish deposit creation', async (done) => {
+    expect(
+      typeof (await rpc.sendToAddress(
+        '2NCmoukMBbhnir5X2HQkVxtK2zRsL62FDxw',
+        1,
+      )),
+    ).toStrictEqual('string');
   });
+
+  // it('should consume withdrawal creation', async (done) => {
+  //   const queue = 'withdrawal_creation';
+  //   const connection = app.get('amqp-connection') as Connection;
+  //   const channel = await connection.createChannel();
+  //   await channel.assertQueue(queue);
+  //   channel.sendToQueue(
+  //     queue,
+  //     Buffer.from(
+  //       JSON.stringify({
+  //         amount: '1',
+  //         coinSymbol: 'BTC',
+  //         key: '0',
+  //         recipient: '3PcRdHdFX8qm6rh6CHhSzR1w8XCBArJg86',
+  //       }),
+  //     ),
+  //   );
+  //   done();
+  // });
+
+  // it('should publish deposit creation', async (done) => {
+  //   const queue = 'deposit_creation';
+  //   const amqp = app.get(AmqpService);
+  //   const channel = await amqp.connection.createChannel();
+  //   await channel.assertQueue(queue);
+  //   channel.sendToQueue(
+  //     queue,
+  //     Buffer.from(
+  //       JSON.stringify({
+  //         id: 1,
+  //         coinSymbol: 'BTC',
+  //         addrPath: '1',
+  //         amount: '1.2',
+  //         // feeAmount: number;
+  //         // feeSymbol: ;
+  //         status: 'unconfirmed',
+  //         // txHash: string;
+  //         createdAt: new Date(),
+  //       }),
+  //     ),
+  //   );
+  //   done();
+  // });
 
   afterAll(async () => {
-    // const manager = app.get(EntityManager);
     await manager.transaction(async (transactionalManager) => {
       await transactionalManager.query(
         'DELETE FROM account WHERE "clientId" = 0;',

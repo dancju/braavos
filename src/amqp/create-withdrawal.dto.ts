@@ -1,6 +1,6 @@
 import { ApiModelProperty, ApiModelPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsString } from 'class-validator';
-import { CoinSymbol } from '../utils/coin-symbol.enum';
+import { CoinEnum } from '../coins';
 
 export class CreateWithdrawalDto {
   @ApiModelProperty({ description: '幂等键' })
@@ -8,8 +8,8 @@ export class CreateWithdrawalDto {
   public key!: string;
 
   @ApiModelProperty({ description: '数字货币符号' })
-  @IsEnum(CoinSymbol)
-  public coinSymbol!: CoinSymbol;
+  @IsEnum(CoinEnum)
+  public coinSymbol!: CoinEnum;
 
   @ApiModelProperty({ description: '收币地址／账户' })
   @IsString()

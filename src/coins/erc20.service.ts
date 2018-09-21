@@ -1,68 +1,43 @@
-import { Inject, Injectable, NotImplementedException } from '@nestjs/common';
-import { BIP32, fromBase58, fromSeed } from 'bip32';
 import crypto from 'crypto';
 import Wallet from 'ethereumjs-wallet';
-import { fromExtendedKey } from 'ethereumjs-wallet/hdkey';
 import { Cron } from 'nest-schedule';
-import {
-  ConfigParam,
-  ConfigService,
-  Configurable,
-  InjectConfig,
-} from 'nestjs-config';
+import { ConfigParam, ConfigService, Configurable } from 'nestjs-config';
 import querystring from 'querystring';
 import request from 'superagent';
 import { getManager } from 'typeorm';
 import Web3 from 'web3';
 import { Signature } from 'web3/eth/accounts';
-import { AmqpService } from '../client/amqp.service';
+import { AmqpService } from '../amqp/amqp.service';
+import { ChainEnum, EthereumService } from '../chains';
+import { CoinEnum } from '../coins';
 import { Account } from '../entities/account.entity';
 import { Addr } from '../entities/addr.entity';
 import { Coin } from '../entities/coin.entity';
+import { DepositStatus } from '../entities/deposit-status.enum';
 import { Deposit } from '../entities/deposit.entity';
 import { KvPair } from '../entities/kv-pair.entity';
+import { WithdrawalStatus } from '../entities/withdrawal-status.enum';
 import { Withdrawal } from '../entities/withdrawal.entity';
-import { Chain } from '../utils/chain.enum';
-import { CoinSymbol } from '../utils/coin-symbol.enum';
-import { DepositStatus } from '../utils/deposit-status.enum';
-import { WithdrawalStatus } from '../utils/withdrawal-status.enum';
-import { CoinAgent } from './coin.agent';
-import { EtherAgent } from './ether.agent';
 
-const { ETH } = CoinSymbol;
-const { ethereum } = Chain;
+const { ETH } = CoinEnum;
+const { ethereum } = ChainEnum;
 
-export abstract class Erc20Agent extends CoinAgent {
+export abstract class Erc20Service extends EthereumService
+  implements ICoinService {
   protected readonly coin: Promise<Coin>;
-  private readonly prvNode: BIP32;
-  private readonly pubNode!: BIP32;
   private readonly web3: Web3;
-  private readonly etherAgent: EtherAgent;
   private readonly abi: any;
-  private readonly symbol: CoinSymbol;
+  private readonly symbol: CoinEnum;
 
   constructor(
     config: ConfigService,
     web3: Web3,
-    etherAgent: EtherAgent,
-    coinSymbol: CoinSymbol,
+    coinSymbol: CoinEnum,
     abi: any,
     amqpService: AmqpService,
   ) {
-    super();
-    const seed = config.get('crypto.seed')() as Buffer;
-    const xPrv = fromSeed(seed)
-      .derivePath(`m/44'/60'/0'/0'`)
-      .toBase58();
-    const xPub = fromExtendedKey(xPrv).publicExtendedKey();
-    if (!xPrv.startsWith('xprv')) {
-      throw Error();
-    }
-    if (!xPub.startsWith('xpub')) {
-      throw Error();
-    }
+    super(config, web3);
     this.web3 = web3;
-    this.etherAgent = etherAgent;
     this.abi = abi;
     this.symbol = coinSymbol;
     this.coin = new Promise(async (resolve) => {
@@ -83,21 +58,6 @@ export abstract class Erc20Agent extends CoinAgent {
         resolve(res);
       }
     });
-    this.prvNode = fromBase58(xPrv);
-    this.pubNode = fromBase58(xPub);
-  }
-
-  public getAddr(clientId: number, path: string): Promise<string> {
-    return this.etherAgent.getAddr(clientId, path);
-  }
-
-  public isValidAddress(addr: string): boolean {
-    return this.etherAgent.isValidAddress(addr);
-  }
-
-  // TODO
-  public async createWithdrawal(withdrawal: Withdrawal): Promise<void> {
-    return;
   }
 
   // TODO
@@ -123,7 +83,7 @@ export abstract class Erc20Agent extends CoinAgent {
     }
     const contract = new this.web3.eth.Contract(this.abi, contractAddr);
     const collectAddr = Wallet.fromPublicKey(
-      this.pubNode.derive(0).publicKey,
+      super.pubNode.derive(0).publicKey,
       true,
     ).getAddressString();
     for (const tx of uu) {
@@ -140,7 +100,9 @@ export abstract class Erc20Agent extends CoinAgent {
         continue;
       }
       const realGasPrice = await this.web3.eth.getGasPrice();
-      const thisGasPrice = this.web3.utils.toBN(realGasPrice).add(this.web3.utils.toBN(10000000000));
+      const thisGasPrice = this.web3.utils
+        .toBN(realGasPrice)
+        .add(this.web3.utils.toBN(10000000000));
 
       /* check if balance of pocket address is enough to pay this fee */
       const gasFee = this.web3.utils
@@ -155,7 +117,9 @@ export abstract class Erc20Agent extends CoinAgent {
       }
 
       /* send ether to address to pay erc20 transfer fee */
-      const prePayGasPrice = this.web3.utils.toBN(realGasPrice).add(this.web3.utils.toBN(10000000000));
+      const prePayGasPrice = this.web3.utils
+        .toBN(realGasPrice)
+        .add(this.web3.utils.toBN(10000000000));
       const etherSignTx = (await this.web3.eth.accounts.signTransaction(
         {
           gas: 21000,
@@ -247,9 +211,7 @@ export abstract class Erc20Agent extends CoinAgent {
     await Promise.all(
       unconfTx.map(async (tx) => {
         const thisAddr = await this.getAddr(tx.clientId, tx.addrPath);
-        const fullNodeNonce = await this.web3.eth.getTransactionCount(
-          thisAddr,
-        );
+        const fullNodeNonce = await this.web3.eth.getTransactionCount(thisAddr);
         /* nonce is always eth nonce */
         let dbNonce;
         if (tx.info.nonce === undefined || tx.info.nonce === null) {
@@ -259,7 +221,7 @@ export abstract class Erc20Agent extends CoinAgent {
               .select()
               .from(Addr, 'addr')
               .where({
-                chain: Chain.ethereum,
+                chain: ChainEnum.ethereum,
                 clientId: tx.clientId,
                 path: tx.addrPath,
               })
@@ -270,7 +232,7 @@ export abstract class Erc20Agent extends CoinAgent {
               .update(Addr)
               .set({ 'info.nonce': `to_json(info.nonce::text::integer + 1)` })
               .where({
-                chain: Chain.ethereum,
+                chain: ChainEnum.ethereum,
                 clientId: tx.clientId,
                 path: tx.addrPath,
               })
@@ -684,9 +646,5 @@ export abstract class Erc20Agent extends CoinAgent {
       }
     }
     return;
-  }
-
-  protected getPrivateKey(derivePath: string): string {
-    return this.prvNode.derivePath(derivePath).toWIF();
   }
 }

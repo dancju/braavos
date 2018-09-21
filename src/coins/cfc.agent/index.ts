@@ -5,29 +5,24 @@ import { ConfigService, InjectConfig } from 'nestjs-config';
 import path from 'path';
 import { Repository } from 'typeorm';
 import Web3 from 'web3';
-import { AmqpService } from '../../client/amqp.service';
+import { AmqpService } from '../../amqp/amqp.service';
+import { CoinEnum } from '../../coins';
 import { Coin } from '../../entities/coin.entity';
-import { CoinSymbol } from '../../utils/coin-symbol.enum';
-import { Erc20Agent } from '../erc20.agent';
-import { EtherAgent } from '../ether.agent';
+import { Erc20Service } from '../erc20.service';
 
-const { CFC } = CoinSymbol;
+const { CFC } = CoinEnum;
 
 @Injectable()
-export class CfcAgent extends Erc20Agent {
+export class CfcAgent extends Erc20Service {
   constructor(
     @InjectConfig() config: ConfigService,
     @InjectRepository(Coin) coins: Repository<Coin>,
     @Inject(Web3) web3: Web3,
-    @Inject(EtherAgent) etherAgent: EtherAgent,
     amqpService: AmqpService,
   ) {
     const abi = JSON.parse(
-      fs.readFileSync(
-        path.resolve(__dirname, `./abi.json`),
-        'utf8',
-      ),
+      fs.readFileSync(path.resolve(__dirname, `./abi.json`), 'utf8'),
     );
-    super(config, web3, etherAgent, CFC, abi, amqpService);
+    super(config, web3, CFC, abi, amqpService);
   }
 }

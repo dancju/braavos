@@ -1,4 +1,4 @@
-export enum CoinSymbol {
+export enum CoinEnum {
   BTC = 'BTC',
   ETH = 'ETH',
   EOS = 'EOS',

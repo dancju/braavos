@@ -1,10 +1,7 @@
 // tslint:disable:no-submodule-imports
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
-import { BIP32, fromBase58, fromSeed } from 'bip32';
-import { isValidChecksumAddress, toChecksumAddress } from 'ethereumjs-util';
 import Wallet from 'ethereumjs-wallet';
-import { fromExtendedKey } from 'ethereumjs-wallet/hdkey';
 import { Cron } from 'nest-schedule';
 import {
   ConfigParam,
@@ -21,27 +18,25 @@ import {
 } from 'typeorm';
 import Web3 from 'web3';
 import { Signature } from 'web3/eth/accounts';
-import { AmqpService } from '../client/amqp.service';
+import { AmqpService } from '../amqp/amqp.service';
+import { EthereumService } from '../chains';
+import { ChainEnum } from '../chains/chain.enum';
+import { CoinEnum } from '../coins';
 import { Account } from '../entities/account.entity';
 import { Addr } from '../entities/addr.entity';
 import { Coin } from '../entities/coin.entity';
+import { DepositStatus } from '../entities/deposit-status.enum';
 import { Deposit } from '../entities/deposit.entity';
 import { KvPair } from '../entities/kv-pair.entity';
+import { WithdrawalStatus } from '../entities/withdrawal-status.enum';
 import { Withdrawal } from '../entities/withdrawal.entity';
-import { Chain } from '../utils/chain.enum';
-import { CoinSymbol } from '../utils/coin-symbol.enum';
-import { DepositStatus } from '../utils/deposit-status.enum';
-import { WithdrawalStatus } from '../utils/withdrawal-status.enum';
-import { CoinAgent } from './coin.agent';
 
-const { ETH } = CoinSymbol;
-const { ethereum } = Chain;
+const { ETH } = CoinEnum;
+const { ethereum } = ChainEnum;
 
 @Injectable()
-export class EtherAgent extends CoinAgent {
+export class EthAgent extends EthereumService implements ICoinService {
   protected readonly coin: Promise<Coin>;
-  private readonly prvNode: BIP32;
-  private readonly pubNode: BIP32;
   private readonly web3: Web3;
 
   constructor(
@@ -50,18 +45,7 @@ export class EtherAgent extends CoinAgent {
     @Inject(Web3) web3: Web3,
     amqpService: AmqpService,
   ) {
-    super();
-    const seed = config.get('crypto.seed')() as Buffer;
-    const xPrv = fromSeed(seed)
-      .derivePath(`m/44'/60'/0'/0`)
-      .toBase58();
-    const xPub = fromExtendedKey(xPrv).publicExtendedKey();
-    if (!xPrv.startsWith('xprv')) {
-      throw Error();
-    }
-    if (!xPub.startsWith('xpub')) {
-      throw Error();
-    }
+    super(config, web3);
     this.coin = new Promise(async (resolve) => {
       let res = await Coin.findOne(ETH);
       if (res) {
@@ -79,45 +63,7 @@ export class EtherAgent extends CoinAgent {
         resolve(res);
       }
     });
-    this.prvNode = fromBase58(xPrv);
-    this.pubNode = fromBase58(xPub);
     this.web3 = web3;
-  }
-
-  public async getAddr(clientId: number, path0: string): Promise<string> {
-    const path1 = clientId + '/' + path0;
-    const addr = toChecksumAddress(
-      Wallet.fromPublicKey(
-        this.pubNode.derivePath(path1).publicKey,
-        true,
-      ).getAddressString(),
-    );
-    await Addr.createQueryBuilder()
-      .insert()
-      .into(Addr)
-      .values({
-        addr,
-        chain: ethereum,
-        clientId,
-        path: path0,
-      })
-      .onConflict('("chain", "clientId", "path") DO NOTHING')
-      .execute();
-    return addr;
-  }
-
-  public isValidAddress(addr: string): boolean {
-    if (!/^0x[0-9a-fA-F]{40}$/i.test(addr)) {
-      return false;
-    } else if (/^0x[0-9a-f]{40}$/.test(addr) || /^0x[0-9A-F]{40}$/.test(addr)) {
-      return true;
-    } else {
-      return isValidChecksumAddress(addr);
-    }
-  }
-
-  public async createWithdrawal(withdrawal: Withdrawal) {
-    // TODO handle off-chain transactions
   }
 
   @Configurable()
@@ -127,7 +73,7 @@ export class EtherAgent extends CoinAgent {
   ): Promise<void> {
     const uu = await Deposit.createQueryBuilder()
       .select()
-      .where({ CoinSymbol: CoinSymbol.ETH, status: DepositStatus.unconfirmed })
+      .where({ CoinSymbol: ETH, status: DepositStatus.unconfirmed })
       .orderBy('id')
       .getMany();
     if (uu.length <= 0) {
@@ -149,12 +95,12 @@ export class EtherAgent extends CoinAgent {
             .execute();
           await manager
             .createQueryBuilder(Account, 'account')
-            .where({ clientId: tx.clientId, coinSymbol: CoinSymbol.ETH })
+            .where({ clientId: tx.clientId, coinSymbol: ETH })
             .setLock('pessimistic_write')
             .getOne();
           await manager.increment(
             Account,
-            { clientId: tx.clientId, coinSymbol: CoinSymbol.ETH },
+            { clientId: tx.clientId, coinSymbol: ETH },
             'balance',
             Number(tx.amount),
           );
@@ -177,7 +123,7 @@ export class EtherAgent extends CoinAgent {
   public async collectCron(): Promise<void> {
     const unconfTxs = await Deposit.createQueryBuilder()
       .select()
-      .where({ coinSymbol: CoinSymbol.ETH, status: DepositStatus.confirmed })
+      .where({ coinSymbol: ETH, status: DepositStatus.confirmed })
       .getMany();
     if (unconfTxs.length <= 0) {
       return;
@@ -194,7 +140,7 @@ export class EtherAgent extends CoinAgent {
               .update(Addr)
               .set({ 'info.nonce': `to_json(info.nonce::text::integer + 1)` })
               .where({
-                chain: Chain.ethereum,
+                chain: ethereum,
                 clientId: tx.clientId,
                 path: tx.addrPath,
               })
@@ -453,9 +399,5 @@ export class EtherAgent extends CoinAgent {
       }
     }
     return;
-  }
-
-  protected getPrivateKey(derivePath: string): string {
-    return this.prvNode.derivePath(derivePath).toWIF();
   }
 }

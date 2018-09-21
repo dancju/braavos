@@ -96,9 +96,8 @@ export class InitialMigration1537423629359 implements MigrationInterface {
     `);
     await queryRunner.query(`
       CREATE TABLE "kv_pair" (
-        "key" character varying NOT NULL,
-        "value" jsonb NOT NULL,
-        CONSTRAINT "PK_47de5fced06a67bda78b13c1d5d" PRIMARY KEY ("key")
+        "key" character varying PRIMARY KEY,
+        "value" jsonb NOT NULL
       )
     `);
     await queryRunner.query(`

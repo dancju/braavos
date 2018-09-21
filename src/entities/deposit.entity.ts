@@ -10,9 +10,9 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { CoinSymbol } from '../utils/coin-symbol.enum';
-import { DepositStatus } from '../utils/deposit-status.enum';
+import { CoinEnum } from '../coins/coin.enum';
 import { Client } from './client.entity';
+import { DepositStatus } from './deposit-status.enum';
 import { Withdrawal } from './withdrawal.entity';
 
 @Entity()
@@ -22,8 +22,8 @@ export class Deposit extends BaseEntity {
   public id!: number;
 
   @ApiModelProperty({ description: '数字货币符号' })
-  @Column({ enum: CoinSymbol, type: 'enum' })
-  public coinSymbol!: CoinSymbol;
+  @Column({ enum: CoinEnum, type: 'enum' })
+  public coinSymbol!: CoinEnum;
 
   @Exclude()
   @Column()
@@ -42,8 +42,8 @@ export class Deposit extends BaseEntity {
   public feeAmount!: number;
 
   @ApiModelProperty({ description: '手续费单位符号' })
-  @Column({ type: 'enum', enum: CoinSymbol })
-  public feeSymbol!: CoinSymbol;
+  @Column({ type: 'enum', enum: CoinEnum })
+  public feeSymbol!: CoinEnum;
 
   @ApiModelProperty({ description: '状态' })
   @Column({

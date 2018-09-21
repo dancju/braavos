@@ -8,14 +8,14 @@ import {
   ManyToOne,
   PrimaryColumn,
 } from 'typeorm';
-import { Chain } from '../utils/chain.enum';
+import { ChainEnum } from '../chains/chain.enum';
 import { Client } from './client.entity';
 
 @Entity()
 @Index(['chain', 'addr'], { unique: true })
 export class Addr extends BaseEntity {
-  @PrimaryColumn({ enum: Chain, type: 'enum' })
-  public chain!: Chain;
+  @PrimaryColumn({ enum: ChainEnum, type: 'enum' })
+  public chain!: ChainEnum;
 
   @PrimaryColumn()
   public clientId!: number;

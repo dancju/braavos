@@ -11,10 +11,10 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { CoinSymbol } from '../utils/coin-symbol.enum';
-import { WithdrawalStatus } from '../utils/withdrawal-status.enum';
+import { CoinEnum } from '../coins';
 import { Client } from './client.entity';
 import { Deposit } from './deposit.entity';
+import { WithdrawalStatus } from './withdrawal-status.enum';
 
 @Entity()
 @Index(['clientId', 'key'], { unique: true })
@@ -32,8 +32,8 @@ export class Withdrawal extends BaseEntity {
   public key!: string;
 
   @ApiModelProperty({ description: '货币符号' })
-  @Column({ type: 'enum', enum: CoinSymbol })
-  public coinSymbol!: CoinSymbol;
+  @Column({ type: 'enum', enum: CoinEnum })
+  public coinSymbol!: CoinEnum;
 
   @ApiModelProperty({ description: '收币者的地址或用户名' })
   @Column()
@@ -52,8 +52,8 @@ export class Withdrawal extends BaseEntity {
   public feeAmount?: number;
 
   @ApiModelProperty({ description: '手续费单位符号' })
-  @Column({ enum: CoinSymbol, nullable: true, type: 'enum' })
-  public feeSymbol?: CoinSymbol;
+  @Column({ enum: CoinEnum, nullable: true, type: 'enum' })
+  public feeSymbol?: CoinEnum;
 
   @ApiModelProperty({ description: '状态' })
   @Column({

@@ -6,13 +6,13 @@ import {
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { CoinSymbol } from '../utils/coin-symbol.enum';
+import { CoinEnum } from '../coins/coin.enum';
 import { Client } from './client.entity';
 
 @Entity()
 export class Account extends BaseEntity {
-  @PrimaryColumn({ enum: CoinSymbol, type: 'enum' })
-  public coinSymbol!: CoinSymbol;
+  @PrimaryColumn({ enum: CoinEnum, type: 'enum' })
+  public coinSymbol!: CoinEnum;
 
   @PrimaryColumn()
   public clientId!: number;
