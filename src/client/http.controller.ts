@@ -5,6 +5,7 @@ import {
   Controller,
   Get,
   HttpException,
+  Inject,
   Injectable,
   NotFoundException,
   Put,
@@ -47,18 +48,12 @@ import { SignatureGuard } from './signature.guard';
 @UseGuards(SignatureGuard)
 @UsePipes(ValidationPipe)
 export class ClientController {
-  private coinAgents: { [k in CoinSymbol]?: CoinAgent };
+  private readonly coinAgents: { [k in CoinSymbol]?: CoinAgent };
 
   constructor(
-    bitcoinAgent: BitcoinAgent,
-    etherAgent: EtherAgent,
-    cfcAgent: CfcAgent,
+    @Inject('coin-agent-repo') coinAgents: { [k in CoinSymbol]?: CoinAgent },
   ) {
-    this.coinAgents = {
-      [CoinSymbol.BTC]: bitcoinAgent,
-      [CoinSymbol.ETH]: etherAgent,
-      [CoinSymbol.CFC]: cfcAgent,
-    };
+    this.coinAgents = coinAgents;
   }
 
   @Get('addrs')

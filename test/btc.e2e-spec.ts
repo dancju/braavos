@@ -1,5 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { Connection } from 'amqplib';
 import fs from 'fs';
 import 'jest';
 import signature from 'superagent-http-signature';
@@ -25,9 +26,14 @@ describe('Client Controller (e2e)', () => {
     app = moduleFixture.createNestApplication();
     await app.init();
     manager = app.get(EntityManager);
+    expect(app).toBeDefined();
+    expect(manager).toBeDefined();
   });
 
   it('should have the test client', async (done) => {
+    expect(app).toBeDefined();
+    expect(manager).toBeDefined();
+    // const manager = app.get(EntityManager);
     const key = fs.readFileSync(__dirname + '/fixtures/public.pem', 'ascii');
     await manager.query(
       `insert into client (id, name, "publicKey") values (0, 'test', '${key}')`,
@@ -61,21 +67,27 @@ describe('Client Controller (e2e)', () => {
       .expect(200, '3BAgZXJzTogswV16nnZcxAxtsJpCiGUFPJ', done);
   });
 
-  it('should push ', async (done) => {
-    // const deposit = await Deposit.create({
-    //   addrPath: '1',
-    //   amount: '1',
-    //   clientId: 1,
-    //   coinSymbol: CoinSymbol.CFC,
-    //   feeAmount: 0.1,
-    //   feeSymbol: CoinSymbol.ETH,
-    //   status: DepositStatus.unconfirmed,
-    //   txHash: '0x98098fdaf8b8b99a3564',
-    // }).save();
+  it('should consume withdrawal creation', async (done) => {
+    const queue = 'withdrawal_creation';
+    const connection = app.get('amqp-connection') as Connection;
+    const channel = await connection.createChannel();
+    await channel.assertQueue(queue);
+    channel.sendToQueue(
+      queue,
+      Buffer.from(
+        JSON.stringify({
+          amount: '1',
+          coinSymbol: 'BTC',
+          key: '0',
+          recipient: '3PcRdHdFX8qm6rh6CHhSzR1w8XCBArJg86',
+        }),
+      ),
+    );
     done();
   });
 
   afterAll(async () => {
+    // const manager = app.get(EntityManager);
     await manager.transaction(async (transactionalManager) => {
       await transactionalManager.query(
         'DELETE FROM account WHERE "clientId" = 0;',

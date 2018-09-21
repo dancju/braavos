@@ -11,6 +11,7 @@ import { AmqpService } from './client/amqp.service';
 import { ClientController } from './client/http.controller';
 import { SignatureStrategy } from './client/signature.strategy';
 import { Coin } from './entities/coin.entity';
+import { CoinSymbol } from './utils/coin-symbol.enum';
 
 @Module({
   controllers: [ClientController],
@@ -35,7 +36,6 @@ import { Coin } from './entities/coin.entity';
       provide: 'amqp-connection',
       useFactory: (config: ConfigService) => amqp.connect(config.get('amqp')),
     },
-    // TODO add agentRepo provider
     {
       inject: [ConfigService],
       provide: BtcRpc,
@@ -53,6 +53,19 @@ import { Coin } from './entities/coin.entity';
       },
     },
     AmqpService,
+    {
+      inject: [BitcoinAgent, EtherAgent, CfcAgent],
+      provide: 'coin-agent-repo',
+      useFactory: (
+        bitcoinAgent: BitcoinAgent,
+        etherAgent: EtherAgent,
+        cfcAgent: CfcAgent,
+      ) => ({
+        [CoinSymbol.BTC]: bitcoinAgent,
+        [CoinSymbol.ETH]: etherAgent,
+        [CoinSymbol.CFC]: cfcAgent,
+      }),
+    },
     BitcoinAgent,
     EtherAgent,
     CfcAgent,
