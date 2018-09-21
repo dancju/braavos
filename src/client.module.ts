@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import amqp from 'amqplib';
 import BtcRpc from 'bitcoin-core';
+import { AmqpModule } from 'nestjs-amqp';
 import { ConfigModule, ConfigService } from 'nestjs-config';
 import Web3 from 'web3';
 import { BitcoinAgent } from './agents/bitcoin.agent';
@@ -28,14 +29,13 @@ import { CoinSymbol } from './utils/coin-symbol.enum';
       }),
     }),
     TypeOrmModule.forFeature([Coin]),
+    AmqpModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => config.get('amqp'),
+    }),
   ],
   providers: [
     SignatureStrategy,
-    {
-      inject: [ConfigService],
-      provide: 'amqp-connection',
-      useFactory: (config: ConfigService) => amqp.connect(config.get('amqp')),
-    },
     {
       inject: [ConfigService],
       provide: BtcRpc,

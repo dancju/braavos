@@ -29,10 +29,10 @@ import { Deposit } from '../entities/deposit.entity';
 import { KvPair } from '../entities/kv-pair.entity';
 import { Withdrawal } from '../entities/withdrawal.entity';
 import { Chain } from '../utils/chain.enum';
-import { CoinAgent } from '../utils/coin-agent';
 import { CoinSymbol } from '../utils/coin-symbol.enum';
 import { DepositStatus } from '../utils/deposit-status.enum';
 import { WithdrawalStatus } from '../utils/withdrawal-status.enum';
+import { CoinAgent } from './coin.agent';
 
 const { ETH } = CoinSymbol;
 const { ethereum } = Chain;
@@ -50,7 +50,7 @@ export class EtherAgent extends CoinAgent {
     @Inject(Web3) web3: Web3,
     amqpService: AmqpService,
   ) {
-    super(amqpService);
+    super();
     const seed = config.get('crypto.seed')() as Buffer;
     const xPrv = fromSeed(seed)
       .derivePath(`m/44'/60'/0'/0`)

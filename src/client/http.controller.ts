@@ -24,18 +24,17 @@ import {
   ApiOkResponse,
   ApiResponse,
 } from '@nestjs/swagger';
+import { Channel, Connection } from 'amqplib';
 import { Matches } from 'class-validator';
 import { getManager } from 'typeorm';
-import { BitcoinAgent } from '../agents/bitcoin.agent';
-import { CfcAgent } from '../agents/cfc.agent';
-import { EtherAgent } from '../agents/ether.agent';
+import { CoinAgent } from '../agents/coin.agent';
 import { Account } from '../entities/account.entity';
 import { Client } from '../entities/client.entity';
 import { Coin } from '../entities/coin.entity';
 import { Deposit } from '../entities/deposit.entity';
 import { Withdrawal } from '../entities/withdrawal.entity';
-import { CoinAgent } from '../utils/coin-agent';
 import { CoinSymbol } from '../utils/coin-symbol.enum';
+import { AmqpService } from './amqp.service';
 import { DClient } from './client.decorator';
 import { CreateWithdrawalDto } from './create-withdrawal.dto';
 import { SignatureGuard } from './signature.guard';
@@ -51,9 +50,92 @@ export class ClientController {
   private readonly coinAgents: { [k in CoinSymbol]?: CoinAgent };
 
   constructor(
+    amqp: AmqpService,
     @Inject('coin-agent-repo') coinAgents: { [k in CoinSymbol]?: CoinAgent },
   ) {
     this.coinAgents = coinAgents;
+    this.createWithdrawal(amqp);
+  }
+
+  public async createWithdrawal(amqp: AmqpService) {
+    const channel = await amqp.connection.createChannel();
+    const queue = 'withdrawal_creation';
+    channel.assertQueue(queue);
+    channel.consume(queue, async (msg) => {
+      if (!msg) {
+        return;
+      }
+      const body = JSON.parse(msg.content.toString());
+      console.log('======================' + Object.keys(body));
+      // TODO handle amqp auth
+      // TODO handle body validation
+      const clientId = 1;
+      if (
+        await Withdrawal.findOne({
+          clientId,
+          key: body.key,
+        })
+      ) {
+        channel.ack(msg);
+        return;
+      }
+      const agent = this.coinAgents[body.coinSymbol];
+      if (!agent) {
+        channel.nack(msg, false, false);
+      }
+      if (!agent.isValidAddress(body.recipient)) {
+        // throw new Error('Bad Recipient');
+        channel.nack(msg, false, false);
+        return;
+      }
+      await Account.createQueryBuilder()
+        .insert()
+        .values({ clientId, coinSymbol: body.coinSymbol })
+        .onConflict('("clientId", "coinSymbol") DO NOTHING')
+        .execute();
+      await getManager().transaction(async (manager) => {
+        const account = await manager
+          .createQueryBuilder(Account, 'account')
+          .where({ clientId, coinSymbol: body.coinSymbol })
+          .setLock('pessimistic_write')
+          .getOne();
+        if (!account) {
+          // throw new Error();
+          channel.nack(msg, false, false);
+          return;
+        }
+        if (Number(account.balance) < Number(body.amount)) {
+          // throw new Error('Payment Required');
+          channel.nack(msg, false, false);
+          return;
+        }
+        await manager.decrement(
+          Account,
+          { clientId, coinSymbol: body.coinSymbol },
+          'balance',
+          Number(body.amount),
+        );
+        await manager
+          .createQueryBuilder()
+          .insert()
+          .into(Withdrawal)
+          .values({
+            amount: body.amount,
+            clientId,
+            coinSymbol: body.coinSymbol,
+            key: body.key,
+            memo: body.memo,
+            recipient: body.recipient,
+          })
+          .execute();
+      });
+      const w = (await Withdrawal.findOne({
+        clientId,
+        key: body.key,
+      }))!;
+      await agent.createWithdrawal(w);
+      channel.ack(msg);
+    });
   }
 
   @Get('addrs')
@@ -112,76 +194,6 @@ export class ClientController {
       .take(limit)
       .getMany();
   }
-
-  // @Put('withdrawals')
-  // @ApiCreatedResponse({ type: Withdrawal })
-  // @ApiBadRequestResponse({ description: '请求格式错误' })
-  // @ApiConflictResponse({ description: '幂等性冲突' })
-  // @ApiResponse({ description: '客户余额不足', status: 402 })
-  // public async createWithdrawal(
-  //   @DClient() client: Client,
-  //   @Body() body: CreateWithdrawalDto,
-  // ): Promise<Withdrawal> {
-  //   const { coinSymbol, recipient } = body;
-  //   if (
-  //     await Withdrawal.findOne({
-  //       clientId: client.id,
-  //       key: body.key,
-  //     })
-  //   ) {
-  //     throw new ConflictException();
-  //   }
-  //   const agent = this.coinAgents[coinSymbol];
-  //   if (!agent) {
-  //     throw new Error();
-  //   }
-  //   if (!agent.isValidAddress(recipient)) {
-  //     throw new BadRequestException('Bad Recipient');
-  //   }
-  //   await Account.createQueryBuilder()
-  //     .insert()
-  //     .values({ clientId: client.id, coinSymbol })
-  //     .onConflict('("clientId", "coinSymbol") DO NOTHING')
-  //     .execute();
-  //   await getManager().transaction(async (manager) => {
-  //     const account = await manager
-  //       .createQueryBuilder(Account, 'account')
-  //       .where({ clientId: client.id, coinSymbol: body.coinSymbol })
-  //       .setLock('pessimistic_write')
-  //       .getOne();
-  //     if (!account) {
-  //       throw new Error();
-  //     }
-  //     if (Number(account.balance) < Number(body.amount)) {
-  //       throw new HttpException('Payment Required', 402);
-  //     }
-  //     await manager.decrement(
-  //       Account,
-  //       { clientId: client.id, coinSymbol: body.coinSymbol },
-  //       'balance',
-  //       Number(body.amount),
-  //     );
-  //     await manager
-  //       .createQueryBuilder()
-  //       .insert()
-  //       .into(Withdrawal)
-  //       .values({
-  //         amount: body.amount,
-  //         clientId: client.id,
-  //         coinSymbol,
-  //         key: body.key,
-  //         memo: body.memo,
-  //         recipient,
-  //       })
-  //       .execute();
-  //   });
-  //   const res = (await Withdrawal.findOne({
-  //     clientId: client.id,
-  //     key: body.key,
-  //   }))!;
-  //   await agent.createWithdrawal(res);
-  //   return res;
-  // }
 
   @Get('coins')
   @ApiImplicitQuery({

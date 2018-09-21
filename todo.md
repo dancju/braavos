@@ -3,4 +3,5 @@
 - bitcoin rpc idempotency
 - query validator
   - limit response size
+- config validator
 - dashboard

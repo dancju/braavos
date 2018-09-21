@@ -23,10 +23,10 @@ import { Deposit } from '../entities/deposit.entity';
 import { KvPair } from '../entities/kv-pair.entity';
 import { Withdrawal } from '../entities/withdrawal.entity';
 import { Chain } from '../utils/chain.enum';
-import { CoinAgent } from '../utils/coin-agent';
 import { CoinSymbol } from '../utils/coin-symbol.enum';
 import { DepositStatus } from '../utils/deposit-status.enum';
 import { WithdrawalStatus } from '../utils/withdrawal-status.enum';
+import { CoinAgent } from './coin.agent';
 import { EtherAgent } from './ether.agent';
 
 const { ETH } = CoinSymbol;
@@ -49,7 +49,7 @@ export abstract class Erc20Agent extends CoinAgent {
     abi: any,
     amqpService: AmqpService,
   ) {
-    super(amqpService);
+    super();
     const seed = config.get('crypto.seed')() as Buffer;
     const xPrv = fromSeed(seed)
       .derivePath(`m/44'/60'/0'/0'`)

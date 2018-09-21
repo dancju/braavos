@@ -27,10 +27,10 @@ import { Coin } from '../entities/coin.entity';
 import { Deposit } from '../entities/deposit.entity';
 import { Withdrawal } from '../entities/withdrawal.entity';
 import { Chain } from '../utils/chain.enum';
-import { CoinAgent } from '../utils/coin-agent';
 import { CoinSymbol } from '../utils/coin-symbol.enum';
 import { DepositStatus } from '../utils/deposit-status.enum';
 import { WithdrawalStatus } from '../utils/withdrawal-status.enum';
+import { CoinAgent } from './coin.agent';
 
 const { BTC } = CoinSymbol;
 const { bitcoin } = Chain;
@@ -57,7 +57,7 @@ export class BitcoinAgent extends CoinAgent {
     @Inject(BtcRpc) rpc: BtcRpc,
     amqpService: AmqpService,
   ) {
-    super(amqpService);
+    super();
     const seed = config.get('crypto.seed')() as Buffer;
     const network = config.get('master').isProduction() ? MAINNET : TESTNET;
     const xPrv = fromSeed(seed, network)
