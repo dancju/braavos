@@ -34,6 +34,14 @@ import { WithdrawalStatus } from '../utils/withdrawal-status.enum';
 
 const { BTC } = CoinSymbol;
 const { bitcoin } = Chain;
+const MAINNET = {
+  bip32: { private: 0x0488ade4, public: 0x0488b21e },
+  wif: 0x80,
+};
+const TESTNET = {
+  bip32: { private: 0x04358394, public: 0x043587cf },
+  wif: 0xef,
+};
 
 @Injectable()
 export class BitcoinAgent extends CoinAgent {
@@ -51,20 +59,15 @@ export class BitcoinAgent extends CoinAgent {
   ) {
     super(amqpService);
     const seed = config.get('crypto.seed')() as Buffer;
-    const xPrv = fromSeed(seed)
+    const network = config.get('master').isProduction() ? MAINNET : TESTNET;
+    const xPrv = fromSeed(seed, network)
       .derivePath(`m/84'/0'/0'/0`)
       .toBase58();
-    const xPub = fromBase58(xPrv)
+    const xPub = fromBase58(xPrv, network)
       .neutered()
       .toBase58();
     this.bech32 = config.get('bitcoin.bech32') as boolean;
     if ('boolean' !== typeof this.bech32) {
-      throw new InternalServerErrorException();
-    }
-    if (!xPrv.startsWith('xprv')) {
-      throw new InternalServerErrorException();
-    }
-    if (!xPub.startsWith('xpub')) {
       throw new InternalServerErrorException();
     }
     this.coin = new Promise(async (resolve) => {
@@ -88,8 +91,8 @@ export class BitcoinAgent extends CoinAgent {
         resolve(res);
       }
     });
-    this.prvNode = fromBase58(xPrv);
-    this.pubNode = fromBase58(xPub);
+    this.prvNode = fromBase58(xPrv, network);
+    this.pubNode = fromBase58(xPub, network);
     this.rpc = rpc;
   }
 
@@ -117,6 +120,7 @@ export class BitcoinAgent extends CoinAgent {
   }
 
   public isValidAddress(addr: string): boolean {
+    // TODO support testnet
     return /^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,39}$/.test(addr);
   }
 
