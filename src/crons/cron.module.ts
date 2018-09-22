@@ -5,12 +5,17 @@ import { AmqpModule } from 'nestjs-amqp';
 import { ConfigModule, ConfigService } from 'nestjs-config';
 import Web3 from 'web3';
 import { AmqpService } from '../amqp/amqp.service';
-import { BtcService, CoinEnum } from '../coins';
+import { BitcoinService, EthereumService } from '../chains';
+import { BtcService, CoinEnum, EthService } from '../coins';
 import { Coin } from '../entities/coin.entity';
 import { BtcCreateDeposit } from './btc-create-deposit';
 import { BtcRefreshFee } from './btc-refresh-fee';
 import { BtcUpdateDeposit } from './btc-update-deposit';
 import { BtcUpdateWithdrawal } from './btc-update-withdrawal';
+import { EthCollect } from './eth-collect';
+import { EthConfirm } from './eth-confirm';
+import { EthDeposit } from './eth-deposit';
+import { EthWithdrawal } from './eth-withdrawal';
 
 @Module({
   controllers: [],
@@ -43,7 +48,7 @@ import { BtcUpdateWithdrawal } from './btc-update-withdrawal';
       inject: [ConfigService],
       provide: Web3,
       useFactory: (config: ConfigService) =>
-        new Web3.providers.HttpProvider(config.get('ethereum.web3')),
+        new Web3(new Web3.providers.HttpProvider(config.get('ethereum.web3'))),
     },
     AmqpService,
     {
@@ -51,11 +56,18 @@ import { BtcUpdateWithdrawal } from './btc-update-withdrawal';
       provide: 'CoinServiceRepo',
       useFactory: (btcService: BtcService) => ({ [CoinEnum.BTC]: btcService }),
     },
+    BitcoinService,
+    EthereumService,
     BtcService,
     BtcCreateDeposit,
     BtcRefreshFee,
     BtcUpdateDeposit,
     BtcUpdateWithdrawal,
+    EthDeposit,
+    EthConfirm,
+    EthCollect,
+    EthWithdrawal,
+    EthService,
   ],
 })
 export class CronModule {}
