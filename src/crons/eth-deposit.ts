@@ -55,7 +55,6 @@ export class EthDeposit extends NestSchedule {
         console.log('last depositCron still in handling');
         return;
       }
-      console.log('here');
       this.ethereumService.cronLock.depositCron = true;
       const minimumThreshold: number = this.config.get(
         'ethereum.ether.deposit.minimumThreshold',
@@ -163,7 +162,7 @@ export class EthDeposit extends NestSchedule {
         await coin.save();
         console.log('blockIndex: ', blockIndex);
       }
-      console.log('finish this time');
+      console.log('finish deposit this time');
       this.ethereumService.cronLock.depositCron = false;
     } catch (err) {
       console.log(err);

@@ -55,7 +55,6 @@ export class EthConfirm extends NestSchedule {
       console.log('last confirmCron still in handling');
       return;
     }
-    console.log('confirm ');
     try {
       this.ethereumService.cronLock.confirmCron = true;
       const confThreshold: number = this.config.get(
