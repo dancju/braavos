@@ -13,18 +13,18 @@ import { ChainService } from './chain.service';
 const { ethereum } = ChainEnum;
 
 export class EthereumService extends ChainService {
-  protected readonly prvNode: EthereumHDKey;
+  protected readonly hdkey: EthereumHDKey;
 
   constructor(config: ConfigService) {
     super();
     const seed = config.get('crypto.seed')() as Buffer;
-    this.prvNode = fromMasterSeed(seed).derivePath('m');
+    this.hdkey = fromMasterSeed(seed);
   }
 
   public async getAddr(clientId: number, path0: string): Promise<string> {
-    const path1 = clientId + `'/` + path0;
+    const path1 = 'm/' + clientId + `'/` + path0;
     const addr = toChecksumAddress(
-      this.prvNode
+      this.hdkey
         .derivePath(path1)
         .getWallet()
         .getAddressString(),
@@ -54,7 +54,7 @@ export class EthereumService extends ChainService {
   }
 
   protected _getPrivateKey(path: string): string {
-    return this.prvNode
+    return this.hdkey
       .derivePath(path)
       .getWallet()
       .getPrivateKeyString();
