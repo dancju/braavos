@@ -21,10 +21,10 @@ export class Addr extends BaseEntity {
   public clientId!: number;
 
   @PrimaryColumn()
+  @Matches(/^\d+(\/\d+)*$/)
   public path!: string;
 
   @Column()
-  @Matches(/^\d+(\/\d+)*$/)
   public addr!: string;
 
   @Column({ default: {}, type: 'jsonb' })
