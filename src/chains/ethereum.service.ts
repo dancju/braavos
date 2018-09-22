@@ -1,10 +1,11 @@
 // tslint:disable:no-submodule-imports
-import { BIP32, fromBase58, fromSeed } from 'bip32';
 import { isValidChecksumAddress, toChecksumAddress } from 'ethereumjs-util';
-import Wallet from 'ethereumjs-wallet';
-import { fromExtendedKey } from 'ethereumjs-wallet/hdkey';
+import {
+  EthereumHDKey,
+  fromExtendedKey,
+  fromMasterSeed,
+} from 'ethereumjs-wallet/hdkey';
 import { ConfigService } from 'nestjs-config';
-import Web3 from 'web3';
 import { Addr } from '../entities/addr.entity';
 import { ChainEnum } from './chain.enum';
 import { ChainService } from './chain.service';
@@ -12,29 +13,25 @@ import { ChainService } from './chain.service';
 const { ethereum } = ChainEnum;
 
 export class EthereumService extends ChainService {
-  protected readonly prvNode: BIP32;
+  protected readonly prvNode: EthereumHDKey;
 
-  constructor(config: ConfigService, web3: Web3) {
+  constructor(config: ConfigService) {
     super();
     const seed = config.get('crypto.seed')() as Buffer;
-    const xPrv = fromSeed(seed).toBase58();
-    const xPub = fromExtendedKey(xPrv).publicExtendedKey();
+    const xPrv = fromMasterSeed(seed).privateExtendedKey();
     if (!xPrv.startsWith('xprv')) {
       throw Error();
     }
-    if (!xPub.startsWith('xpub')) {
-      throw Error();
-    }
-    this.prvNode = fromBase58(xPrv);
+    this.prvNode = fromExtendedKey(xPrv);
   }
 
   public async getAddr(clientId: number, path0: string): Promise<string> {
     const path1 = clientId + `'/` + path0;
     const addr = toChecksumAddress(
-      Wallet.fromPublicKey(
-        this.prvNode.derivePath(path1).publicKey,
-        true,
-      ).getAddressString(),
+      this.prvNode
+        .derivePath(path1)
+        .getWallet()
+        .getAddressString(),
     );
     await Addr.createQueryBuilder()
       .insert()
@@ -60,7 +57,11 @@ export class EthereumService extends ChainService {
     }
   }
 
-  protected getPrivateKey(derivePath: string): string {
-    return this.prvNode.derivePath(derivePath).toWIF();
+  protected getPrivateKey(clientId: number, path0: string): string {
+    const path1 = clientId + `'/` + path0;
+    return this.prvNode
+      .derivePath(path1)
+      .getWallet()
+      .getPrivateKeyString();
   }
 }

@@ -15,7 +15,6 @@ const MAINNET: Network = {
   scriptHash: 0x05,
   wif: 0x80,
 };
-
 const TESTNET: Network = {
   bech32: 'tb',
   bip32: { private: 0x04358394, public: 0x043587cf },
@@ -67,7 +66,11 @@ export class BitcoinService extends ChainService {
         clientId,
         path: path0,
       }).save();
-      await this.rpc.importPrivKey(this.getPrivateKey(path1), 'braavos', false);
+      await this.rpc.importPrivKey(
+        this.getPrivateKey(clientId, path0),
+        'braavos',
+        false,
+      );
     }
     return addr;
   }
@@ -76,8 +79,9 @@ export class BitcoinService extends ChainService {
     return this.rAddr.test(addr);
   }
 
-  protected getPrivateKey(derivePath: string): string {
-    return this.prvNode.derivePath(derivePath).toWIF();
+  protected getPrivateKey(clientId: number, path0: string): string {
+    const path1 = clientId + `'/` + path0;
+    return this.prvNode.derivePath(path1).toWIF();
   }
 
   private getAddrP2sh(derivePath: string): string {
