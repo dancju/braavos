@@ -139,12 +139,24 @@ export class InitialMigration1537423629359 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<any> {
-    await queryRunner.query(`ALTER TABLE "deposit" DROP CONSTRAINT "FK_e1886ba77141192085e44e4e878"`);
-    await queryRunner.query(`ALTER TABLE "deposit" DROP CONSTRAINT "FK_a4e41bb666e25795577fd9ac155"`);
-    await queryRunner.query(`ALTER TABLE "withdrawal" DROP CONSTRAINT "FK_804f38351628d8076bb6d0ba337"`);
-    await queryRunner.query(`ALTER TABLE "withdrawal" DROP CONSTRAINT "FK_c49c38eb68782a2a7f254e05993"`);
-    await queryRunner.query(`ALTER TABLE "addr" DROP CONSTRAINT "FK_d4638cb77adb629796ef446df62"`);
-    await queryRunner.query(`ALTER TABLE "account" DROP CONSTRAINT "FK_861667d82d42bf6617f423f537b"`);
+    await queryRunner.query(
+      `ALTER TABLE "deposit" DROP CONSTRAINT "FK_e1886ba77141192085e44e4e878"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "deposit" DROP CONSTRAINT "FK_a4e41bb666e25795577fd9ac155"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "withdrawal" DROP CONSTRAINT "FK_804f38351628d8076bb6d0ba337"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "withdrawal" DROP CONSTRAINT "FK_c49c38eb68782a2a7f254e05993"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "addr" DROP CONSTRAINT "FK_d4638cb77adb629796ef446df62"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "account" DROP CONSTRAINT "FK_861667d82d42bf6617f423f537b"`,
+    );
     await queryRunner.query(`DROP TABLE "kv_pair"`);
     await queryRunner.query(`DROP TABLE "deposit"`);
     await queryRunner.query(`DROP TABLE "withdrawal"`);

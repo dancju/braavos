@@ -2,7 +2,12 @@ import { Injectable } from '@nestjs/common';
 import BtcRpc, { ListTransactionsResult } from 'bitcoin-core';
 import { Cron, NestSchedule } from 'nest-schedule';
 import { ConfigParam, Configurable } from 'nestjs-config';
-import { EntityManager, getManager, Transaction, TransactionManager } from 'typeorm';
+import {
+  EntityManager,
+  getManager,
+  Transaction,
+  TransactionManager,
+} from 'typeorm';
 import { AmqpService } from '../amqp/amqp.service';
 import { ChainEnum } from '../chains';
 import { CoinEnum } from '../coins';
