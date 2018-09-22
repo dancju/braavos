@@ -10,6 +10,7 @@
     "lint": "tslint --fix './{src,test}/**/*.ts' && prettier --write \"**/*.ts\"",
     "prestart:http": "ts-node --files ./node_modules/.bin/typeorm migration:run",
     "start:http": "nodemon -e ts -w ./src -i src/**/*.spec.ts -x ts-node --files src/http.main.ts",
+    "prestart:crons": "ts-node --files ./node_modules/.bin/typeorm migration:run",
     "start:crons": "nodemon -e ts -w ./src -i src/**/*.spec.ts -x ts-node --files src/crons.main.ts",
     "start:dashboard": "nodemon -e ts -w ./src -i src/**/*.spec.ts -x ts-node --files src/dashboard.main.ts",
     "test": "jest",
