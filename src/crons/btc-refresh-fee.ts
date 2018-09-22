@@ -34,7 +34,8 @@ export class BtcRefreshFee extends NestSchedule {
   public async cron(): Promise<void> {
     const feeRate = (await this.rpc.estimateSmartFee(this.confTarget)).feerate;
     if (!feeRate || feeRate === -1) {
-      throw new Error();
+      // TODO logger.warn
+      return;
     }
     const fee = this.txSizeKb * feeRate;
     await Promise.all([

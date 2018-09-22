@@ -84,6 +84,16 @@ export class BitcoinService extends ChainService {
     return this.prvNode.derivePath(path1).toWIF();
   }
 
+  // pay to public key hash
+  private getAddrP2pkh(derivePath: string): string {
+    const { address } = payments.p2pkh({
+      network: this.network,
+      pubkey: this.prvNode.derivePath(derivePath).publicKey,
+    });
+    return address;
+  }
+
+  // pay to script hash
   private getAddrP2sh(derivePath: string): string {
     const { address } = payments.p2sh({
       network: this.network,
@@ -95,6 +105,7 @@ export class BitcoinService extends ChainService {
     return address;
   }
 
+  // pay to witness public key hash
   private getAddrP2wpkh(derivePath: string): string {
     const { address } = payments.p2wpkh({
       network: this.network,
