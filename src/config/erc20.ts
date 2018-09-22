@@ -5,7 +5,8 @@ export default {
       contractAddr: '0x64c289C22Fd7EC36a766cc7C0b6b60C73BAF9B48',
       decimals: 8,
       pocketAddr: '0x55F71854c4094d659A1c303A6E507A77ce727509',
-      pocketPrv: '0xecee39f1c2c73e661ba48f8d8110dd4ef4af98fe7fe451f6cb91cb53d6adcc37',
+      pocketPrv:
+        '0xecee39f1c2c73e661ba48f8d8110dd4ef4af98fe7fe451f6cb91cb53d6adcc37',
     },
     deposit: {
       _from: '_from',

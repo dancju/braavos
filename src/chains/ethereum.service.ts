@@ -1,4 +1,5 @@
 // tslint:disable:no-submodule-imports
+import { Injectable } from '@nestjs/common';
 import { isValidChecksumAddress, toChecksumAddress } from 'ethereumjs-util';
 import {
   EthereumHDKey,
@@ -12,13 +13,21 @@ import { ChainService } from './chain.service';
 
 const { ethereum } = ChainEnum;
 
+@Injectable()
 export class EthereumService extends ChainService {
+  public cronLock: any;
   protected readonly hdkey: EthereumHDKey;
 
   constructor(config: ConfigService) {
     super();
     const seed = config.get('crypto.seed')() as Buffer;
     this.hdkey = fromMasterSeed(seed);
+    this.cronLock = {
+      collectCron: false,
+      confirmCron: false,
+      depositCron: false,
+      withdrawalCron: false,
+    };
   }
 
   public async getAddr(clientId: number, path0: string): Promise<string> {
@@ -29,6 +38,9 @@ export class EthereumService extends ChainService {
         .getWallet()
         .getAddressString(),
     );
+    if (clientId === 0 && path0 === '0') {
+      return addr;
+    }
     await Addr.createQueryBuilder()
       .insert()
       .into(Addr)
@@ -40,6 +52,11 @@ export class EthereumService extends ChainService {
       })
       .onConflict('("chain", "clientId", "path") DO NOTHING')
       .execute();
+    const res = await Addr.findOne({ chain: ethereum, clientId });
+    if (res && !res.info.nonce) {
+      res.info.nonce = 0;
+      await res.save();
+    }
     return addr;
   }
 
@@ -53,7 +70,7 @@ export class EthereumService extends ChainService {
     }
   }
 
-  protected getPrivateKey(clientId: number, path0: string): string {
+  public getPrivateKey(clientId: number, path0: string): string {
     const path1 = 'm/' + clientId + `'/` + path0;
     return this.hdkey
       .derivePath(path1)
