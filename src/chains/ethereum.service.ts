@@ -53,9 +53,10 @@ export class EthereumService extends ChainService {
     }
   }
 
-  protected _getPrivateKey(path: string): string {
+  protected getPrivateKey(clientId: number, path0: string): string {
+    const path1 = 'm/' + clientId + `'/` + path0;
     return this.hdkey
-      .derivePath(path)
+      .derivePath(path1)
       .getWallet()
       .getPrivateKeyString();
   }

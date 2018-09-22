@@ -79,8 +79,9 @@ export class BitcoinService extends ChainService {
     return this.rAddr.test(addr);
   }
 
-  protected _getPrivateKey(path: string): string {
-    return this.prvNode.derivePath(path).toWIF();
+  protected getPrivateKey(clientId: number, path0: string): string {
+    const path1 = clientId + `'/` + path0;
+    return this.prvNode.derivePath(path1).toWIF();
   }
 
   private getAddrP2sh(derivePath: string): string {
