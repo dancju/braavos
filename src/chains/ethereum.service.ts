@@ -18,11 +18,7 @@ export class EthereumService extends ChainService {
   constructor(config: ConfigService) {
     super();
     const seed = config.get('crypto.seed')() as Buffer;
-    const xPrv = fromMasterSeed(seed).privateExtendedKey();
-    if (!xPrv.startsWith('xprv')) {
-      throw Error();
-    }
-    this.prvNode = fromExtendedKey(xPrv);
+    this.prvNode = fromMasterSeed(seed).derivePath('m');
   }
 
   public async getAddr(clientId: number, path0: string): Promise<string> {
