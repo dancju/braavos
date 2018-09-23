@@ -14,6 +14,7 @@ import { BtcCreateDeposit } from '../src/crons/btc-create-deposit';
 import { BtcUpdateDeposit } from '../src/crons/btc-update-deposit';
 import { CronModule } from '../src/crons/cron.module';
 import { Client } from '../src/entities/client.entity';
+import { DepositStatus } from '../src/entities/deposit-status.enum';
 import { Deposit } from '../src/entities/deposit.entity';
 import { HttpModule } from '../src/http/http.module';
 
@@ -106,23 +107,21 @@ describe('BTC (e2e)', () => {
       .expect(200, '2NCmoukMBbhnir5X2HQkVxtK2zRsL62FDxw', done);
   });
 
-  it('should publish deposit', async (done) => {
+  it('should handle deposits', async (done) => {
     const txHash = await rpc.sendToAddress(
       '2NCmoukMBbhnir5X2HQkVxtK2zRsL62FDxw',
       1,
     );
     expect(typeof txHash).toStrictEqual('string');
-    console.log(txHash);
     await new BtcCreateDeposit(rpc, amqpService, config).cron();
-    console.log(await manager.find(Deposit));
     expect((await manager.findOne(Deposit, { txHash }))!.status).toStrictEqual(
       'unconfirmed',
     );
     await rpc.generate(2);
-    // await (new BtcUpdateDeposit(rpc, amqpService, config)).cron();
-    // expect(
-    //   (await manager.findOne(Deposit, { txHash }))!.status,
-    // ).toStrictEqual('confirmed');
+    await new BtcUpdateDeposit(rpc, amqpService, config).cron();
+    expect((await manager.findOne(Deposit, { txHash }))!.status).toStrictEqual(
+      'confirmed',
+    );
     done();
   });
 

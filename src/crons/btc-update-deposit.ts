@@ -30,20 +30,15 @@ export class BtcUpdateDeposit extends NestSchedule {
   @Cron('*/10 * * * *', { startTime: new Date() })
   public async cron(): Promise<void> {
     const deposits: Deposit[] = [];
-    getManager().transaction(async (manager) => {
-      console.log('------------------');
+    await getManager().transaction(async (manager) => {
       for (const d of await manager
-        .createQueryBuilder()
-        .select()
-        .from(Deposit, 'deposit')
+        .createQueryBuilder(Deposit, 'd')
         .where({ coinSymbol: BTC, status: DepositStatus.unconfirmed })
         .setLock('pessimistic_write')
         .getMany()) {
-        console.log(d);
         if (!d.txHash) {
           throw new Error();
         }
-        console.log(await this.rpc.getTransaction(d.txHash));
         if (
           (await this.rpc.getTransaction(d.txHash)).confirmations <
           this.confThreshold
@@ -51,12 +46,11 @@ export class BtcUpdateDeposit extends NestSchedule {
           continue;
         }
         await Promise.all([
-          manager
-            .createQueryBuilder()
-            .update(Deposit)
-            .set({ status: DepositStatus.confirmed })
-            .where({ id: d.id })
-            .execute(),
+          manager.update(
+            Deposit,
+            { id: d.id },
+            { status: DepositStatus.confirmed },
+          ),
           manager
             .createQueryBuilder()
             .insert()
@@ -71,11 +65,9 @@ export class BtcUpdateDeposit extends NestSchedule {
             Number(d.amount),
           ),
         ]);
-        // TODO check if reload is necessary
-        await d.reload();
-        deposits.push(d);
+        deposits.push((await manager.findOne(Deposit, { id: d.id }))!);
       }
     });
-    deposits.forEach(this.amqpService.updateDeposit);
+    deposits.forEach(this.amqpService.updateDeposit.bind(this.amqpService));
   }
 }

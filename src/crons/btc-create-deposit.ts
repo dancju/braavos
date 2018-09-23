@@ -7,7 +7,6 @@ import { AmqpService } from '../amqp/amqp.service';
 import { ChainEnum } from '../chains';
 import { CoinEnum } from '../coins';
 import { Addr } from '../entities/addr.entity';
-import { Client } from '../entities/client.entity';
 import { Coin } from '../entities/coin.entity';
 import { Deposit } from '../entities/deposit.entity';
 
@@ -27,7 +26,6 @@ export class BtcCreateDeposit extends NestSchedule {
 
   @Cron('*/1 * * * *', { startTime: new Date() })
   public async cron(): Promise<void> {
-    // TODO lock
     const lastMilestone: string = (await Coin.findOne(BTC))!.info.depositCursor;
     const nextMilestone: string = (await this.rpc.listTransactions(
       '*',

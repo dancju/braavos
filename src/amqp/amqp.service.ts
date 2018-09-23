@@ -44,7 +44,7 @@ export class AmqpService {
     await this.publish('deposit_updation', deposit);
   }
 
-  private async publish(queue: string, message: any) {
+  private async publish(queue: string, message: any): Promise<void> {
     const channel = await this.connection.createChannel();
     await channel.assertQueue(queue);
     channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)));
@@ -59,8 +59,6 @@ export class AmqpService {
         return;
       }
       const body = JSON.parse(msg.content.toString());
-      // TODO handle amqp auth
-      // TODO handle body validation
       const clientId = 1;
       if (
         await Withdrawal.findOne({
@@ -73,11 +71,11 @@ export class AmqpService {
       }
       const coinService = this.coinServices[body.coinSymbol];
       if (!coinService) {
-        channel.nack(msg, false, false);
+        channel.ack(msg);
+        return;
       }
       if (!coinService.isValidAddress(body.recipient)) {
-        // throw new Error('Bad Recipient');
-        channel.nack(msg, false, false);
+        channel.ack(msg);
         return;
       }
       await Account.createQueryBuilder()
@@ -92,13 +90,7 @@ export class AmqpService {
           .setLock('pessimistic_write')
           .getOne();
         if (!account) {
-          // throw new Error();
-          channel.nack(msg, false, false);
-          return;
-        }
-        if (Number(account.balance) < Number(body.amount)) {
-          // throw new Error('Payment Required');
-          channel.nack(msg, false, false);
+          channel.ack(msg);
           return;
         }
         await manager.decrement(
@@ -121,11 +113,6 @@ export class AmqpService {
           })
           .execute();
       });
-      const w = (await Withdrawal.findOne({
-        clientId,
-        key: body.key,
-      }))!;
-      await coinService.createWithdrawal(w);
       channel.ack(msg);
     });
   }
