@@ -6,12 +6,14 @@ import { ConfigModule, ConfigService } from 'nestjs-config';
 import Web3 from 'web3';
 import { AmqpService } from '../amqp/amqp.service';
 import { BitcoinService, EthereumService } from '../chains';
-import { BtcService, CoinEnum, EthService } from '../coins';
+import { BtcService, CfcService, CoinEnum, EthService } from '../coins';
 import { Coin } from '../entities/coin.entity';
 import { BtcCreateDeposit } from './btc-create-deposit';
 import { BtcRefreshFee } from './btc-refresh-fee';
 import { BtcUpdateDeposit } from './btc-update-deposit';
 import { BtcUpdateWithdrawal } from './btc-update-withdrawal';
+import { CfcConfirm } from './cfc-confirm';
+import { CfcDeposit } from './cfc-deposit';
 import { EthCollect } from './eth-collect';
 import { EthConfirm } from './eth-confirm';
 import { EthDeposit } from './eth-deposit';
@@ -67,10 +69,16 @@ import { EthWithdrawal } from './eth-withdrawal';
     BtcRefreshFee,
     BtcUpdateDeposit,
     BtcUpdateWithdrawal,
+
     EthDeposit,
     EthConfirm,
     EthCollect,
     EthWithdrawal,
+    EthService,
+
+    CfcService,
+    CfcDeposit,
+    CfcConfirm,
   ],
 })
 export class CronModule {}

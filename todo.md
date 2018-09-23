@@ -1,8 +1,9 @@
-- review nestjs-amqp, https://github.com/nestjs-community/nestjs-amqp/issues/15#issuecomment-423100933
-- e2e test with docker-compose
 - bitcoin rpc idempotency
 - query validator
   - limit response size
 - config validator
 - dashboard
 - substitute `nest-schedule`
+- add lock to crons
+- amqp auth
+- amqp consumer body validator
