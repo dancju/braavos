@@ -1,9 +1,9 @@
 - bitcoin rpc idempotency
+- substitute `nest-schedule`
+- amqp auth
+- add lock to crons
 - query validator
   - limit response size
 - config validator
 - dashboard
-- substitute `nest-schedule`
-- add lock to crons
-- amqp auth
-- amqp consumer body validator
+- run module without listening a port

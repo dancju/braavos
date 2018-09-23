@@ -123,26 +123,27 @@ describe('BTC (e2e)', () => {
       'confirmed',
     );
     done();
+    // TODO fetch from mq
   });
 
-  // it('should consume withdrawal creation', async (done) => {
-  //   const queue = 'withdrawal_creation';
-  //   const connection = app.get('amqp-connection') as Connection;
-  //   const channel = await connection.createChannel();
-  //   await channel.assertQueue(queue);
-  //   channel.sendToQueue(
-  //     queue,
-  //     Buffer.from(
-  //       JSON.stringify({
-  //         amount: '1',
-  //         coinSymbol: 'BTC',
-  //         key: '0',
-  //         recipient: '3PcRdHdFX8qm6rh6CHhSzR1w8XCBArJg86',
-  //       }),
-  //     ),
-  //   );
-  //   done();
-  // });
+  it('should consume withdrawal creation', async (done) => {
+    const queue = 'withdrawal_creation';
+    const connection = app.get('amqp-connection') as Connection;
+    const channel = await connection.createChannel();
+    await channel.assertQueue(queue);
+    // channel.sendToQueue(
+    //   queue,
+    //   Buffer.from(
+    //     JSON.stringify({
+    //       amount: '1',
+    //       coinSymbol: 'BTC',
+    //       key: '0',
+    //       recipient: '3PcRdHdFX8qm6rh6CHhSzR1w8XCBArJg86',
+    //     }),
+    //   ),
+    // );
+    done();
+  });
 
   // it('should publish deposit creation', async (done) => {
   //   const queue = 'deposit_creation';
