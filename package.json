@@ -15,7 +15,7 @@
     "start:dashboard": "nodemon -e ts -w ./src -i src/**/*.spec.ts -x ts-node --files src/dashboard.main.ts",
     "test": "jest",
     "test:cov": "jest --coverage",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json --detectOpenHandles"
   },
   "dependencies": {
     "@nestjs/common": "^5.0.0",

@@ -18,7 +18,7 @@ export class BtcService extends BitcoinService implements ICoinService {
       INSERT INTO coin (
         chain, "depositFeeAmount", "depositFeeSymbol", symbol, "withdrawalFeeAmount", "withdrawalFeeSymbol", info
       ) VALUES (
-        'bitcoin', 0, 'BTC', 'BTC', 0, 'BTC', '{ "depositCursor": 0, "withdrawalCursor": 0 }'::jsonb
+        'bitcoin', 0, 'BTC', 'BTC', 0, 'BTC', '{ "depositCursor": "", "withdrawalCursor": 0 }'::jsonb
       ) ON CONFLICT ("symbol") DO NOTHING;
     `);
   }

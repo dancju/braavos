@@ -38,7 +38,7 @@ export class BtcUpdateWithdrawal extends NestSchedule {
   @Transaction()
   public async cron(
     @ConfigParam('bitcoin.btc.confThreshold') confThreshold: number,
-    @ConfigParam('bitcoin.btc.withdrawal.step') step: number,
+    @ConfigParam('bitcoin.btc.withdrawalStep') step: number,
     @TransactionManager() manager: EntityManager,
   ): Promise<void> {
     const coin = await manager

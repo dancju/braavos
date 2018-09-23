@@ -38,11 +38,11 @@ export class Deposit extends BaseEntity {
   public amount!: string;
 
   @ApiModelProperty({ description: '手续费数量' })
-  @Column()
+  @Column({ nullable: true })
   public feeAmount!: number;
 
   @ApiModelProperty({ description: '手续费单位符号' })
-  @Column({ type: 'enum', enum: CoinEnum })
+  @Column({ enum: CoinEnum, nullable: true, type: 'enum' })
   public feeSymbol!: CoinEnum;
 
   @ApiModelProperty({ description: '状态' })

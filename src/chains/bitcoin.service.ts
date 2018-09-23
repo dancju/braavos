@@ -55,13 +55,7 @@ export class BitcoinService extends ChainService {
     const addr = this.bech32
       ? this.getAddrP2wpkh(path1)
       : this.getAddrP2sh(path1);
-    if (
-      !(await Addr.findOne({
-        chain: bitcoin,
-        clientId,
-        path: path0,
-      }))
-    ) {
+    if (!(await Addr.findOne({ chain: bitcoin, clientId, path: path0 }))) {
       await Addr.create({
         addr,
         chain: bitcoin,
@@ -73,6 +67,7 @@ export class BitcoinService extends ChainService {
         'braavos',
         false,
       );
+      await this.rpc.addWitnessAddress(this.getAddrP2pkh(path1));
     }
     return addr;
   }

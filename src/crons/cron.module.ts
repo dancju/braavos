@@ -56,9 +56,13 @@ import { EthWithdrawal } from './eth-withdrawal';
       provide: 'CoinServiceRepo',
       useFactory: (btcService: BtcService) => ({ [CoinEnum.BTC]: btcService }),
     },
+    // chain services
     BitcoinService,
     EthereumService,
+    // coin services
     BtcService,
+    EthService,
+    // crons
     BtcCreateDeposit,
     BtcRefreshFee,
     BtcUpdateDeposit,
@@ -67,7 +71,6 @@ import { EthWithdrawal } from './eth-withdrawal';
     EthConfirm,
     EthCollect,
     EthWithdrawal,
-    EthService,
   ],
 })
 export class CronModule {}

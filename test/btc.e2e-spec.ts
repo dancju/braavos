@@ -4,19 +4,27 @@ import { connect, Connection } from 'amqplib';
 import BtcRpc from 'bitcoin-core';
 import fs from 'fs';
 import 'jest';
-import { InjectAmqpConnection } from 'nestjs-amqp';
-import { ConfigModule, ConfigService } from 'nestjs-config';
+import { ConfigService } from 'nestjs-config';
 import signature from 'superagent-http-signature';
 import request from 'supertest';
 import { EntityManager } from 'typeorm';
+import { AmqpService } from '../src/amqp/amqp.service';
+import { CoinEnum } from '../src/coins';
+import { BtcCreateDeposit } from '../src/crons/btc-create-deposit';
+import { BtcUpdateDeposit } from '../src/crons/btc-update-deposit';
+import { CronModule } from '../src/crons/cron.module';
 import { Client } from '../src/entities/client.entity';
+import { Deposit } from '../src/entities/deposit.entity';
 import { HttpModule } from '../src/http/http.module';
 
 describe('BTC (e2e)', () => {
   let app: INestApplication;
   let manager: EntityManager;
-  let amqp: Connection;
+  let amqpConnection: Connection;
   let rpc: BtcRpc;
+  let config: ConfigService;
+  let coinServiceRepo: { [_ in CoinEnum]?: ICoinService };
+  let amqpService: AmqpService;
   const signer = signature({
     algorithm: 'rsa-sha256',
     headers: ['(request-target)', 'date', 'content-md5'],
@@ -30,6 +38,7 @@ describe('BTC (e2e)', () => {
     }).compile();
     app = moduleFixture.createNestApplication();
     await app.init();
+    // seeding database
     manager = app.get(EntityManager);
     await manager.query(`
       insert into client (
@@ -38,12 +47,20 @@ describe('BTC (e2e)', () => {
         0, 'test', '${fs.readFileSync(__dirname + '/fixtures/public.pem')}'
       )
     `);
-    amqp = await connect(app.get(ConfigService).get('amqp'));
+    // prepare config
+    config = app.get(ConfigService);
+    // prepare AMQP
+    amqpConnection = await connect(config.get('amqp'));
+    // prepare Omnicored regtest
     rpc = app.get(BtcRpc);
-    rpc.generate(101);
+    // generate at least 432 blocks to activate SegWit
+    await rpc.generate(432);
+    // prepare injections
+    coinServiceRepo = app.get('CoinServiceRepo');
+    amqpService = new AmqpService(amqpConnection, coinServiceRepo);
   });
 
-  it('should be initialised', async (done) => {
+  it('http server and database should be initialised', async (done) => {
     expect(app).toBeDefined();
     expect(manager).toBeDefined();
     expect((await manager.findOne(Client, { name: 'test' }))!.id).toStrictEqual(
@@ -52,8 +69,15 @@ describe('BTC (e2e)', () => {
     expect(app.get(ConfigService).get('master.environment')).toStrictEqual(
       'test',
     );
-    expect((await rpc.getBlockchainInfo()).chain).toStrictEqual('regtest');
-    expect(await rpc.getBlockCount()).toBeGreaterThanOrEqual(1);
+    done();
+  });
+
+  it('omnicored regtest should be initialised', async (done) => {
+    const info = await rpc.getBlockchainInfo();
+    expect(info.chain).toStrictEqual('regtest');
+    expect(info.blocks).toBeGreaterThanOrEqual(1);
+    expect(info.bip9_softforks.segwit.status).toStrictEqual('active');
+    expect(Number(info.difficulty)).toBeGreaterThan(0);
     expect(await rpc.getBalance()).toBeGreaterThanOrEqual(50);
     done();
   });
@@ -82,13 +106,24 @@ describe('BTC (e2e)', () => {
       .expect(200, '2NCmoukMBbhnir5X2HQkVxtK2zRsL62FDxw', done);
   });
 
-  it('should publish deposit creation', async (done) => {
-    expect(
-      typeof (await rpc.sendToAddress(
-        '2NCmoukMBbhnir5X2HQkVxtK2zRsL62FDxw',
-        1,
-      )),
-    ).toStrictEqual('string');
+  it('should publish deposit', async (done) => {
+    const txHash = await rpc.sendToAddress(
+      '2NCmoukMBbhnir5X2HQkVxtK2zRsL62FDxw',
+      1,
+    );
+    expect(typeof txHash).toStrictEqual('string');
+    console.log(txHash);
+    await new BtcCreateDeposit(rpc, amqpService, config).cron();
+    console.log(await manager.find(Deposit));
+    expect((await manager.findOne(Deposit, { txHash }))!.status).toStrictEqual(
+      'unconfirmed',
+    );
+    await rpc.generate(2);
+    // await (new BtcUpdateDeposit(rpc, amqpService, config)).cron();
+    // expect(
+    //   (await manager.findOne(Deposit, { txHash }))!.status,
+    // ).toStrictEqual('confirmed');
+    done();
   });
 
   // it('should consume withdrawal creation', async (done) => {
@@ -135,15 +170,8 @@ describe('BTC (e2e)', () => {
   // });
 
   afterAll(async () => {
-    await manager.transaction(async (transactionalManager) => {
-      await transactionalManager.query(
-        'DELETE FROM account WHERE "clientId" = 0;',
-      );
-      await transactionalManager.query(
-        'DELETE FROM addr WHERE "clientId" = 0;',
-      );
-      await transactionalManager.query('DELETE FROM client WHERE id = 0;');
-    });
+    await manager.query('DELETE FROM client WHERE id = 0;');
+    await amqpConnection.close();
     await app.close();
   });
 });

@@ -1,38 +1,37 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import BtcRpc from 'bitcoin-core';
 import { Cron, NestSchedule } from 'nest-schedule';
-import { ConfigParam, Configurable } from 'nestjs-config';
+import { ConfigService } from 'nestjs-config';
 import { getManager } from 'typeorm';
 import { AmqpService } from '../amqp/amqp.service';
-import { ChainEnum } from '../chains';
 import { CoinEnum } from '../coins';
 import { Account } from '../entities/account.entity';
-import { Addr } from '../entities/addr.entity';
-import { Coin } from '../entities/coin.entity';
 import { DepositStatus } from '../entities/deposit-status.enum';
 import { Deposit } from '../entities/deposit.entity';
 
 const { BTC } = CoinEnum;
-const { bitcoin } = ChainEnum;
 
 @Injectable()
 export class BtcUpdateDeposit extends NestSchedule {
   private readonly rpc: BtcRpc;
   private readonly amqpService: AmqpService;
+  private readonly confThreshold: number;
 
-  constructor(rpc: BtcRpc, amqpService: AmqpService) {
+  constructor(rpc: BtcRpc, amqpService: AmqpService, config: ConfigService) {
     super();
     this.rpc = rpc;
     this.amqpService = amqpService;
+    this.confThreshold = config.get('bitcoin.btc.confThreshold');
+    if (typeof this.confThreshold !== 'number') {
+      throw new Error();
+    }
   }
 
-  @Configurable()
   @Cron('*/10 * * * *', { startTime: new Date() })
-  public async cron(
-    @ConfigParam('bitcoin.btc.confThreshold') confThreshold: number,
-  ): Promise<void> {
+  public async cron(): Promise<void> {
     const deposits: Deposit[] = [];
     getManager().transaction(async (manager) => {
+      console.log('------------------');
       for (const d of await manager
         .createQueryBuilder()
         .select()
@@ -40,12 +39,14 @@ export class BtcUpdateDeposit extends NestSchedule {
         .where({ coinSymbol: BTC, status: DepositStatus.unconfirmed })
         .setLock('pessimistic_write')
         .getMany()) {
+        console.log(d);
         if (!d.txHash) {
           throw new Error();
         }
+        console.log(await this.rpc.getTransaction(d.txHash));
         if (
           (await this.rpc.getTransaction(d.txHash)).confirmations <
-          confThreshold
+          this.confThreshold
         ) {
           continue;
         }

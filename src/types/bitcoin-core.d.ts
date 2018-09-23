@@ -174,11 +174,11 @@ declare module 'bitcoin-core' {
         status: boolean;
       };
     }>;
-    bip9_softforks: Array<{
+    bip9_softforks: {
       [key: string]: {
         status: 'defined' | 'started' | 'locked_in' | 'active' | 'failed';
       };
-    }>;
+    };
     warnings?: string;
   }
   interface ChainTip {
