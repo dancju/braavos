@@ -2,7 +2,7 @@ export default {
   CFC: {
     collect: {
       confThreshold: 10,
-      contractAddr: '0x64c289C22Fd7EC36a766cc7C0b6b60C73BAF9B48',
+      contractAddr: '0x8631409593B6e089e17dae1607B6e75825Df62F0',
       decimals: 8,
       pocketAddr: '0x55F71854c4094d659A1c303A6E507A77ce727509',
       pocketPrv:
@@ -12,13 +12,13 @@ export default {
       _from: '_from',
       _to: '_to',
       _value: '_value',
-      contractAddr: '0x64c289C22Fd7EC36a766cc7C0b6b60C73BAF9B48',
+      contractAddr: '0x8631409593B6e089e17dae1607B6e75825Df62F0',
       decimals: 8,
       minThreshold: 10,
-      step: 30,
+      step: 300,
     },
     withdraw: {
-      contractAddr: '0x64c289C22Fd7EC36a766cc7C0b6b60C73BAF9B48',
+      contractAddr: '0x8631409593B6e089e17dae1607B6e75825Df62F0',
       decimals: 8,
     },
   },
