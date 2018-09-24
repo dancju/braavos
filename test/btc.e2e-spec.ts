@@ -126,7 +126,7 @@ describe('BTC (e2e)', () => {
     // TODO fetch from mq
   });
 
-  it('should consume withdrawal creation', async (done) => {
+  it('should handle withdrawals', async (done) => {
     const queue = 'withdrawal_creation';
     const connection = app.get('amqp-connection') as Connection;
     const channel = await connection.createChannel();
@@ -144,30 +144,6 @@ describe('BTC (e2e)', () => {
     // );
     done();
   });
-
-  // it('should publish deposit creation', async (done) => {
-  //   const queue = 'deposit_creation';
-  //   const amqp = app.get(AmqpService);
-  //   const channel = await amqp.connection.createChannel();
-  //   await channel.assertQueue(queue);
-  //   channel.sendToQueue(
-  //     queue,
-  //     Buffer.from(
-  //       JSON.stringify({
-  //         id: 1,
-  //         coinSymbol: 'BTC',
-  //         addrPath: '1',
-  //         amount: '1.2',
-  //         // feeAmount: number;
-  //         // feeSymbol: ;
-  //         status: 'unconfirmed',
-  //         // txHash: string;
-  //         createdAt: new Date(),
-  //       }),
-  //     ),
-  //   );
-  //   done();
-  // });
 
   afterAll(async () => {
     await manager.query('DELETE FROM client WHERE id = 0;');

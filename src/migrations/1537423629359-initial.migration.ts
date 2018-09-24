@@ -15,6 +15,18 @@ export class InitialMigration1537423629359 implements MigrationInterface {
       `CREATE TYPE "deposit_status_enum" AS ENUM('unconfirmed', 'confirmed', 'finished', 'attacked')`,
     );
     await queryRunner.query(`
+      CREATE TABLE "coin" (
+        "symbol" "coin_symbol_enum" PRIMARY KEY,
+        "chain" character varying NOT NULL,
+        "depositFeeAmount" integer NOT NULL,
+        "depositFeeSymbol" "coin_symbol_enum" NOT NULL,
+        "withdrawalFeeAmount" integer NOT NULL,
+        "withdrawalFeeSymbol" "coin_symbol_enum" NOT NULL,
+        "info" jsonb NOT NULL DEFAULT '{}',
+        "updatedAt" TIMESTAMP NOT NULL DEFAULT now()
+      )
+    `);
+    await queryRunner.query(`
       CREATE TABLE "client" (
         "id" SERIAL PRIMARY KEY,
         "name" character varying NOT NULL,
@@ -46,18 +58,6 @@ export class InitialMigration1537423629359 implements MigrationInterface {
       )
     `);
     await queryRunner.query(`
-      CREATE TABLE "coin" (
-        "symbol" "coin_symbol_enum" PRIMARY KEY,
-        "chain" character varying NOT NULL,
-        "depositFeeAmount" integer NOT NULL,
-        "depositFeeSymbol" "coin_symbol_enum" NOT NULL,
-        "withdrawalFeeAmount" integer NOT NULL,
-        "withdrawalFeeSymbol" "coin_symbol_enum" NOT NULL,
-        "info" jsonb NOT NULL DEFAULT '{}',
-        "updatedAt" TIMESTAMP NOT NULL DEFAULT now()
-      )
-    `);
-    await queryRunner.query(`
       CREATE TABLE "withdrawal" (
         "id" SERIAL PRIMARY KEY,
         "clientId" integer NOT NULL,
@@ -84,8 +84,8 @@ export class InitialMigration1537423629359 implements MigrationInterface {
         "clientId" integer NOT NULL,
         "addrPath" character varying NOT NULL,
         "amount" numeric(16,8) NOT NULL,
-        "feeAmount" integer NOT NULL,
-        "feeSymbol" "coin_symbol_enum" NOT NULL,
+        "feeAmount" integer,
+        "feeSymbol" "coin_symbol_enum",
         "status" "deposit_status_enum" NOT NULL DEFAULT 'unconfirmed',
         "txHash" character varying,
         "info" jsonb NOT NULL DEFAULT '{}',
@@ -104,13 +104,13 @@ export class InitialMigration1537423629359 implements MigrationInterface {
       ALTER TABLE "account"
       ADD CONSTRAINT "FK_861667d82d42bf6617f423f537b"
       FOREIGN KEY ("clientId")
-      REFERENCES "client"("id")
+      REFERENCES "client"("id") ON DELETE CASCADE
     `);
     await queryRunner.query(`
       ALTER TABLE "addr"
       ADD CONSTRAINT "FK_d4638cb77adb629796ef446df62"
       FOREIGN KEY ("clientId")
-      REFERENCES "client"("id")
+      REFERENCES "client"("id") ON DELETE CASCADE
     `);
     await queryRunner.query(`
       ALTER TABLE "withdrawal"
@@ -122,7 +122,7 @@ export class InitialMigration1537423629359 implements MigrationInterface {
       ALTER TABLE "withdrawal"
       ADD CONSTRAINT "FK_804f38351628d8076bb6d0ba337"
       FOREIGN KEY ("clientId")
-      REFERENCES "client"("id")
+      REFERENCES "client"("id") ON DELETE CASCADE
     `);
     await queryRunner.query(`
       ALTER TABLE "deposit"
@@ -134,8 +134,32 @@ export class InitialMigration1537423629359 implements MigrationInterface {
       ALTER TABLE "deposit"
       ADD CONSTRAINT "FK_e1886ba77141192085e44e4e878"
       FOREIGN KEY ("clientId")
-      REFERENCES "client"("id")
+      REFERENCES "client"("id") ON DELETE CASCADE
     `);
+    await queryRunner.query(`
+      INSERT INTO coin (
+        chain, "depositFeeAmount", "depositFeeSymbol", symbol, "withdrawalFeeAmount", "withdrawalFeeSymbol", info
+      ) VALUES (
+        'bitcoin', 0, 'BTC', 'BTC', 0, 'BTC', '{ "depositCursor": "", "withdrawalCursor": 0 }'::jsonb
+      )
+    `);
+    await queryRunner.query(`
+      INSERT INTO coin (
+        chain, "depositFeeAmount", "depositFeeSymbol", symbol, "withdrawalFeeAmount", "withdrawalFeeSymbol", info
+      ) VALUES (
+        'ethereum', 0, 'ETH', 'ETH', 0, 'ETH', '{ "cursor": 0, "fee": 0 }'::jsonb
+      )
+    `);
+    await queryRunner.query(`
+      INSERT INTO coin (
+        chain, "depositFeeAmount", "depositFeeSymbol", symbol, "withdrawalFeeAmount", "withdrawalFeeSymbol", info
+      ) VALUES (
+        'ethereum', 0, 'ETH', 'CFC', 0, 'ETH', '{ "cursor": 0, "fee": 0 }'::jsonb
+      )
+    `);
+    await queryRunner.query(
+      `insert into kv_pair (key, "value") values ('ethWithdrawalNonce', '0'::jsonb)`,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<any> {

@@ -1,39 +1,14 @@
-// tslint:disable:no-submodule-imports
-import { Inject, Injectable } from '@nestjs/common';
-import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
-import Wallet from 'ethereumjs-wallet';
-import { Cron } from 'nest-schedule';
-import {
-  ConfigParam,
-  ConfigService,
-  Configurable,
-  InjectConfig,
-} from 'nestjs-config';
-import {
-  EntityManager,
-  getManager,
-  Repository,
-  Transaction,
-  TransactionManager,
-} from 'typeorm';
-import Web3 from 'web3';
-import { Signature } from 'web3/eth/accounts';
-import { AmqpService } from '../amqp/amqp.service';
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { ConfigService, InjectConfig } from 'nestjs-config';
+import { Repository } from 'typeorm';
 import { EthereumService } from '../chains';
-import { ChainEnum } from '../chains/chain.enum';
 import { CoinEnum } from '../coins';
 import { Account } from '../entities/account.entity';
-import { Addr } from '../entities/addr.entity';
 import { Client } from '../entities/client.entity';
 import { Coin } from '../entities/coin.entity';
-import { DepositStatus } from '../entities/deposit-status.enum';
-import { Deposit } from '../entities/deposit.entity';
-import { KvPair } from '../entities/kv-pair.entity';
-import { WithdrawalStatus } from '../entities/withdrawal-status.enum';
-import { Withdrawal } from '../entities/withdrawal.entity';
 
 const { ETH } = CoinEnum;
-const { ethereum } = ChainEnum;
 
 @Injectable()
 export class EthService extends EthereumService implements ICoinService {
@@ -44,29 +19,7 @@ export class EthService extends EthereumService implements ICoinService {
     @InjectRepository(Coin) coins: Repository<Coin>,
   ) {
     super(config);
-    this.coin = new Promise(async (resolve) => {
-      let res = await Coin.findOne(ETH);
-      if (res) {
-        resolve(res);
-      } else {
-        res = await Coin.create({
-          chain: ethereum,
-          depositFeeAmount: 0,
-          depositFeeSymbol: ETH,
-          symbol: ETH,
-          withdrawalFeeAmount: 0,
-          withdrawalFeeSymbol: ETH,
-        });
-        res.info = { cursor: 0, fee: 0 };
-        await res.save();
-        resolve(res);
-      }
-    });
-    (async () => {
-      await KvPair.query(
-        `insert into kv_pair (key, "value") values ('ethWithdrawalNonce', '0'::jsonb) ON CONFLICT (key) DO NOTHING`,
-      );
-    })();
+    this.coin = Coin.findOne(ETH) as Promise<Coin>;
 
     // init for debug
     (async () => {
