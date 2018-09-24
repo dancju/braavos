@@ -54,7 +54,7 @@ export class AmqpService {
         msg.content.toString(),
       ) as object);
       validate(body);
-      const clientId = 1;
+      const clientId = 0;
       if (
         await Withdrawal.findOne({
           clientId,

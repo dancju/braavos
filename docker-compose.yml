@@ -8,16 +8,20 @@ services:
   #     - .:/app
   #   ports:
   #     - 3000:3000
+  #   environment:
+  #     TYPEORM_HOST: postgresql
+  #     OMNICORED_HOST: omnicored
   #   depends_on:
   #     - postgresql
-  #     - rabbitmq
-  #     - omnicored
   # crons:
   #   image: node:10-alpine
   #   command: yarn run start:crons
   #   working_dir: /app
   #   volumes:
   #     - .:/app
+  #   environment:
+  #     TYPEORM_HOST: postgresql
+  #     AMQP: amqp://rabbitmq
   #   depends_on:
   #     - postgresql
   #     - rabbitmq

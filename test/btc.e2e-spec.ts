@@ -16,6 +16,7 @@ import { CronModule } from '../src/crons/cron.module';
 import { Client } from '../src/entities/client.entity';
 import { DepositStatus } from '../src/entities/deposit-status.enum';
 import { Deposit } from '../src/entities/deposit.entity';
+import { Withdrawal } from '../src/entities/withdrawal.entity';
 import { HttpModule } from '../src/http/http.module';
 
 describe('BTC (e2e)', () => {
@@ -128,20 +129,32 @@ describe('BTC (e2e)', () => {
 
   it('should handle withdrawals', async (done) => {
     const queue = 'withdrawal_creation';
-    const channel = await amqpConnection.createChannel();
+    const channel = await amqpConnection.createConfirmChannel();
     await channel.assertQueue(queue);
-    channel.sendToQueue(
-      queue,
-      Buffer.from(
-        JSON.stringify({
-          amount: '1',
-          coinSymbol: 'BTC',
-          key: '0',
-          recipient: '2PcRdHdFX8qm6rh6CHhSzR1w8XCBArJg86',
-        }),
+    await new Promise((resolve) =>
+      channel.sendToQueue(
+        queue,
+        Buffer.from(
+          JSON.stringify({
+            amount: '1',
+            coinSymbol: 'BTC',
+            key: 'foo',
+            recipient: '2PcRdHdFX8qm6rh6CHhSzR1w8XCBArJg86',
+          }),
+        ),
+        {},
+        (err, ok) => {
+          if (err) {
+            done(err);
+          } else {
+            resolve();
+          }
+        },
       ),
     );
-    await new Promise((resolve) => setInterval(resolve, 4000));
+    expect((await Withdrawal.findOne({ key: 'foo' }))!.recipient).toStrictEqual(
+      '2PcRdHdFX8qm6rh6CHhSzR1w8XCBArJg86',
+    );
     done();
   });
 
