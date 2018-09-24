@@ -12,8 +12,10 @@ import { BtcCreateDeposit } from './btc-create-deposit';
 import { BtcRefreshFee } from './btc-refresh-fee';
 import { BtcUpdateDeposit } from './btc-update-deposit';
 import { BtcUpdateWithdrawal } from './btc-update-withdrawal';
+import { CfcCollect } from './cfc-collect';
 import { CfcConfirm } from './cfc-confirm';
 import { CfcDeposit } from './cfc-deposit';
+import { CfcWithdrawal } from './cfc-withdrawal';
 import { EthCollect } from './eth-collect';
 import { EthConfirm } from './eth-confirm';
 import { EthDeposit } from './eth-deposit';
@@ -64,6 +66,7 @@ import { EthWithdrawal } from './eth-withdrawal';
     // coin services
     BtcService,
     EthService,
+    CfcService,
     // crons
     BtcCreateDeposit,
     BtcRefreshFee,
@@ -76,9 +79,10 @@ import { EthWithdrawal } from './eth-withdrawal';
     EthWithdrawal,
     EthService,
 
-    CfcService,
     CfcDeposit,
     CfcConfirm,
+    CfcCollect,
+    CfcWithdrawal,
   ],
 })
 export class CronModule {}
