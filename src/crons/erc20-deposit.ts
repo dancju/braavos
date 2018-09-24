@@ -157,6 +157,7 @@ export abstract class Erc20Deposit extends NestSchedule {
               if (cnt < decimals) {
                 while (cnt < decimals) {
                   dbAmount = '0' + dbAmount;
+                  cnt++;
                 }
                 dbAmount = '0.' + dbAmount;
               } else if (cnt === decimals) {
@@ -195,6 +196,7 @@ export abstract class Erc20Deposit extends NestSchedule {
                 senderAddr: fromAddr,
               };
               await d.save();
+              await this.amqpService.createDeposit(d);
             }
           }
         }

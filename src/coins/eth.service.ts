@@ -8,7 +8,7 @@ import { Account } from '../entities/account.entity';
 import { Client } from '../entities/client.entity';
 import { Coin } from '../entities/coin.entity';
 
-const { ETH } = CoinEnum;
+const { CFC, ETH } = CoinEnum;
 
 @Injectable()
 export class EthService extends EthereumService implements ICoinService {
@@ -22,36 +22,53 @@ export class EthService extends EthereumService implements ICoinService {
     this.coin = Coin.findOne(ETH) as Promise<Coin>;
 
     // init for debug
-    (async () => {
-      const pp = await Client.createQueryBuilder()
-        .insert()
-        .into(Client)
-        .values({
-          name: 'sss',
-          publicKey: 'www',
-        })
-        .onConflict('("name") DO NOTHING')
-        .returning('id')
-        .execute();
-      await Account.createQueryBuilder()
-        .insert()
-        .into(Account)
-        .values({
-          clientId: pp.raw[0].id,
-          coinSymbol: ETH,
-        })
-        .onConflict('("clientId", "coinSymbol") DO NOTHING')
-        .execute();
-      const qq = await this.getAddr(Number(pp.raw[0].id), '20/33');
-      await Client.createQueryBuilder()
-        .insert()
-        .into(Client)
-        .values({
-          name: 'xx',
-          publicKey: 'sdzz',
-        })
-        .onConflict('("name") DO NOTHING')
-        .execute();
-    })();
+    try {
+      (async () => {
+        const pp = await Client.createQueryBuilder()
+          .insert()
+          .into(Client)
+          .values({
+            name: 'sss',
+            publicKey: 'www',
+          })
+          .onConflict('("name") DO NOTHING')
+          .returning('id')
+          .execute();
+        try {
+          await Account.createQueryBuilder()
+            .insert()
+            .into(Account)
+            .values({
+              clientId: pp.raw[0].id,
+              coinSymbol: ETH,
+            })
+            .onConflict('("clientId", "coinSymbol") DO NOTHING')
+            .execute();
+          await Account.createQueryBuilder()
+            .insert()
+            .into(Account)
+            .values({
+              clientId: pp.raw[0].id,
+              coinSymbol: CFC,
+            })
+            .onConflict('("clientId", "coinSymbol") DO NOTHING')
+            .execute();
+        } catch (err) {
+          console.log(err);
+        }
+        const qq = await this.getAddr(Number(pp.raw[0].id), '20/33');
+        await Client.createQueryBuilder()
+          .insert()
+          .into(Client)
+          .values({
+            name: 'xx',
+            publicKey: 'sdzz',
+          })
+          .onConflict('("name") DO NOTHING')
+          .execute();
+      })();
+    } catch (err) {
+      console.log(err);
+    }
   }
 }

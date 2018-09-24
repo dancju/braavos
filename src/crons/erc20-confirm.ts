@@ -107,6 +107,10 @@ export abstract class Erc20Confirm extends NestSchedule {
               'balance',
               Number(tx.amount),
             );
+            const dd = await Deposit.findOne({ id: tx.id });
+            if (dd) {
+              await this.amqpService.updateDeposit(dd);
+            }
             console.log('erc20 confirm: ', tx.id);
           });
         }),
@@ -136,7 +140,9 @@ export abstract class Erc20Confirm extends NestSchedule {
       const pocketPrv: string = this.config.get(
         `erc20.${this.coinSymbol}.collect.pocketPrv`,
       );
-      const decimals: number = this.config.get(`erc20.${this.coinSymbol}.collect.decimals`);
+      const decimals: number = this.config.get(
+        `erc20.${this.coinSymbol}.collect.decimals`,
+      );
       const uu = await Deposit.createQueryBuilder()
         .select()
         .where({ coinSymbol: this.coinSymbol, status: DepositStatus.confirmed })
@@ -156,7 +162,9 @@ export abstract class Erc20Confirm extends NestSchedule {
           tx.addrPath,
         );
         const stringAmount = tx.amount.split('.');
-        const preAmount = this.web3.utils.toBN(stringAmount[0] + stringAmount[1]);
+        const preAmount = this.web3.utils.toBN(
+          stringAmount[0] + stringAmount[1],
+        );
 
         let collectValue: string;
         // check whether real erc20 balance is more than db record
@@ -219,7 +227,7 @@ export abstract class Erc20Confirm extends NestSchedule {
               // logger.warn("preSendEtherTxHash: " + hash + " | tokenName: " + tokenName);
               console.log('preSendEtherTxHash: ' + hash);
               tx.info.gasLimit = gasLimit;
-              tx.info.gasPrice = thisGasPrice;
+              tx.info.gasPrice = thisGasPrice.toString();
               tx.info.collectHash = hash;
               await tx.save();
             });

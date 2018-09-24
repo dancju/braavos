@@ -153,6 +153,7 @@ export class EthDeposit extends NestSchedule {
                 senderAddr: tx.from,
               };
               await d.save();
+              await this.amqpService.createDeposit(d);
             } else {
               return;
             }

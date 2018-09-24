@@ -154,6 +154,10 @@ export class EthWithdrawal extends NestSchedule {
                     .set({ txHash: hash, status: WithdrawalStatus.finished })
                     .where({ id: wd[i].id })
                     .execute();
+                  const ww = await Withdrawal.findOne({ id: wd[i].id });
+                  if (ww) {
+                    await this.amqpService.updateWithdrawal(ww);
+                  }
                   // logger.info('Finish update db');
                 });
             } catch (error) {
