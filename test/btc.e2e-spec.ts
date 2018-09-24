@@ -128,20 +128,20 @@ describe('BTC (e2e)', () => {
 
   it('should handle withdrawals', async (done) => {
     const queue = 'withdrawal_creation';
-    const connection = app.get('amqp-connection') as Connection;
-    const channel = await connection.createChannel();
+    const channel = await amqpConnection.createChannel();
     await channel.assertQueue(queue);
-    // channel.sendToQueue(
-    //   queue,
-    //   Buffer.from(
-    //     JSON.stringify({
-    //       amount: '1',
-    //       coinSymbol: 'BTC',
-    //       key: '0',
-    //       recipient: '3PcRdHdFX8qm6rh6CHhSzR1w8XCBArJg86',
-    //     }),
-    //   ),
-    // );
+    channel.sendToQueue(
+      queue,
+      Buffer.from(
+        JSON.stringify({
+          amount: '1',
+          coinSymbol: 'BTC',
+          key: '0',
+          recipient: '2PcRdHdFX8qm6rh6CHhSzR1w8XCBArJg86',
+        }),
+      ),
+    );
+    await new Promise((resolve) => setInterval(resolve, 4000));
     done();
   });
 

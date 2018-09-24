@@ -15,6 +15,7 @@
     "start:dashboard": "nodemon -e ts -w ./src -i src/**/*.spec.ts -x ts-node --files src/dashboard.main.ts",
     "test": "jest",
     "test:cov": "jest --coverage",
+    "pretest:e2e": "ts-node --files ./node_modules/.bin/typeorm migration:run",
     "test:e2e": "jest --config ./test/jest-e2e.json --detectOpenHandles"
   },
   "dependencies": {
@@ -81,5 +82,5 @@
     },
     "coverageDirectory": "../coverage"
   },
-  "version": "2.3.2"
+  "version": "0.0.0"
 }
