@@ -80,5 +80,6 @@
       "^.+\\.ts$": "ts-jest"
     },
     "coverageDirectory": "../coverage"
-  }
+  },
+  "version": "2.3.2"
 }

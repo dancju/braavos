@@ -31,7 +31,6 @@ import { EthWithdrawal } from './eth-withdrawal';
       useFactory: async (config: ConfigService) => ({
         ...config.get('pg'),
         bigNumberStrings: true,
-        entities: [__dirname + '/../**/*.entity.ts'],
         supportBigNumbers: true,
       }),
     }),

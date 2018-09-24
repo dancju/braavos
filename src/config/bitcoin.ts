@@ -9,12 +9,10 @@ export default {
     withdrawalStep: 512,
   },
   rpc: {
-    host: process.env.OMNICORED_HOST || 'localhost',
-    network: process.env.OMNICORED_NETWORK || 'regtest',
-    password:
-      process.env.OMNICORED_PASSWORD ||
-      'J2fqb-r8YdvESyLK8DkMQCJBOyEhlRWI3VuYrul8bYI=',
-    username: process.env.OMNICORED_USERNAME || 'test',
+    host: process.env.OMNICORED_HOST,
+    network: process.env.OMNICORED_NETWORK,
+    password: process.env.OMNICORED_PASSWORD,
+    username: process.env.OMNICORED_USERNAME,
   },
   usdt: {},
 };

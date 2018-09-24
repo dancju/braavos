@@ -10,5 +10,5 @@ export default {
     },
     withdraw: {},
   },
-  web3: process.env.WEB3_RPC || 'http://35.201.223.155:8547',
+  web3: process.env.WEB3_RPC,
 };

@@ -1,1 +1,1 @@
-export default process.env.AMQP || 'amqp://localhost';
+export default process.env.AMQP;

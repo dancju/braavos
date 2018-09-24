@@ -27,5 +27,5 @@ export default {
     bmartKey: 'a171c650b67e647e7a35052b8b5d4e64d',
     bmartSecret: '5aaf0b7d9b4ea9c52f6a70bbffec779a',
   },
-  web3: process.env.WEB3 || 'http://35.201.223.155:8547',
+  web3: process.env.WEB3_RPC,
 };

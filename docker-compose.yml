@@ -1,96 +1,39 @@
 version: '3'
 services:
-  http:
-    image: node:10-alpine
-    command: yarn run start:http
-    ports:
-      - 3000:3000
-    volumes:
-      - .:/app
-    working_dir: /app
-    environment:
-      NODE_ENV: test
-      PORT: 3000
-      MNEMONIC: '一 一 一'
-      TYPEORM_CONNECTION: postgres
-      TYPEORM_ENTITIES: ./**/*.entity.ts
-      TYPEORM_HOST: postgresql
-      TYPEORM_USERNAME: postgres
-      TYPEORM_PASSWORD: postgres_password
-      TYPEORM_DATABASE: braavos
-      TYPEORM_PORT: 5432
-      TYPEORM_MIGRATIONS: ./**/*.migration.ts
-      TYPEORM_MIGRATIONS_DIR: src/migrations
-      AMQP: amqp://rabbitmq
-      OMNICORED_HOST: omnicored
-      OMNICORED_NETWORK: regtest
-      OMNICORED_PASSWORD: J2fqb-r8YdvESyLK8DkMQCJBOyEhlRWI3VuYrul8bYI=
-      OMNICORED_USERNAME: test
-      WEB3: ''
-    depends_on:
-      - postgresql
-      - rabbitmq
-      - omnicored
-  crons:
-    image: node:10-alpine
-    command: yarn run start:crons
-    volumes:
-      - .:/app
-    working_dir: /app
-    environment:
-      NODE_ENV: test
-      PORT: 3000
-      MNEMONIC: '一 一 一'
-      TYPEORM_CONNECTION: postgres
-      TYPEORM_ENTITIES: ./**/*.entity.ts
-      TYPEORM_HOST: postgresql
-      TYPEORM_USERNAME: postgres
-      TYPEORM_PASSWORD: postgres_password
-      TYPEORM_DATABASE: braavos
-      TYPEORM_PORT: 5432
-      TYPEORM_MIGRATIONS: ./**/*.migration.ts
-      TYPEORM_MIGRATIONS_DIR: src/migrations
-      AMQP: amqp://rabbitmq
-      OMNICORED_HOST: omnicored
-      OMNICORED_NETWORK: regtest
-      OMNICORED_PASSWORD: J2fqb-r8YdvESyLK8DkMQCJBOyEhlRWI3VuYrul8bYI=
-      OMNICORED_USERNAME: test
-      WEB3: ''
-    depends_on:
-      - postgresql
-      - rabbitmq
-      - omnicored
-  dashboard:
-    image: node:10-alpine
-    command: yarn run start:dashboard
-    ports:
-      - 3001:3001
-    volumes:
-      - .:/app
-    working_dir: /app
-    environment:
-      NODE_ENV: test
-      PORT: 3001
-      MNEMONIC: '一 一 一'
-      TYPEORM_CONNECTION: postgres
-      TYPEORM_ENTITIES: ./**/*.entity.ts
-      TYPEORM_HOST: postgresql
-      TYPEORM_USERNAME: postgres
-      TYPEORM_PASSWORD: postgres_password
-      TYPEORM_DATABASE: braavos
-      TYPEORM_PORT: 5432
-      TYPEORM_MIGRATIONS: ./**/*.migration.ts
-      TYPEORM_MIGRATIONS_DIR: src/migrations
-      AMQP: amqp://rabbitmq
-      OMNICORED_HOST: omnicored
-      OMNICORED_NETWORK: regtest
-      OMNICORED_PASSWORD: J2fqb-r8YdvESyLK8DkMQCJBOyEhlRWI3VuYrul8bYI=
-      OMNICORED_USERNAME: test
-      WEB3: ''
-    depends_on:
-      - postgresql
-      - rabbitmq
-      - omnicored
+  # http:
+  #   image: node:10-alpine
+  #   command: yarn run start:http
+  #   working_dir: /app
+  #   volumes:
+  #     - .:/app
+  #   ports:
+  #     - 3000:3000
+  #   depends_on:
+  #     - postgresql
+  #     - rabbitmq
+  #     - omnicored
+  # crons:
+  #   image: node:10-alpine
+  #   command: yarn run start:crons
+  #   working_dir: /app
+  #   volumes:
+  #     - .:/app
+  #   depends_on:
+  #     - postgresql
+  #     - rabbitmq
+  #     - omnicored
+  # dashboard:
+  #   image: node:10-alpine
+  #   command: yarn run start:dashboard
+  #   working_dir: /app
+  #   volumes:
+  #     - .:/app
+  #   ports:
+  #     - 3001:3001
+  #   depends_on:
+  #     - postgresql
+  #     - rabbitmq
+  #     - omnicored
   postgresql:
     image: postgres:11-alpine
     ports:
@@ -104,7 +47,7 @@ services:
       - 5672:5672
       - 15672:15672
   omnicored:
-    image: dancju/omnicored:0.3.1
+    image: mpugach/omnicored:v0.3.1-alpine
     ports:
       - 18332:18332
-    command: 'omnicored -server -regtest -txindex -rpcauth=test:d420a6feb7865b5827725ec037f039c8$$52fe47e079807f05b5108b301c329423dce7c30132f9df010cb07d36ff22469f -rpcallowip=0.0.0.0/0 -printtoconsole'
+    command: '-server -regtest -txindex -rpcauth=test:d420a6feb7865b5827725ec037f039c8$$52fe47e079807f05b5108b301c329423dce7c30132f9df010cb07d36ff22469f -rpcallowip=0.0.0.0/0 -printtoconsole'

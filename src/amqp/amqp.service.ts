@@ -70,6 +70,9 @@ export class AmqpService {
         return;
       }
       if (!coinService.isValidAddress(body.recipient)) {
+        // logger.info(
+        //   `invalid address from client #${clientId}: ${JSON.stringify(body)}`,
+        // );
         channel.ack(msg);
         return;
       }

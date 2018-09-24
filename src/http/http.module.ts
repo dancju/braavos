@@ -17,7 +17,6 @@ import { SignatureStrategy } from './signature.strategy';
       useFactory: async (config: ConfigService) => ({
         ...config.get('pg'),
         bigNumberStrings: true,
-        entities: [__dirname + '/../**/*.entity.ts'],
         supportBigNumbers: true,
       }),
     }),
