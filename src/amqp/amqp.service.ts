@@ -21,6 +21,7 @@ export class AmqpService {
   ) {
     this.connection = connection;
     this.coinServices = coinServices;
+    this.assertQueues();
     this.createWithdrawal();
   }
 
@@ -42,10 +43,17 @@ export class AmqpService {
     channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)));
   }
 
+  private async assertQueues() {
+    const channel = await this.connection.createChannel();
+    await channel.assertQueue('deposit_creation');
+    await channel.assertQueue('deposit_updation');
+    await channel.assertQueue('withdrawal_update');
+  }
+
   private async createWithdrawal() {
     const channel = await this.connection.createChannel();
     const queue = 'withdrawal_creation';
-    channel.assertQueue(queue);
+    await channel.assertQueue(queue);
     channel.consume(queue, async (msg) => {
       if (!msg) {
         return;
