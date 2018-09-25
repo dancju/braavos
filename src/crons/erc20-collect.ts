@@ -214,10 +214,13 @@ export abstract class Erc20Collect extends NestSchedule {
                 .on('transactionHash', async (hash) => {
                   // logger.info("collectTxHash: " + hash + " | tokenName: " + tokenName);
                   console.log(`collect ${this.coinSymbol} hash: `, hash);
-                  tx.status = DepositStatus.finished;
-                  await tx.save();
+                  await Deposit.createQueryBuilder()
+                    .update()
+                    .set({ status: DepositStatus.finished })
+                    .execute();
                 });
             } catch (error) {
+              console.log(error);
               // logger.error(error);
             }
           }
