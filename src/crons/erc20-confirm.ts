@@ -107,12 +107,18 @@ export abstract class Erc20Confirm extends NestSchedule {
               'balance',
               Number(tx.amount),
             );
-            const dd = await Deposit.findOne({ id: tx.id });
-            if (dd) {
-              await this.amqpService.updateDeposit(dd);
-            }
             console.log('erc20 confirm: ', tx.id);
           });
+          const dd = await Deposit.findOne({ id: tx.id });
+          if (dd) {
+            try {
+              if (dd.status === DepositStatus.confirmed) {
+                await this.amqpService.updateDeposit(dd);
+              }
+            } catch (err) {
+              console.log(err);
+            }
+          }
         }),
       );
       this.cronLock.confirmCron = false;

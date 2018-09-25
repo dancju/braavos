@@ -103,12 +103,14 @@ export class EthConfirm extends NestSchedule {
               'balance',
               Number(tx.amount),
             );
-            const d = await Deposit.findOne({id: tx.id});
-            if (d) {
-              await this.amqpService.updateDeposit(d);
-            }
             console.log(`confirm tx: ${tx.id}`);
           });
+          const d = await Deposit.findOne({ id: tx.id });
+          if (d) {
+            if (d.status === DepositStatus.confirmed) {
+              await this.amqpService.updateDeposit(d);
+            }
+          }
         }),
       );
       this.ethereumService.cronLock.confirmCron = false;
