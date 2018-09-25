@@ -55,9 +55,17 @@ import { EthWithdrawal } from './eth-withdrawal';
     },
     AmqpService,
     {
-      inject: [BtcService],
+      inject: [BtcService, EthService, CfcService],
       provide: 'CoinServiceRepo',
-      useFactory: (btcService: BtcService) => ({ [CoinEnum.BTC]: btcService }),
+      useFactory: (
+        btcService: BtcService,
+        ethService: EthService,
+        cfcService: CfcService,
+      ) => ({
+        [CoinEnum.BTC]: btcService,
+        [CoinEnum.ETH]: ethService,
+        [CoinEnum.CFC]: cfcService,
+      }),
     },
     // chain services
     BitcoinService,

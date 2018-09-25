@@ -60,7 +60,7 @@ export class HttpController {
   ): Promise<string> {
     const coinService = this.coinServices[coinSymbol];
     if (!coinService) {
-      throw new Error();
+      throw new NotFoundException();
     }
     return coinService.getAddr(client.id, path);
   }

@@ -27,7 +27,6 @@ export class BtcRefreshFee extends NestSchedule {
     ) {
       throw new Error();
     }
-    this.cron();
   }
 
   @Cron('*/10 * * * *', { startTime: new Date() })

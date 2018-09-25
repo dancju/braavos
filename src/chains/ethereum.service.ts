@@ -1,4 +1,3 @@
-// tslint:disable:no-submodule-imports
 import { Injectable } from '@nestjs/common';
 import { isValidChecksumAddress, toChecksumAddress } from 'ethereumjs-util';
 import {

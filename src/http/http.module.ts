@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import BtcRpc from 'bitcoin-core';
 import { ConfigModule, ConfigService } from 'nestjs-config';
-import { BtcService, CoinEnum } from '../coins';
+import { BtcService, CfcService, CoinEnum, EthService } from '../coins';
 import { Coin } from '../entities/coin.entity';
 import { HttpController } from './http.controller';
 import { SignatureStrategy } from './signature.strategy';
@@ -31,10 +31,20 @@ import { SignatureStrategy } from './signature.strategy';
         new BtcRpc(config.get('bitcoin.rpc')),
     },
     BtcService,
+    EthService,
+    CfcService,
     {
-      inject: [BtcService],
+      inject: [BtcService, EthService, CfcService],
       provide: 'CoinServiceRepo',
-      useFactory: (btcService: BtcService) => ({ [CoinEnum.BTC]: btcService }),
+      useFactory: (
+        btcService: BtcService,
+        ethService: EthService,
+        cfcService: CfcService,
+      ) => ({
+        [CoinEnum.BTC]: btcService,
+        [CoinEnum.ETH]: ethService,
+        [CoinEnum.CFC]: cfcService,
+      }),
     },
   ],
 })
