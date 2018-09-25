@@ -34,7 +34,7 @@ export class AmqpService {
   }
 
   public async updateDeposit(deposit: Deposit): Promise<void> {
-    await this.publish('deposit_updation', deposit);
+    await this.publish('deposit_update', deposit);
   }
 
   private async publish(queue: string, message: any): Promise<void> {
@@ -43,14 +43,16 @@ export class AmqpService {
     channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)));
   }
 
-  private async assertQueues() {
+  private async assertQueues(): Promise<void> {
     const channel = await this.connection.createChannel();
-    await channel.assertQueue('deposit_creation');
-    await channel.assertQueue('deposit_updation');
-    await channel.assertQueue('withdrawal_update');
+    await Promise.all([
+      channel.assertQueue('deposit_creation'),
+      channel.assertQueue('deposit_update'),
+      channel.assertQueue('withdrawal_update'),
+    ]);
   }
 
-  private async createWithdrawal() {
+  private async createWithdrawal(): Promise<void> {
     const channel = await this.connection.createChannel();
     const queue = 'withdrawal_creation';
     await channel.assertQueue(queue);
