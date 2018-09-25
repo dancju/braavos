@@ -51,7 +51,7 @@ export class EthereumService extends ChainService {
       })
       .onConflict('("chain", "clientId", "path") DO NOTHING')
       .execute();
-    const res = await Addr.findOne({ chain: ethereum, clientId });
+    const res = await Addr.findOne({ chain: ethereum, clientId, path: path0});
     if (res && !res.info.nonce) {
       res.info.nonce = 0;
       await res.save();
