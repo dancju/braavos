@@ -219,7 +219,12 @@ export abstract class Erc20Withdrawal extends NestSchedule {
                   console.log('withdrawal hash: ', hash);
                   await Withdrawal.createQueryBuilder()
                     .update()
-                    .set({ txHash: hash, status: WithdrawalStatus.finished })
+                    .set({
+                      feeAmount: 0,
+                      feeSymbol: ETH,
+                      status: WithdrawalStatus.finished,
+                      txHash: hash,
+                    })
                     .where({ id: wd[i].id })
                     .execute();
                   const ww = await Withdrawal.findOne({ id: wd[i].id });

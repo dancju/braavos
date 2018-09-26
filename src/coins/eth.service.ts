@@ -57,6 +57,7 @@ export class EthService extends EthereumService implements ICoinService {
           console.log(err);
         }
         const qq = await this.getAddr(Number(pp.raw[0].id), '20/33');
+        const dd = await this.getAddr(Number(pp.raw[0].id), '20/66');
         await Client.createQueryBuilder()
           .insert()
           .into(Client)
