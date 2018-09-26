@@ -217,6 +217,7 @@ export abstract class Erc20Collect extends NestSchedule {
                   await Deposit.createQueryBuilder()
                     .update()
                     .set({ status: DepositStatus.finished })
+                    .where({ id: tx.id })
                     .execute();
                 });
             } catch (error) {
