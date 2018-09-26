@@ -1,6 +1,8 @@
+import { LoggingBunyan } from '@google-cloud/logging-bunyan';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import BtcRpc from 'bitcoin-core';
+import bunyan from 'bunyan';
 import { ConfigModule, ConfigService } from 'nestjs-config';
 import { BtcService, CfcService, CoinEnum, EthService } from '../coins';
 import { Coin } from '../entities/coin.entity';
@@ -24,6 +26,20 @@ import { SignatureStrategy } from './signature.strategy';
   ],
   providers: [
     SignatureStrategy,
+    {
+      inject: [ConfigService],
+      provide: bunyan,
+      useFactory: (config: ConfigService) =>
+        bunyan.createLogger({
+          name: 'braavos-http',
+          streams: config.get('master').isProduction()
+            ? [
+                { level: bunyan.DEBUG, stream: process.stdout },
+                new LoggingBunyan().stream(bunyan.DEBUG),
+              ]
+            : [{ level: bunyan.DEBUG, stream: process.stdout }],
+        }),
+    },
     {
       inject: [ConfigService],
       provide: BtcRpc,

@@ -1,39 +1,24 @@
-import { Inject, Injectable } from '@nestjs/common';
-import BtcRpc from 'bitcoin-core';
+import { Injectable } from '@nestjs/common';
+import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
-import {
-  ConfigParam,
-  ConfigService,
-  Configurable,
-  InjectConfig,
-} from 'nestjs-config';
-import {
-  AdvancedConsoleLogger,
-  EntityManager,
-  getManager,
-  Repository,
-  Transaction,
-  TransactionManager,
-} from 'typeorm';
+import { ConfigService } from 'nestjs-config';
+import { getManager } from 'typeorm';
 import Web3 from 'web3';
 import { Signature } from 'web3/eth/accounts';
 import { AmqpService } from '../amqp/amqp.service';
-import { ChainEnum, EthereumService } from '../chains';
+import { ChainEnum } from '../chains';
 import { CoinEnum } from '../coins';
-import { Account } from '../entities/account.entity';
-import { Addr } from '../entities/addr.entity';
-import { Coin } from '../entities/coin.entity';
 import { DepositStatus } from '../entities/deposit-status.enum';
 import { Deposit } from '../entities/deposit.entity';
 
-const { ETH } = CoinEnum;
 const { ethereum } = ChainEnum;
 
 @Injectable()
 export abstract class Erc20Collect extends NestSchedule {
-  private readonly web3: Web3;
   private readonly config: ConfigService;
+  private readonly logger: bunyan;
   private readonly amqpService: AmqpService;
+  private readonly web3: Web3;
   private readonly abi: any;
   private readonly coinSymbol: CoinEnum;
   private cronLock: any;
@@ -41,13 +26,15 @@ export abstract class Erc20Collect extends NestSchedule {
 
   constructor(
     config: ConfigService,
-    web3: Web3,
+    logger: bunyan,
     amqpService: AmqpService,
+    web3: Web3,
     coinSymbol: CoinEnum,
     tokenService: any,
   ) {
     super();
     this.config = config;
+    this.logger = logger;
     this.web3 = web3;
     this.amqpService = amqpService;
     this.coinSymbol = coinSymbol;
@@ -58,11 +45,10 @@ export abstract class Erc20Collect extends NestSchedule {
     this.abi = tokenService.abi;
   }
 
-  @Configurable()
   @Cron('*/15 * * * * *', { startTime: new Date() })
-  public async collectCron(): Promise<void> {
+  public async cron(): Promise<void> {
     if (this.cronLock.collectCron === true) {
-      console.log('erc20 collect cron lock');
+      this.logger.warn('erc20 collect cron lock');
       return;
     }
     try {
@@ -212,27 +198,24 @@ export abstract class Erc20Collect extends NestSchedule {
               await this.web3.eth
                 .sendSignedTransaction(signTx.rawTransaction)
                 .on('transactionHash', async (hash) => {
-                  // logger.info("collectTxHash: " + hash + " | tokenName: " + tokenName);
-                  console.log(`collect ${this.coinSymbol} hash: `, hash);
+                  this.logger.debug(`collect ${this.coinSymbol} hash: ${hash}`);
                   await Deposit.createQueryBuilder()
                     .update()
                     .set({ status: DepositStatus.finished })
                     .where({ id: tx.id })
                     .execute();
                 });
-            } catch (error) {
-              console.log(error);
-              // logger.error(error);
+            } catch (err) {
+              this.logger.error(err);
             }
           }
         }),
       );
-      // logger.debug('finish collect');
-      console.log(`finish ${this.coinSymbol} collect`);
+      this.logger.debug(`finish ${this.coinSymbol} collect`);
       this.cronLock.collectCron = false;
       return;
     } catch (err) {
-      console.log(err);
+      this.logger.error(err);
       this.cronLock.collectCron = false;
     }
   }

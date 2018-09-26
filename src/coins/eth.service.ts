@@ -1,26 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { ConfigService, InjectConfig } from 'nestjs-config';
-import { Repository } from 'typeorm';
+import { ConfigService } from 'nestjs-config';
 import { EthereumService } from '../chains';
 import { CoinEnum } from '../coins';
 import { Account } from '../entities/account.entity';
 import { Client } from '../entities/client.entity';
-import { Coin } from '../entities/coin.entity';
 
 const { CFC, ETH } = CoinEnum;
 
 @Injectable()
 export class EthService extends EthereumService implements ICoinService {
-  protected readonly coin: Promise<Coin>;
-
-  constructor(
-    @InjectConfig() config: ConfigService,
-    @InjectRepository(Coin) coins: Repository<Coin>,
-  ) {
+  constructor(config: ConfigService) {
     super(config);
-    this.coin = Coin.findOne(ETH) as Promise<Coin>;
-
     // init for debug
     try {
       (async () => {

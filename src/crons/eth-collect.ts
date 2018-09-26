@@ -1,20 +1,8 @@
-import { Inject, Injectable } from '@nestjs/common';
-import BtcRpc from 'bitcoin-core';
+import { Injectable } from '@nestjs/common';
+import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
-import {
-  ConfigParam,
-  ConfigService,
-  Configurable,
-  InjectConfig,
-} from 'nestjs-config';
-import {
-  AdvancedConsoleLogger,
-  EntityManager,
-  getManager,
-  Repository,
-  Transaction,
-  TransactionManager,
-} from 'typeorm';
+import { ConfigService } from 'nestjs-config';
+import { EntityManager, getManager } from 'typeorm';
 import Web3 from 'web3';
 import { Signature } from 'web3/eth/accounts';
 import { AmqpService } from '../amqp/amqp.service';
@@ -31,19 +19,22 @@ const { ethereum } = ChainEnum;
 
 @Injectable()
 export class EthCollect extends NestSchedule {
-  private readonly web3: Web3;
   private readonly config: ConfigService;
+  private readonly logger: bunyan;
   private readonly amqpService: AmqpService;
+  private readonly web3: Web3;
   private ethereumService: EthereumService;
 
   constructor(
     config: ConfigService,
+    logger: bunyan,
     web3: Web3,
     amqpService: AmqpService,
     ethereumService: EthereumService,
   ) {
     super();
     this.config = config;
+    this.logger = logger;
     this.web3 = web3;
     this.amqpService = amqpService;
     this.ethereumService = ethereumService;
@@ -52,7 +43,7 @@ export class EthCollect extends NestSchedule {
   @Cron('*/50 * * * * *', { startTime: new Date() })
   public async collectCron(): Promise<void> {
     if (this.ethereumService.cronLock.collectCron === true) {
-      console.log('last collectCron still in handling');
+      this.logger.warn('last collectCron still in handling');
       return;
     }
     this.ethereumService.cronLock.collectCron = true;
@@ -134,12 +125,12 @@ export class EthCollect extends NestSchedule {
               },
               prv,
             )) as Signature;
-            console.log('collect signTx', signTx.rawTransaction);
+            this.logger.debug('collect signTx' + signTx.rawTransaction);
             try {
               await this.web3.eth
                 .sendSignedTransaction(signTx.rawTransaction)
                 .on('transactionHash', async (hash) => {
-                  console.log('collect hash: ', hash);
+                  this.logger.debug('collect hash: ' + hash);
                   await Deposit.createQueryBuilder()
                     .update()
                     .set({ status: DepositStatus.finished })
@@ -147,17 +138,16 @@ export class EthCollect extends NestSchedule {
                     .execute();
                 });
             } catch (err) {
-              // logger.error
-              console.log(err);
+              this.logger.error(err);
             }
           }
         }),
       );
       this.ethereumService.cronLock.collectCron = false;
-      console.log('finish collect');
+      this.logger.debug('finish collect');
       return;
     } catch (err) {
-      console.log(err);
+      this.logger.error(err);
       this.ethereumService.cronLock.collectCron = false;
     }
   }

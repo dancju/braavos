@@ -1,20 +1,8 @@
-import { Inject, Injectable } from '@nestjs/common';
-import BtcRpc from 'bitcoin-core';
+import { Injectable } from '@nestjs/common';
+import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
-import {
-  ConfigParam,
-  ConfigService,
-  Configurable,
-  InjectConfig,
-} from 'nestjs-config';
-import {
-  AdvancedConsoleLogger,
-  EntityManager,
-  getManager,
-  Repository,
-  Transaction,
-  TransactionManager,
-} from 'typeorm';
+import { ConfigService } from 'nestjs-config';
+import { getManager } from 'typeorm';
 import Web3 from 'web3';
 import { Signature } from 'web3/eth/accounts';
 import { AmqpService } from '../amqp/amqp.service';
@@ -35,27 +23,29 @@ const { ethereum } = ChainEnum;
 export class EthWithdrawal extends NestSchedule {
   private readonly web3: Web3;
   private readonly config: ConfigService;
+  private readonly logger: bunyan;
   private readonly amqpService: AmqpService;
   private ethereumService: EthereumService;
 
   constructor(
     config: ConfigService,
+    logger: bunyan,
     web3: Web3,
     amqpService: AmqpService,
     ethereumService: EthereumService,
   ) {
     super();
     this.config = config;
+    this.logger = logger;
     this.web3 = web3;
     this.amqpService = amqpService;
     this.ethereumService = ethereumService;
   }
 
-  @Configurable()
   @Cron('*/20 * * * * *', { startTime: new Date() })
   public async withdrawalCron(): Promise<void> {
     if (this.ethereumService.cronLock.withdrawalCron === true) {
-      console.log('last withdrawalCron still in handling');
+      this.logger.warn('last withdrawalCron still in handling');
       return;
     }
     this.ethereumService.cronLock.withdrawalCron = true;
@@ -126,8 +116,7 @@ export class EthWithdrawal extends NestSchedule {
             );
             const balance = await this.web3.eth.getBalance(collectAddr);
             if (this.web3.utils.toBN(balance).lte(value)) {
-              // logger.error('wallet balance is not enough');
-              console.log('wallet balance is not enough');
+              this.logger.error('wallet balance not enough');
               this.ethereumService.cronLock.withdrawalCron = false;
               return;
             }
@@ -141,14 +130,15 @@ export class EthWithdrawal extends NestSchedule {
               },
               prv,
             )) as Signature;
-            // logger.info(`signTx gasPrice: ${thisGasPrice} rawTransaction: ${signTx.rawTransaction}`);
-            console.log('withdraw signtx raw:', signTx.rawTransaction);
+            this.logger.debug(`
+              gasPrice: ${thisGasPrice}
+              rawTransaction: ${signTx.rawTransaction}
+            `);
             try {
               await this.web3.eth
                 .sendSignedTransaction(signTx.rawTransaction)
                 .on('transactionHash', async (hash) => {
-                  // logger.info('withdrawTxHash: ' + hash);
-                  console.log('withdraw hash: ', hash);
+                  this.logger.info('withdrawTxHash: ' + hash);
                   await Withdrawal.createQueryBuilder()
                     .update()
                     .set({ txHash: hash, status: WithdrawalStatus.finished })
@@ -167,10 +157,10 @@ export class EthWithdrawal extends NestSchedule {
         }
       }
       this.ethereumService.cronLock.withdrawalCron = false;
-      console.log('finish withdraw ether');
+      this.logger.debug('finish withdraw ether');
       return;
     } catch (err) {
-      console.log(err);
+      this.logger.error(err);
       this.ethereumService.cronLock.withdrawalCron = false;
     }
   }

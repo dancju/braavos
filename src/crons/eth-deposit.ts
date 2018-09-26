@@ -1,20 +1,7 @@
-import { Inject, Injectable } from '@nestjs/common';
-import BtcRpc from 'bitcoin-core';
+import { Injectable } from '@nestjs/common';
+import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
-import {
-  ConfigParam,
-  ConfigService,
-  Configurable,
-  InjectConfig,
-} from 'nestjs-config';
-import {
-  AdvancedConsoleLogger,
-  EntityManager,
-  getManager,
-  Repository,
-  Transaction,
-  TransactionManager,
-} from 'typeorm';
+import { ConfigService } from 'nestjs-config';
 import Web3 from 'web3';
 import { AmqpService } from '../amqp/amqp.service';
 import { ChainEnum, EthereumService } from '../chains';
@@ -31,28 +18,30 @@ const { ethereum } = ChainEnum;
 export class EthDeposit extends NestSchedule {
   private readonly web3: Web3;
   private readonly config: ConfigService;
+  private readonly logger: bunyan;
   private readonly amqpService: AmqpService;
   private ethereumService: EthereumService;
 
   constructor(
     config: ConfigService,
+    logger: bunyan,
     web3: Web3,
     amqpService: AmqpService,
     ethereumService: EthereumService,
   ) {
     super();
     this.config = config;
+    this.logger = logger;
     this.web3 = web3;
     this.amqpService = amqpService;
     this.ethereumService = ethereumService;
   }
 
-  @Configurable()
   @Cron('*/30 * * * * *', { startTime: new Date() })
   public async depositCron(): Promise<void> {
     try {
       if (this.ethereumService.cronLock.depositCron === true) {
-        console.log('last depositCron still in handling');
+        this.logger.warn('last depositCron still in handling');
         return;
       }
       this.ethereumService.cronLock.depositCron = true;
@@ -63,7 +52,7 @@ export class EthDeposit extends NestSchedule {
         'ethereum.ether.deposit.pocketAddr',
       );
       const step: number = this.config.get('ethereum.ether.deposit.step');
-      console.log(new Date());
+      this.logger.debug(new Date());
       const coin = await Coin.createQueryBuilder()
         .where({ symbol: ETH })
         .getOne();
@@ -122,20 +111,12 @@ export class EthDeposit extends NestSchedule {
             });
             if (!checkTx) {
               const amount = await this.web3.utils.fromWei(tx.value, 'ether');
-              // logger.info(`
-              //   blockHash: ${block.hash}
-              //   blockNumber: ${block.number}
-              //   txHash: ${tx.hash}
-              //   userId: ${user.user_id}
-              //   recipientAddr: ${tx.to}
-              //   amount: ${amount}
-              // `);
-              console.log(`
-              blockHash: ${block.hash}
-              blockNumber: ${block.number}
-              txHash: ${tx.hash}
-              amount: ${amount}
-            `);
+              this.logger.debug(`
+                blockHash: ${block.hash}
+                blockNumber: ${block.number}
+                txHash: ${tx.hash}
+                amount: ${amount}
+              `);
               const d = await Deposit.create({
                 addrPath: user.path,
                 amount: String(amount),
@@ -161,12 +142,12 @@ export class EthDeposit extends NestSchedule {
         );
         coin.info.cursor = blockIndex;
         await coin.save();
-        console.log('blockIndex: ', blockIndex);
+        this.logger.debug('blockIndex: ', blockIndex);
       }
-      console.log('finish deposit this time');
+      this.logger.debug('finish deposit this time');
       this.ethereumService.cronLock.depositCron = false;
     } catch (err) {
-      console.log(err);
+      this.logger.error(err);
       this.ethereumService.cronLock.depositCron = false;
     }
   }

@@ -1,20 +1,8 @@
-import { Inject, Injectable } from '@nestjs/common';
-import BtcRpc from 'bitcoin-core';
+import { Injectable } from '@nestjs/common';
+import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
-import {
-  ConfigParam,
-  ConfigService,
-  Configurable,
-  InjectConfig,
-} from 'nestjs-config';
-import {
-  AdvancedConsoleLogger,
-  EntityManager,
-  getManager,
-  Repository,
-  Transaction,
-  TransactionManager,
-} from 'typeorm';
+import { ConfigService } from 'nestjs-config';
+import { getManager } from 'typeorm';
 import Web3 from 'web3';
 import { Signature } from 'web3/eth/accounts';
 import { AmqpService } from '../amqp/amqp.service';
@@ -26,13 +14,13 @@ import { Coin } from '../entities/coin.entity';
 import { DepositStatus } from '../entities/deposit-status.enum';
 import { Deposit } from '../entities/deposit.entity';
 
-const { ETH } = CoinEnum;
 const { ethereum } = ChainEnum;
 
 @Injectable()
 export abstract class Erc20Confirm extends NestSchedule {
-  private readonly web3: Web3;
   private readonly config: ConfigService;
+  private readonly logger: bunyan;
+  private readonly web3: Web3;
   private readonly amqpService: AmqpService;
   private readonly abi: any;
   private readonly coinSymbol: CoinEnum;
@@ -41,13 +29,15 @@ export abstract class Erc20Confirm extends NestSchedule {
 
   constructor(
     config: ConfigService,
-    web3: Web3,
+    logger: bunyan,
     amqpService: AmqpService,
+    web3: Web3,
     coinSymbol: CoinEnum,
     tokenService: any,
   ) {
     super();
     this.config = config;
+    this.logger = logger;
     this.web3 = web3;
     this.amqpService = amqpService;
     this.coinSymbol = coinSymbol;
@@ -59,11 +49,10 @@ export abstract class Erc20Confirm extends NestSchedule {
     this.abi = tokenService.abi;
   }
 
-  @Configurable()
   @Cron('*/30 * * * * *', { startTime: new Date() })
   public async confirmCron(): Promise<void> {
     if (this.cronLock.confirmCron === true) {
-      console.log('erc20 confirm cron lock');
+      this.logger.warn('erc20 confirm cron lock');
       return;
     }
     try {
@@ -107,7 +96,7 @@ export abstract class Erc20Confirm extends NestSchedule {
               'balance',
               Number(tx.amount),
             );
-            console.log('erc20 confirm: ', tx.id);
+            this.logger.debug('erc20 confirm: ' + tx.id);
           });
           const dd = await Deposit.findOne({ id: tx.id });
           if (dd) {
@@ -116,7 +105,7 @@ export abstract class Erc20Confirm extends NestSchedule {
                 await this.amqpService.updateDeposit(dd);
               }
             } catch (err) {
-              console.log(err);
+              this.logger.error(err);
             }
           }
         }),
@@ -128,11 +117,10 @@ export abstract class Erc20Confirm extends NestSchedule {
     }
   }
 
-  @Configurable()
   @Cron('*/30 * * * * *', { startTime: new Date() })
   public async payPreFee(): Promise<void> {
     if (this.cronLock.payPreFeeCron === true) {
-      console.log('erc20 pay pre fee cron lock');
+      this.logger.warn('erc20 pay pre fee cron lock');
       return;
     }
     try {
@@ -189,9 +177,8 @@ export abstract class Erc20Confirm extends NestSchedule {
         try {
           txData = await method.encodeABI();
           gasLimit = await method.estimateGas({ from: thisAddr });
-        } catch (error) {
-          // logger.error(error);
-          console.log(error);
+        } catch (err) {
+          this.logger.error(err);
           continue;
         }
         const realGasPrice = await this.web3.eth.getGasPrice();
@@ -230,23 +217,21 @@ export abstract class Erc20Confirm extends NestSchedule {
           await this.web3.eth
             .sendSignedTransaction(etherSignTx.rawTransaction)
             .on('transactionHash', async (hash) => {
-              // logger.warn("preSendEtherTxHash: " + hash + " | tokenName: " + tokenName);
-              console.log('preSendEtherTxHash: ' + hash);
+              this.logger.debug(`payPreFee ${this.coinSymbol} hash: ${hash}`);
               tx.info.gasLimit = gasLimit;
               tx.info.gasPrice = thisGasPrice.toString();
               tx.info.collectHash = hash;
               await tx.save();
             });
-        } catch (error) {
-          console.log(error);
-          // logger.error(error);
+        } catch (err) {
+          this.logger.error(err);
         }
       }
       this.cronLock.payPreFeeCron = false;
-      console.log('finish pay pre fee');
+      this.logger.debug('finish pay pre fee');
       return;
     } catch (err) {
-      console.log(err);
+      this.logger.error(err);
       this.cronLock.payPreFeeCron = false;
     }
   }

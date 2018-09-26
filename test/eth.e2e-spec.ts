@@ -12,7 +12,7 @@ import Web3 from 'web3';
 import { CronModule } from '../src/crons/cron.module';
 import { HttpModule } from '../src/http/http.module';
 
-describe('CFC (e2e)', () => {
+describe('ETH (e2e)', () => {
   let app: INestApplication;
   let amqpConnection: Connection;
   let web3: Web3;
@@ -55,7 +55,7 @@ describe('CFC (e2e)', () => {
 
   it('GET /coins', (done) => {
     request(app.getHttpServer())
-      .get('/coins?coinSymbol=CFC')
+      .get('/coins?coinSymbol=ETH')
       .use(signer)
       .expect(200)
       .end((err, res) => {
@@ -63,7 +63,7 @@ describe('CFC (e2e)', () => {
           done(err);
         }
         expect(res.body.chain).toStrictEqual('ethereum');
-        expect(res.body.symbol).toStrictEqual('CFC');
+        expect(res.body.symbol).toStrictEqual('ETH');
         expect(res.body.depositFeeSymbol).toStrictEqual('ETH');
         expect(res.body.withdrawalFeeSymbol).toStrictEqual('ETH');
         done();
@@ -72,7 +72,7 @@ describe('CFC (e2e)', () => {
 
   it('GET /addrs', (done) => {
     request(app.getHttpServer())
-      .get('/addrs?coinSymbol=CFC&path=1')
+      .get('/addrs?coinSymbol=ETH&path=1')
       .use(signer)
       .expect(200, '0x577E5592a9DE963f1DC0260bC6EB58f6eAbAA1BD', done);
   });

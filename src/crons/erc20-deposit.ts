@@ -1,23 +1,10 @@
-import { Inject, Injectable } from '@nestjs/common';
-import BtcRpc from 'bitcoin-core';
+import { Injectable } from '@nestjs/common';
+import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
-import {
-  ConfigParam,
-  ConfigService,
-  Configurable,
-  InjectConfig,
-} from 'nestjs-config';
-import {
-  AdvancedConsoleLogger,
-  EntityManager,
-  getManager,
-  Repository,
-  Transaction,
-  TransactionManager,
-} from 'typeorm';
+import { ConfigService } from 'nestjs-config';
 import Web3 from 'web3';
 import { AmqpService } from '../amqp/amqp.service';
-import { ChainEnum, EthereumService } from '../chains';
+import { ChainEnum } from '../chains';
 import { CoinEnum } from '../coins';
 import { Addr } from '../entities/addr.entity';
 import { Coin } from '../entities/coin.entity';
@@ -29,22 +16,25 @@ const { ethereum } = ChainEnum;
 
 @Injectable()
 export abstract class Erc20Deposit extends NestSchedule {
-  private readonly web3: Web3;
   private readonly config: ConfigService;
+  private readonly logger: bunyan;
   private readonly amqpService: AmqpService;
+  private readonly web3: Web3;
   private readonly abi: any;
   private readonly coinSymbol: CoinEnum;
   private cronLock: boolean;
 
   constructor(
     config: ConfigService,
-    web3: Web3,
+    logger: bunyan,
     amqpService: AmqpService,
+    web3: Web3,
     coinSymbol: CoinEnum,
     abi: any,
   ) {
     super();
     this.config = config;
+    this.logger = logger;
     this.web3 = web3;
     this.amqpService = amqpService;
     this.coinSymbol = coinSymbol;
@@ -52,11 +42,10 @@ export abstract class Erc20Deposit extends NestSchedule {
     this.cronLock = false;
   }
 
-  @Configurable()
   @Cron('*/20 * * * * *', { startTime: new Date() })
   public async depositCron(): Promise<void> {
     if (this.cronLock === true) {
-      console.log('last erc20 depositCron still in handling');
+      this.logger.warn('last erc20 depositCron still in handling');
       return;
     }
     this.cronLock = true;
@@ -107,7 +96,7 @@ export abstract class Erc20Deposit extends NestSchedule {
         fromBlock: blockIndex,
         toBlock: height,
       });
-      console.log('erc20 blockIndex: ', blockIndex);
+      this.logger.debug('erc20 blockIndex: ', blockIndex);
       for (const e of events) {
         const eIndex = e.blockNumber;
         /* catch up eIndex */
@@ -174,7 +163,7 @@ export abstract class Erc20Deposit extends NestSchedule {
                 dbAmount = dbAmount + tmp[1][i];
               }
               dbAmount = tmp[0] + '.' + dbAmount;
-              console.log(`erc20 deposit:
+              this.logger.debug(`erc20 deposit:
                 amount: ${amount}
                 clientId: ${user.clientId}
                 txHash: ${txHash}
@@ -214,7 +203,7 @@ export abstract class Erc20Deposit extends NestSchedule {
       this.cronLock = false;
       return;
     } catch (err) {
-      console.log(err);
+      this.logger.error(err);
       this.cronLock = false;
     }
   }

@@ -1,21 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import BtcRpc, { ListTransactionsResult } from 'bitcoin-core';
+import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
-import { ConfigParam, Configurable } from 'nestjs-config';
-import {
-  EntityManager,
-  getManager,
-  Transaction,
-  TransactionManager,
-} from 'typeorm';
+import { ConfigParam } from 'nestjs-config';
+import { EntityManager, Transaction, TransactionManager } from 'typeorm';
 import { AmqpService } from '../amqp/amqp.service';
 import { ChainEnum } from '../chains';
 import { CoinEnum } from '../coins';
-import { Account } from '../entities/account.entity';
-import { Addr } from '../entities/addr.entity';
 import { Coin } from '../entities/coin.entity';
-import { DepositStatus } from '../entities/deposit-status.enum';
-import { Deposit } from '../entities/deposit.entity';
 import { WithdrawalStatus } from '../entities/withdrawal-status.enum';
 import { Withdrawal } from '../entities/withdrawal.entity';
 
@@ -24,16 +16,17 @@ const { bitcoin } = ChainEnum;
 
 @Injectable()
 export class BtcUpdateWithdrawal extends NestSchedule {
+  private readonly logger: bunyan;
   private readonly rpc: BtcRpc;
   private readonly amqpService: AmqpService;
 
-  constructor(rpc: BtcRpc, amqpService: AmqpService) {
+  constructor(logger: bunyan, rpc: BtcRpc, amqpService: AmqpService) {
     super();
+    this.logger = logger;
     this.rpc = rpc;
     this.amqpService = amqpService;
   }
 
-  @Configurable()
   @Cron('*/10 * * * *', { startTime: new Date() })
   @Transaction()
   public async cron(
@@ -84,8 +77,8 @@ export class BtcUpdateWithdrawal extends NestSchedule {
           coin.info.withdrawalCursor,
         );
         // TODO update status, credit fee
-        console.log(ws);
-        console.log(txs);
+        this.logger.warn(ws);
+        this.logger.warn(txs);
       };
     };
     const taskSelector = async (): Promise<(() => Promise<void>) | null> => {

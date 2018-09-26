@@ -1,20 +1,8 @@
-import { Inject, Injectable } from '@nestjs/common';
-import BtcRpc from 'bitcoin-core';
+import { Injectable } from '@nestjs/common';
+import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
-import {
-  ConfigParam,
-  ConfigService,
-  Configurable,
-  InjectConfig,
-} from 'nestjs-config';
-import {
-  AdvancedConsoleLogger,
-  EntityManager,
-  getManager,
-  Repository,
-  Transaction,
-  TransactionManager,
-} from 'typeorm';
+import { ConfigService } from 'nestjs-config';
+import { getManager } from 'typeorm';
 import Web3 from 'web3';
 import { AmqpService } from '../amqp/amqp.service';
 import { ChainEnum, EthereumService } from '../chains';
@@ -32,27 +20,29 @@ const { ethereum } = ChainEnum;
 export class EthConfirm extends NestSchedule {
   private readonly web3: Web3;
   private readonly config: ConfigService;
+  private readonly logger: bunyan;
   private readonly amqpService: AmqpService;
   private ethereumService: EthereumService;
 
   constructor(
     config: ConfigService,
+    logger: bunyan,
     web3: Web3,
     amqpService: AmqpService,
     ethereumService: EthereumService,
   ) {
     super();
     this.config = config;
+    this.logger = logger;
     this.web3 = web3;
     this.amqpService = amqpService;
     this.ethereumService = ethereumService;
   }
 
-  @Configurable()
   @Cron('*/10 * * * * *', { startTime: new Date() })
   public async confirmCron(): Promise<void> {
     if (this.ethereumService.cronLock.confirmCron === true) {
-      console.log('last confirmCron still in handling');
+      this.logger.warn('last confirmCron still in handling');
       return;
     }
     try {
@@ -81,8 +71,7 @@ export class EthConfirm extends NestSchedule {
             .where({ clientId: tx.clientId, coinSymbol: ETH })
             .getOne();
           if (!acc) {
-            console.log(`don't have this account`);
-            // logger.error('no have this client');
+            this.logger.error(`don't have this account`);
             return;
           }
           await getManager().transaction(async (manager) => {
@@ -103,7 +92,7 @@ export class EthConfirm extends NestSchedule {
               'balance',
               Number(tx.amount),
             );
-            console.log(`confirm tx: ${tx.id}`);
+            this.logger.debug(`confirm tx: ${tx.id}`);
           });
           const d = await Deposit.findOne({ id: tx.id });
           if (d) {
@@ -115,7 +104,7 @@ export class EthConfirm extends NestSchedule {
       );
       this.ethereumService.cronLock.confirmCron = false;
     } catch (err) {
-      console.log(err);
+      this.logger.error(err);
       this.ethereumService.cronLock.confirmCron = false;
     }
   }

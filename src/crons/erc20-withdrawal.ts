@@ -1,24 +1,12 @@
-import { Inject, Injectable } from '@nestjs/common';
-import BtcRpc from 'bitcoin-core';
+import { Injectable } from '@nestjs/common';
+import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
-import {
-  ConfigParam,
-  ConfigService,
-  Configurable,
-  InjectConfig,
-} from 'nestjs-config';
-import {
-  AdvancedConsoleLogger,
-  EntityManager,
-  getManager,
-  Repository,
-  Transaction,
-  TransactionManager,
-} from 'typeorm';
+import { ConfigService } from 'nestjs-config';
+import { getManager } from 'typeorm';
 import Web3 from 'web3';
 import { Signature } from 'web3/eth/accounts';
 import { AmqpService } from '../amqp/amqp.service';
-import { ChainEnum, EthereumService } from '../chains';
+import { ChainEnum } from '../chains';
 import { CoinEnum } from '../coins';
 import { Account } from '../entities/account.entity';
 import { Addr } from '../entities/addr.entity';
@@ -34,9 +22,10 @@ const { ethereum } = ChainEnum;
 
 @Injectable()
 export abstract class Erc20Withdrawal extends NestSchedule {
-  private readonly web3: Web3;
   private readonly config: ConfigService;
+  private readonly logger: bunyan;
   private readonly amqpService: AmqpService;
+  private readonly web3: Web3;
   private readonly abi: any;
   private readonly coinSymbol: CoinEnum;
   private cronLock: any;
@@ -44,15 +33,17 @@ export abstract class Erc20Withdrawal extends NestSchedule {
 
   constructor(
     config: ConfigService,
-    web3: Web3,
+    logger: bunyan,
     amqpService: AmqpService,
+    web3: Web3,
     coinSymbol: CoinEnum,
     tokenService: any,
   ) {
     super();
     this.config = config;
-    this.web3 = web3;
+    this.logger = logger;
     this.amqpService = amqpService;
+    this.web3 = web3;
     this.coinSymbol = coinSymbol;
     this.cronLock = {
       withdrawalCron: false,
@@ -61,11 +52,10 @@ export abstract class Erc20Withdrawal extends NestSchedule {
     this.abi = tokenService.abi;
   }
 
-  @Configurable()
   @Cron('*/12 * * * * *', { startTime: new Date() })
   public async withdrawalCron(): Promise<void> {
     if (this.cronLock.withdrawalCron === true) {
-      console.log('last erc20 withdrawal cron still in handling');
+      this.logger.warn('last erc20 withdrawal cron still in handling');
       return;
     }
     try {
@@ -164,9 +154,8 @@ export abstract class Erc20Withdrawal extends NestSchedule {
             try {
               txData = await method.encodeABI();
               gasLimit = await method.estimateGas({ from: collectAddr });
-            } catch (error) {
-              // logger.error(error);
-              console.log(error);
+            } catch (err) {
+              this.logger.error(err);
               this.cronLock.withdrawalCron = false;
               return;
             }
@@ -215,8 +204,9 @@ export abstract class Erc20Withdrawal extends NestSchedule {
               const tx = await this.web3.eth
                 .sendSignedTransaction(signTx.rawTransaction)
                 .on('transactionHash', async (hash) => {
-                  // logger.info("withdrawTxHash: " + hash + " | tokenName: " + tokenName);
-                  console.log('withdrawal hash: ', hash);
+                  this.logger.info(
+                    `withdrawTxHash ${this.coinSymbol}: ${hash}`,
+                  );
                   await Withdrawal.createQueryBuilder()
                     .update()
                     .set({
@@ -258,8 +248,8 @@ export abstract class Erc20Withdrawal extends NestSchedule {
                   //   // logger.info("Finish datastream");
                   // }
                 });
-            } catch (error) {
-              // logger.error(error);
+            } catch (err) {
+              this.logger.error(err);
             }
           }
         }
@@ -267,7 +257,7 @@ export abstract class Erc20Withdrawal extends NestSchedule {
       this.cronLock.withdrawalCron = false;
       return;
     } catch (err) {
-      console.log(err);
+      this.logger.error(err);
       this.cronLock.withdrawalCron = false;
     }
   }

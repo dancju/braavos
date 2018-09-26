@@ -1,11 +1,13 @@
+import { LoggingBunyan } from '@google-cloud/logging-bunyan';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import BtcRpc from 'bitcoin-core';
+import bunyan from 'bunyan';
 import { AmqpModule } from 'nestjs-amqp';
 import { ConfigModule, ConfigService } from 'nestjs-config';
 import Web3 from 'web3';
 import { AmqpService } from '../amqp/amqp.service';
-import { BitcoinService, EthereumService } from '../chains';
+import { EthereumService } from '../chains';
 import { BtcService, CfcService, CoinEnum, EthService } from '../coins';
 import { Coin } from '../entities/coin.entity';
 import { BtcCreateDeposit } from './btc-create-deposit';
@@ -43,6 +45,20 @@ import { EthWithdrawal } from './eth-withdrawal';
   providers: [
     {
       inject: [ConfigService],
+      provide: bunyan,
+      useFactory: (config: ConfigService) =>
+        bunyan.createLogger({
+          name: 'braavos-crons',
+          streams: config.get('master').isProduction()
+            ? [
+                { level: bunyan.DEBUG, stream: process.stdout },
+                new LoggingBunyan().stream(bunyan.DEBUG),
+              ]
+            : [{ level: bunyan.DEBUG, stream: process.stdout }],
+        }),
+    },
+    {
+      inject: [ConfigService],
       provide: BtcRpc,
       useFactory: (config: ConfigService) =>
         new BtcRpc(config.get('bitcoin.rpc')),
@@ -67,8 +83,7 @@ import { EthWithdrawal } from './eth-withdrawal';
         [CoinEnum.CFC]: cfcService,
       }),
     },
-    // chain services
-    BitcoinService,
+    // TODO remove EthereumService from providers
     EthereumService,
     // coin services
     BtcService,

@@ -1,10 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { isValidChecksumAddress, toChecksumAddress } from 'ethereumjs-util';
-import {
-  EthereumHDKey,
-  fromExtendedKey,
-  fromMasterSeed,
-} from 'ethereumjs-wallet/hdkey';
+import { EthereumHDKey, fromMasterSeed } from 'ethereumjs-wallet/hdkey';
 import { ConfigService } from 'nestjs-config';
 import { Addr } from '../entities/addr.entity';
 import { ChainEnum } from './chain.enum';

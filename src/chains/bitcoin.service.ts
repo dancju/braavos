@@ -1,4 +1,3 @@
-import { Injectable } from '@nestjs/common';
 import { BIP32, fromBase58, fromSeed } from 'bip32';
 import BtcRpc from 'bitcoin-core';
 import { Network, payments } from 'bitcoinjs-lib';
@@ -25,7 +24,6 @@ const TESTNET: Network = {
   wif: 0xef,
 };
 
-@Injectable()
 export class BitcoinService extends ChainService {
   protected readonly rpc: BtcRpc;
   private readonly prvNode: BIP32;
