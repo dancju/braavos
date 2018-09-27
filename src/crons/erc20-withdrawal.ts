@@ -145,14 +145,11 @@ export abstract class Erc20Withdrawal extends NestSchedule {
                 .mul(this.web3.utils.toBN(Math.pow(10, decimals - 8)))
                 .toString();
             }
-            const method = await contract.methods.transfer(
-              wd[i].recipient,
-              amount,
-            );
+            const method = contract.methods.transfer(wd[i].recipient, amount);
             let txData;
             let gasLimit;
             try {
-              txData = await method.encodeABI();
+              txData = method.encodeABI();
               gasLimit = await method.estimateGas({ from: collectAddr });
             } catch (err) {
               this.logger.error(err);

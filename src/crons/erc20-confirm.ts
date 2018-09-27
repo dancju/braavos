@@ -175,7 +175,7 @@ export abstract class Erc20Confirm extends NestSchedule {
         let txData;
         let gasLimit;
         try {
-          txData = await method.encodeABI();
+          txData = method.encodeABI();
           gasLimit = await method.estimateGas({ from: thisAddr });
         } catch (err) {
           this.logger.error(err);

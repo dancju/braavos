@@ -169,7 +169,7 @@ export abstract class Erc20Collect extends NestSchedule {
             const method = contract.methods.transfer(collectAddr, collectValue);
             let txData;
             try {
-              txData = await method.encodeABI();
+              txData = method.encodeABI();
               await method.estimateGas({ from: thisAddr });
             } catch (error) {
               // logger.error(error);

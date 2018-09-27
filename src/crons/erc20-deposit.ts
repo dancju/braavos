@@ -170,7 +170,7 @@ export abstract class Erc20Deposit extends NestSchedule {
                 clientId: ${user.clientId}
                 txHash: ${txHash}
               `);
-              const d = await Deposit.create({
+              const d = Deposit.create({
                 addrPath: user.path,
                 amount: dbAmount,
                 clientId: user.clientId,

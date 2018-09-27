@@ -121,7 +121,7 @@ export class EthDeposit extends NestSchedule {
                 txHash: ${tx.hash}
                 amount: ${amount}
               `);
-              const d = await Deposit.create({
+              const d = Deposit.create({
                 addrPath: user.path,
                 amount: String(amount),
                 clientId: user.clientId,
