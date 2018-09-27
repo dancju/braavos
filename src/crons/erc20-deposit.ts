@@ -22,7 +22,7 @@ export abstract class Erc20Deposit extends NestSchedule {
   private readonly web3: Web3;
   private readonly abi: any;
   private readonly coinSymbol: CoinEnum;
-  private cronLock: boolean;
+  private cronLock: any;
 
   constructor(
     config: ConfigService,
@@ -39,16 +39,18 @@ export abstract class Erc20Deposit extends NestSchedule {
     this.amqpService = amqpService;
     this.coinSymbol = coinSymbol;
     this.abi = abi;
-    this.cronLock = false;
+    this.cronLock = {
+      depositCron: false,
+    };
   }
 
   @Cron('*/20 * * * * *', { startTime: new Date() })
   public async depositCron(): Promise<void> {
-    if (this.cronLock === true) {
+    if (this.cronLock.depositCron === true) {
       this.logger.warn('last erc20 depositCron still in handling');
       return;
     }
-    this.cronLock = true;
+    this.cronLock.depositCron = true;
     try {
       const abiFrom: string = this.config.get(
         `erc20.${this.coinSymbol}.deposit._from`,
@@ -88,7 +90,7 @@ export abstract class Erc20Deposit extends NestSchedule {
       let height = await this.web3.eth.getBlockNumber();
       if (height < blockIndex) {
         // logger.warn("Ethereum full node is lower than db | tokenName: " + tokenName);
-        this.cronLock = false;
+        this.cronLock.depositCron = false;
         return;
       }
       height = Math.min(height, blockIndex + step - 1);
@@ -200,11 +202,11 @@ export abstract class Erc20Deposit extends NestSchedule {
         coin.info.cursor = blockIndex;
         await coin.save();
       }
-      this.cronLock = false;
+      this.cronLock.depositCron = false;
       return;
     } catch (err) {
       this.logger.error(err);
-      this.cronLock = false;
+      this.cronLock.depositCron = false;
     }
   }
 }

@@ -10,19 +10,12 @@ const { ethereum } = ChainEnum;
 
 @Injectable()
 export class EthereumService extends ChainService {
-  public cronLock: any;
   protected readonly hdkey: EthereumHDKey;
 
   constructor(config: ConfigService) {
     super();
     const seed = config.get('crypto.seed')() as Buffer;
     this.hdkey = fromMasterSeed(seed);
-    this.cronLock = {
-      collectCron: false,
-      confirmCron: false,
-      depositCron: false,
-      withdrawalCron: false,
-    };
   }
 
   public async getAddr(clientId: number, path0: string): Promise<string> {

@@ -21,6 +21,7 @@ export class EthDeposit extends NestSchedule {
   private readonly logger: bunyan;
   private readonly amqpService: AmqpService;
   private ethereumService: EthereumService;
+  private cronLock: any;
 
   constructor(
     config: ConfigService,
@@ -35,16 +36,19 @@ export class EthDeposit extends NestSchedule {
     this.web3 = web3;
     this.amqpService = amqpService;
     this.ethereumService = ethereumService;
+    this.cronLock = {
+      depositCron: false,
+    };
   }
 
   @Cron('*/30 * * * * *', { startTime: new Date() })
   public async depositCron(): Promise<void> {
     try {
-      if (this.ethereumService.cronLock.depositCron === true) {
+      if (this.cronLock.depositCron === true) {
         this.logger.warn('last depositCron still in handling');
         return;
       }
-      this.ethereumService.cronLock.depositCron = true;
+      this.cronLock.depositCron = true;
       const minimumThreshold: number = this.config.get(
         'ethereum.ether.deposit.minimumThreshold',
       );
@@ -57,7 +61,7 @@ export class EthDeposit extends NestSchedule {
         .where({ symbol: ETH })
         .getOne();
       if (!coin) {
-        this.ethereumService.cronLock.depositCron = false;
+        this.cronLock.depositCron = false;
         throw new Error();
       }
       /**
@@ -71,7 +75,7 @@ export class EthDeposit extends NestSchedule {
       height = height - 3;
       if (height < blockIndex) {
         // logger.warn('Ethereum full node is lower than db');
-        this.ethereumService.cronLock.depositCron = false;
+        this.cronLock.depositCron = false;
         return;
       }
       height = Math.min(height, blockIndex + step - 1);
@@ -145,10 +149,10 @@ export class EthDeposit extends NestSchedule {
         this.logger.debug('blockIndex: ', blockIndex);
       }
       this.logger.debug('finish deposit this time');
-      this.ethereumService.cronLock.depositCron = false;
+      this.cronLock.depositCron = false;
     } catch (err) {
       this.logger.error(err);
-      this.ethereumService.cronLock.depositCron = false;
+      this.cronLock.depositCron = false;
     }
   }
 }

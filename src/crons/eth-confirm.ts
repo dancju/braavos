@@ -23,6 +23,7 @@ export class EthConfirm extends NestSchedule {
   private readonly logger: bunyan;
   private readonly amqpService: AmqpService;
   private ethereumService: EthereumService;
+  private cronLock: any;
 
   constructor(
     config: ConfigService,
@@ -37,16 +38,19 @@ export class EthConfirm extends NestSchedule {
     this.web3 = web3;
     this.amqpService = amqpService;
     this.ethereumService = ethereumService;
+    this.cronLock = {
+      confirmCron: false,
+    };
   }
 
   @Cron('*/10 * * * * *', { startTime: new Date() })
   public async confirmCron(): Promise<void> {
-    if (this.ethereumService.cronLock.confirmCron === true) {
+    if (this.cronLock.confirmCron === true) {
       this.logger.warn('last confirmCron still in handling');
       return;
     }
     try {
-      this.ethereumService.cronLock.confirmCron = true;
+      this.cronLock.confirmCron = true;
       const confThreshold: number = this.config.get(
         'ethereum.ether.collect.confThreshold',
       );
@@ -56,7 +60,7 @@ export class EthConfirm extends NestSchedule {
         .orderBy('id')
         .getMany();
       if (uu.length <= 0) {
-        this.ethereumService.cronLock.confirmCron = false;
+        this.cronLock.confirmCron = false;
         return;
       }
       const height = await this.web3.eth.getBlockNumber();
@@ -102,10 +106,10 @@ export class EthConfirm extends NestSchedule {
           }
         }),
       );
-      this.ethereumService.cronLock.confirmCron = false;
+      this.cronLock.confirmCron = false;
     } catch (err) {
       this.logger.error(err);
-      this.ethereumService.cronLock.confirmCron = false;
+      this.cronLock.confirmCron = false;
     }
   }
 }

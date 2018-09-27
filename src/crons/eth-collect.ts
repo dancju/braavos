@@ -24,6 +24,7 @@ export class EthCollect extends NestSchedule {
   private readonly amqpService: AmqpService;
   private readonly web3: Web3;
   private ethereumService: EthereumService;
+  private cronLock: any;
 
   constructor(
     config: ConfigService,
@@ -38,22 +39,25 @@ export class EthCollect extends NestSchedule {
     this.web3 = web3;
     this.amqpService = amqpService;
     this.ethereumService = ethereumService;
+    this.cronLock = {
+      collectCron: false,
+    };
   }
 
   @Cron('*/50 * * * * *', { startTime: new Date() })
   public async collectCron(): Promise<void> {
-    if (this.ethereumService.cronLock.collectCron === true) {
+    if (this.cronLock.collectCron === true) {
       this.logger.warn('last collectCron still in handling');
       return;
     }
-    this.ethereumService.cronLock.collectCron = true;
+    this.cronLock.collectCron = true;
     try {
       const confTxs = await Deposit.createQueryBuilder()
         .select()
         .where({ coinSymbol: ETH, status: DepositStatus.confirmed })
         .getMany();
       if (confTxs.length <= 0) {
-        this.ethereumService.cronLock.collectCron = false;
+        this.cronLock.collectCron = false;
         return;
       }
       await Promise.all(
@@ -143,12 +147,12 @@ export class EthCollect extends NestSchedule {
           }
         }),
       );
-      this.ethereumService.cronLock.collectCron = false;
+      this.cronLock.collectCron = false;
       this.logger.debug('finish collect');
       return;
     } catch (err) {
       this.logger.error(err);
-      this.ethereumService.cronLock.collectCron = false;
+      this.cronLock.collectCron = false;
     }
   }
 }

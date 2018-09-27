@@ -26,6 +26,7 @@ export class EthWithdrawal extends NestSchedule {
   private readonly logger: bunyan;
   private readonly amqpService: AmqpService;
   private ethereumService: EthereumService;
+  private cronLock: any;
 
   constructor(
     config: ConfigService,
@@ -40,15 +41,18 @@ export class EthWithdrawal extends NestSchedule {
     this.web3 = web3;
     this.amqpService = amqpService;
     this.ethereumService = ethereumService;
+    this.cronLock = {
+      withdrawalCron: false,
+    };
   }
 
   @Cron('*/20 * * * * *', { startTime: new Date() })
   public async withdrawalCron(): Promise<void> {
-    if (this.ethereumService.cronLock.withdrawalCron === true) {
+    if (this.cronLock.withdrawalCron === true) {
       this.logger.warn('last withdrawalCron still in handling');
       return;
     }
-    this.ethereumService.cronLock.withdrawalCron = true;
+    this.cronLock.withdrawalCron = true;
     try {
       const collectAddr = await this.ethereumService.getAddr(0, '0');
       const prv = this.ethereumService.getPrivateKey(0, '0');
@@ -117,7 +121,7 @@ export class EthWithdrawal extends NestSchedule {
             const balance = await this.web3.eth.getBalance(collectAddr);
             if (this.web3.utils.toBN(balance).lte(value)) {
               this.logger.error('wallet balance not enough');
-              this.ethereumService.cronLock.withdrawalCron = false;
+              this.cronLock.withdrawalCron = false;
               return;
             }
             const signTx = (await this.web3.eth.accounts.signTransaction(
@@ -156,12 +160,12 @@ export class EthWithdrawal extends NestSchedule {
           }
         }
       }
-      this.ethereumService.cronLock.withdrawalCron = false;
+      this.cronLock.withdrawalCron = false;
       this.logger.debug('finish withdraw ether');
       return;
     } catch (err) {
       this.logger.error(err);
-      this.ethereumService.cronLock.withdrawalCron = false;
+      this.cronLock.withdrawalCron = false;
     }
   }
 }
