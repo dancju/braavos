@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Connection } from 'amqplib';
+import bunyan from 'bunyan';
 import { plainToClass } from 'class-transformer';
 import { validate } from 'class-validator';
 import { InjectAmqpConnection } from 'nestjs-amqp';
@@ -12,13 +13,16 @@ import { CreateWithdrawalDto } from './create-withdrawal.dto';
 
 @Injectable()
 export class AmqpService {
+  private readonly logger: bunyan;
   private readonly connection: Connection;
   private readonly coinServices: { [_ in CoinEnum]?: ICoinService };
 
   constructor(
+    logger: bunyan,
     @InjectAmqpConnection() connection: Connection,
     @Inject('CoinServiceRepo') coinServices: { [_ in CoinEnum]?: ICoinService },
   ) {
+    this.logger = logger;
     this.connection = connection;
     this.coinServices = coinServices;
     this.assertQueues();
@@ -80,9 +84,9 @@ export class AmqpService {
         return;
       }
       if (!coinService.isValidAddress(body.recipient)) {
-        // logger.info(
-        //   `invalid address from client #${clientId}: ${JSON.stringify(body)}`,
-        // );
+        this.logger.info(
+          `invalid address from client #${clientId}: ${JSON.stringify(body)}`,
+        );
         channel.ack(msg);
         return;
       }

@@ -1,6 +1,6 @@
-// Type definitions for bitcoin-core 2.0.0
-// Project: https://github.com/ruimarinho/bitcoin-core
-// Definitions by: Joe Miyamoto <joemphilps@gmail.com>
+// TypeScript definition for bitcoin-core 2.0.0
+// Contributor: Joe Miyamoto <joemphilps@gmail.com>
+// Contributor: Daniel Zhou <danichau93@gmail.com>
 // tslint:disable:interface-name
 
 declare module 'bitcoin-core' {
@@ -35,6 +35,7 @@ declare module 'bitcoin-core' {
     addresses: string[];
     ps2h?: string;
   }
+
   interface FundRawTxOptions {
     changeAddress?: string;
     chnagePosition?: number;
@@ -181,6 +182,7 @@ declare module 'bitcoin-core' {
     };
     warnings?: string;
   }
+
   interface ChainTip {
     height: number;
     hash: string;
@@ -192,10 +194,12 @@ declare module 'bitcoin-core' {
       | 'headers-only'
       | 'invalid';
   }
+
   interface Outpoint {
     id: string;
     index: number;
   }
+
   interface UTXO {
     height: number;
     value: number;
@@ -240,6 +244,7 @@ declare module 'bitcoin-core' {
     disk_size: number;
     total_amount: number;
   }
+
   interface MempoolContent {
     [key: string]: {
       size: number;
@@ -296,6 +301,7 @@ declare module 'bitcoin-core' {
     mempoolminfee: number;
     minrelaytxfee: number;
   }
+
   interface BlockHeader {
     hash: string;
     confirmations: number;
@@ -311,6 +317,7 @@ declare module 'bitcoin-core' {
     chainwork: string;
     previoutsblockchash: string;
   }
+
   interface Block {
     hash: string;
     confirmations: number;
@@ -332,6 +339,7 @@ declare module 'bitcoin-core' {
     previousblockhash: string;
     nextblockchash?: string;
   }
+
   interface Transaction {
     txid: string;
     hash: string;
@@ -654,7 +662,7 @@ declare module 'bitcoin-core' {
     to?: string;
   }
 
-  type TransactionInListSinceBlock = {} & WalletTxBase;
+  type TransactionInListSinceBlock = WalletTxBase;
 
   interface ListSinceBlockResult {
     transactions: TransactionInListSinceBlock[];

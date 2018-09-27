@@ -1,6 +1,6 @@
 {
   "defaultSeverity": "error",
-  "extends": ["tslint:latest"],
+  "extends": ["tslint:latest", "tslint-sonarts"],
   "jsRules": {},
   "rules": {
     "no-implicit-dependencies": false,

@@ -7,7 +7,7 @@
     "postinstall-2": "sed -i.bak '10s/message: string;/messageHash: string;/' ./node_modules/@types/web3/eth/accounts.d.ts",
     "postinstall-3": "sed -i.bak '11s/hash: string;/rawTransaction: string;/' ./node_modules/@types/web3/eth/accounts.d.ts",
     "postinstall-4": "sed -i.bak 's/var scryptNative = require(\".\\/build\\/Release\\/scrypt\")/var scryptNative = require(\"scrypt\")/' ./node_modules/scrypt/index.js",
-    "lint": "tslint --fix './{src,test}/**/*.ts' && prettier --write \"**/*.ts\"",
+    "lint": "tslint --project ./tsconfig.json --fix './{src,test}/**/*.ts' && prettier --write \"**/*.ts\"",
     "prestart:http": "ts-node --files ./node_modules/.bin/typeorm migration:run",
     "start:http": "nodemon -e ts -w ./src -i src/**/*.spec.ts -x ts-node --files src/http.main.ts",
     "prestart:crons": "ts-node --files ./node_modules/.bin/typeorm migration:run",
@@ -68,6 +68,7 @@
     "ts-loader": "^5.1.0",
     "ts-node": "^7.0.1",
     "tslint": "5.11.0",
+    "tslint-sonarts": "^1.8.0",
     "webpack": "^4.2.0",
     "webpack-cli": "^3.1.0",
     "webpack-node-externals": "^1.6.0"

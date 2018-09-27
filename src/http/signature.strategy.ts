@@ -9,7 +9,7 @@ export class SignatureStrategy extends PassportStrategy(Strategy, 'signature') {
     keyId: string,
     done: (_: null, client: Client, publicKey: string) => void,
   ) {
-    const { name, fingerprint } = (await new Promise((resolve, reject) => {
+    const { name } = (await new Promise((resolve, reject) => {
       keyId.replace(
         /^\/(\w+)\/keys\/([0-9a-f:]+)$/,
         (_: string, n: string, f: string): string => {

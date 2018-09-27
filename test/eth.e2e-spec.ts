@@ -60,7 +60,7 @@ describe('ETH (e2e)', () => {
       .expect(200)
       .end((err, res) => {
         if (err) {
-          done(err);
+          done.fail(err);
         }
         expect(res.body.chain).toStrictEqual('ethereum');
         expect(res.body.symbol).toStrictEqual('ETH');
