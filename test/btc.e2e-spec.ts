@@ -67,7 +67,7 @@ describe('BTC (e2e)', () => {
       .expect(200)
       .end((err, res) => {
         if (err) {
-          done(err);
+          done.fail(err);
         }
         expect(res.body.chain).toStrictEqual('bitcoin');
         expect(res.body.symbol).toStrictEqual('BTC');
@@ -91,16 +91,17 @@ describe('BTC (e2e)', () => {
     );
     expect(typeof txHash).toStrictEqual('string');
     await app.get(BtcCreateDeposit).cron();
+    // TODO mq
     // expect((await manager.findOne(Deposit, { txHash }))!.status).toStrictEqual(
     //   'unconfirmed',
     // );
     await rpc.generate(2);
     await app.get(BtcUpdateDeposit).cron();
+    // TODO mq
     // expect((await manager.findOne(Deposit, { txHash }))!.status).toStrictEqual(
     //   'confirmed',
     // );
     done();
-    // TODO fetch from mq
   });
 
   it('should handle withdrawals', async (done) => {
@@ -121,13 +122,14 @@ describe('BTC (e2e)', () => {
         {},
         (err, ok) => {
           if (err) {
-            done(err);
+            done.fail(err);
           } else {
             resolve();
           }
         },
       ),
     );
+    // TODO mq
     // console.log(await Withdrawal.find());
     // expect((await Withdrawal.findOne({ key: 'foo' }))!.recipient).toStrictEqual(
     //   '2PcRdHdFX8qm6rh6CHhSzR1w8XCBArJg86',
