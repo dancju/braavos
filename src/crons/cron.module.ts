@@ -33,10 +33,10 @@ import { EthWithdrawal } from './eth-withdrawal';
       useFactory: async (config: ConfigService) => ({
         ...config.get('pg'),
         bigNumberStrings: true,
+        name: 'crons',
         supportBigNumbers: true,
       }),
     }),
-    TypeOrmModule.forFeature([Coin]),
     AmqpModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => config.get('amqp'),

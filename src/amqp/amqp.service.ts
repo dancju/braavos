@@ -60,14 +60,15 @@ export class AmqpService {
     const channel = await this.connection.createChannel();
     const queue = 'withdrawal_creation';
     await channel.assertQueue(queue);
-    channel.consume(queue, async (msg) => {
+    await channel.consume(queue, async (msg) => {
       if (!msg) {
-        return;
+        throw new Error();
       }
       const body = plainToClass(CreateWithdrawalDto, JSON.parse(
         msg.content.toString(),
       ) as object);
-      validate(body);
+      // TODO check this out
+      await validate(body);
       const clientId = 0;
       if (
         await Withdrawal.findOne({
@@ -75,17 +76,26 @@ export class AmqpService {
           key: body.key,
         })
       ) {
+        this.logger.info(
+          `consuming existed withdrawal from client #${clientId}: ` +
+            JSON.stringify(body),
+        );
         channel.ack(msg);
         return;
       }
       const coinService = this.coinServices[body.coinSymbol];
       if (!coinService) {
+        this.logger.info(
+          `consuming withdrawal with unrecognisable coin symbol from client #` +
+            `${clientId}: ${JSON.stringify(body)}`,
+        );
         channel.ack(msg);
         return;
       }
       if (!coinService.isValidAddress(body.recipient)) {
         this.logger.info(
-          `invalid address from client #${clientId}: ${JSON.stringify(body)}`,
+          `consuming withdrawal with invalid address from client #` +
+            `${clientId}: ${JSON.stringify(body)}`,
         );
         channel.ack(msg);
         return;
@@ -102,28 +112,33 @@ export class AmqpService {
           .setLock('pessimistic_write')
           .getOne();
         if (!account) {
-          channel.ack(msg);
+          this.logger.error(
+            `account (${clientId}, ${body.coinSymbol}) does not exist`,
+          );
+          channel.nack(msg);
           return;
         }
-        await manager.decrement(
-          Account,
-          { clientId, coinSymbol: body.coinSymbol },
-          'balance',
-          Number(body.amount),
-        );
-        await manager
-          .createQueryBuilder()
-          .insert()
-          .into(Withdrawal)
-          .values({
-            amount: body.amount,
-            clientId,
-            coinSymbol: body.coinSymbol,
-            key: body.key,
-            memo: body.memo,
-            recipient: body.recipient,
-          })
-          .execute();
+        await Promise.all([
+          manager.decrement(
+            Account,
+            { clientId, coinSymbol: body.coinSymbol },
+            'balance',
+            Number(body.amount),
+          ),
+          manager
+            .createQueryBuilder()
+            .insert()
+            .into(Withdrawal)
+            .values({
+              amount: body.amount,
+              clientId,
+              coinSymbol: body.coinSymbol,
+              key: body.key,
+              memo: body.memo,
+              recipient: body.recipient,
+            })
+            .execute(),
+        ]);
       });
       channel.ack(msg);
     });

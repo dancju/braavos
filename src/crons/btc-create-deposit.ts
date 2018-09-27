@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import BtcRpc, { ListTransactionsResult } from 'bitcoin-core';
 import { Cron, NestSchedule } from 'nest-schedule';
-import { ConfigService } from 'nestjs-config';
 import { getManager } from 'typeorm';
 import { AmqpService } from '../amqp/amqp.service';
 import { ChainEnum } from '../chains';
@@ -18,7 +17,7 @@ export class BtcCreateDeposit extends NestSchedule {
   private readonly rpc: BtcRpc;
   private readonly amqpService: AmqpService;
 
-  constructor(rpc: BtcRpc, amqpService: AmqpService, config: ConfigService) {
+  constructor(rpc: BtcRpc, amqpService: AmqpService) {
     super();
     this.rpc = rpc;
     this.amqpService = amqpService;

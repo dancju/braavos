@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { connect, Connection } from 'amqplib';
+import { ConfirmChannel, connect, Connection } from 'amqplib';
 import BtcRpc from 'bitcoin-core';
 import fs from 'fs';
 import 'jest';
@@ -17,6 +17,7 @@ import { HttpModule } from '../src/http/http.module';
 describe('BTC (e2e)', () => {
   let app: INestApplication;
   let amqpConnection: Connection;
+  let amqpChannel: ConfirmChannel;
   let rpc: BtcRpc;
   const signer = signature({
     algorithm: 'rsa-sha256',
@@ -41,23 +42,15 @@ describe('BTC (e2e)', () => {
     `);
     // prepare AMQP
     amqpConnection = await connect(app.get(ConfigService).get('amqp'));
+    amqpChannel = await amqpConnection.createConfirmChannel();
     // prepare Omnicored regtest
     rpc = app.get(BtcRpc);
-  });
-
-  it('should have the test client', async (done) => {
-    expect(app).toBeDefined();
-    done();
-  });
-
-  it('should have the omnicored regtest connection', async (done) => {
     const info = await rpc.getBlockchainInfo();
     expect(info.chain).toStrictEqual('regtest');
     expect(info.blocks).toBeGreaterThanOrEqual(1);
     expect(info.bip9_softforks.segwit.status).toStrictEqual('active');
     expect(Number(info.difficulty)).toBeGreaterThan(0);
     expect(await rpc.getBalance()).toBeGreaterThanOrEqual(50);
-    done();
   });
 
   it('GET /coins', (done) => {
@@ -91,26 +84,39 @@ describe('BTC (e2e)', () => {
     );
     expect(typeof txHash).toStrictEqual('string');
     await app.get(BtcCreateDeposit).cron();
-    // TODO mq
-    // expect((await manager.findOne(Deposit, { txHash }))!.status).toStrictEqual(
-    //   'unconfirmed',
-    // );
-    await rpc.generate(2);
+    await new Promise((resolve) => {
+      amqpChannel.consume('deposit_creation', async (msg) => {
+        const body = JSON.parse(msg!.content.toString());
+        if (body.txHash === txHash) {
+          amqpChannel.ack(msg!);
+          expect(body.status).toStrictEqual('unconfirmed');
+          resolve();
+        } else {
+          amqpChannel.nack(msg!);
+        }
+      });
+    });
+    await rpc.generate(app.get(ConfigService).get('bitcoin.btc.confThreshold'));
     await app.get(BtcUpdateDeposit).cron();
-    // TODO mq
-    // expect((await manager.findOne(Deposit, { txHash }))!.status).toStrictEqual(
-    //   'confirmed',
-    // );
+    await new Promise((resolve) => {
+      amqpChannel.consume('deposit_update', async (msg) => {
+        const body = JSON.parse(msg!.content.toString());
+        if (body.txHash === txHash) {
+          amqpChannel.ack(msg!);
+          expect(body.status).toStrictEqual('confirmed');
+          resolve();
+        } else {
+          amqpChannel.nack(msg!);
+        }
+      });
+    });
     done();
   });
 
   it('should handle withdrawals', async (done) => {
-    const queue = 'withdrawal_creation';
-    const channel = await amqpConnection.createConfirmChannel();
-    await channel.assertQueue(queue);
     await new Promise((resolve) =>
-      channel.sendToQueue(
-        queue,
+      amqpChannel.sendToQueue(
+        'withdrawal_creation',
         Buffer.from(
           JSON.stringify({
             amount: '1',
@@ -130,10 +136,6 @@ describe('BTC (e2e)', () => {
       ),
     );
     // TODO mq
-    // console.log(await Withdrawal.find());
-    // expect((await Withdrawal.findOne({ key: 'foo' }))!.recipient).toStrictEqual(
-    //   '2PcRdHdFX8qm6rh6CHhSzR1w8XCBArJg86',
-    // );
     done();
   });
 

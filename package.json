@@ -1,5 +1,6 @@
 {
   "name": "braavos",
+  "version": "0.0.0",
   "private": true,
   "scripts": {
     "postinstall": "yarn postinstall-1; yarn postinstall-2; yarn postinstall-3; yarn postinstall-4",
@@ -8,15 +9,17 @@
     "postinstall-3": "sed -i.bak '11s/hash: string;/rawTransaction: string;/' ./node_modules/@types/web3/eth/accounts.d.ts",
     "postinstall-4": "sed -i.bak 's/var scryptNative = require(\".\\/build\\/Release\\/scrypt\")/var scryptNative = require(\"scrypt\")/' ./node_modules/scrypt/index.js",
     "lint": "tslint --project ./tsconfig.json --fix './{src,test}/**/*.ts' && prettier --write \"**/*.ts\"",
-    "prestart:http": "ts-node --files ./node_modules/.bin/typeorm migration:run",
+    "migrate": "ts-node --files ./node_modules/.bin/typeorm migration:run",
+    "prestart:http": "yarn run migrate",
     "start:http": "nodemon -e ts -w ./src -i src/**/*.spec.ts -x ts-node --files src/http.main.ts",
-    "prestart:crons": "ts-node --files ./node_modules/.bin/typeorm migration:run",
+    "prestart:crons": "yarn run migrate",
     "start:crons": "nodemon -e ts -w ./src -i src/**/*.spec.ts -x ts-node --files src/crons.main.ts",
+    "prestart:dashboard": "yarn run migrate",
     "start:dashboard": "nodemon -e ts -w ./src -i src/**/*.spec.ts -x ts-node --files src/dashboard.main.ts",
-    "test": "jest",
+    "pretest:cov": "yarn run migrate",
     "test:cov": "jest --coverage",
-    "pretest:e2e": "ts-node --files ./node_modules/.bin/typeorm migration:run",
-    "test:e2e": "jest --config ./test/jest-e2e.json --detectOpenHandles"
+    "pretest:e2e": "yarn run migrate",
+    "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
     "@google-cloud/logging-bunyan": "^0.9.2",
@@ -60,6 +63,7 @@
     "@types/node": "^10.9.4",
     "@types/supertest": "^2.0.4",
     "jest": "^23.6.0",
+    "jest-sonar-reporter": "^2.0.0",
     "nodemon": "^1.14.1",
     "prettier": "^1.11.1",
     "superagent-http-signature": "^0.2.0",
@@ -81,10 +85,10 @@
     ],
     "rootDir": "src",
     "testRegex": ".spec.ts$",
+    "testResultsProcessor": "jest-sonar-reporter",
     "transform": {
       "^.+\\.ts$": "ts-jest"
     },
     "coverageDirectory": "../coverage"
-  },
-  "version": "0.0.0"
+  }
 }

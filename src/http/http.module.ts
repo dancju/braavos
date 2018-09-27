@@ -22,7 +22,6 @@ import { SignatureStrategy } from './signature.strategy';
         supportBigNumbers: true,
       }),
     }),
-    TypeOrmModule.forFeature([Coin]),
   ],
   providers: [
     SignatureStrategy,
