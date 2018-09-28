@@ -16,6 +16,9 @@ import { Deposit } from '../entities/deposit.entity';
 import { KvPair } from '../entities/kv-pair.entity';
 import { WithdrawalStatus } from '../entities/withdrawal-status.enum';
 import { Withdrawal } from '../entities/withdrawal.entity';
+import request from 'superagent';
+import crypto from 'crypto';
+import querystring from 'querystring';
 
 const { ETH } = CoinEnum;
 const { ethereum } = ChainEnum;
@@ -218,32 +221,32 @@ export abstract class Erc20Withdrawal extends NestSchedule {
                   if (ww) {
                     this.amqpService.updateWithdrawal(ww);
                   }
-                  // logger.info("Finish update db | tokenName: " + tokenName);
-                  // if (wd[i].memo === 'bmart') {
-                  //   const bmartRes = await request
-                  //     .post(`${bmartHost}/api/v1/withdraw/addWithdrawInfo`)
-                  //     .query(
-                  //       (() => {
-                  //         const req: any = {
-                  //           amount: wd[i].amount,
-                  //           contractAddress: contractAddr,
-                  //           from: collectAddr,
-                  //           identify: 81,
-                  //           key: bmartKey,
-                  //           secret: bmartSecret,
-                  //           to: wd[i].recipient,
-                  //           txid: hash,
-                  //         };
-                  //         req.sign = crypto
-                  //           .createHash('sha1')
-                  //           .update(querystring.stringify(req))
-                  //           .digest('hex');
-                  //         delete req.secret;
-                  //         return req;
-                  //       })(),
-                  //     );
-                  //   // logger.info("Finish datastream");
-                  // }
+                  this.logger.info('Finish update db | tokenName: ' + this.coinSymbol);
+                  if (wd[i].memo === 'bmart') {
+                    const bmartRes = await request
+                      .post(`${bmartHost}/api/v1/withdraw/addWithdrawInfo`)
+                      .query(
+                        (() => {
+                          const req: any = {
+                            amount: wd[i].amount,
+                            contractAddress: contractAddr,
+                            from: collectAddr,
+                            identify: 81,
+                            key: bmartKey,
+                            secret: bmartSecret,
+                            to: wd[i].recipient,
+                            txid: hash,
+                          };
+                          req.sign = crypto
+                            .createHash('sha1')
+                            .update(querystring.stringify(req))
+                            .digest('hex');
+                          delete req.secret;
+                          return req;
+                        })(),
+                      );
+                    this.logger.info('Finish datastream');
+                  }
                 });
             } catch (err) {
               this.logger.error(err);

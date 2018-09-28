@@ -23,9 +23,9 @@ export default {
     },
   },
   bmart: {
-    bmartHost: 'https://api.bmart.io/',
-    bmartKey: 'a171c650b67e647e7a35052b8b5d4e64d',
-    bmartSecret: '5aaf0b7d9b4ea9c52f6a70bbffec779a',
+    bmartHost: 'http://47.75.205.44:8090/',
+    bmartKey: 'a6c70ae31673c489b8ad466a3254ba89c',
+    bmartSecret: '1b9b280b7a7ab1dd6d6d9ab9394a29bb',
   },
   web3: process.env.WEB3_RPC,
 };
