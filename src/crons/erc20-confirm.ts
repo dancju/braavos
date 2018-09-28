@@ -86,6 +86,13 @@ export abstract class Erc20Confirm extends NestSchedule {
               .where({ id: tx.id })
               .execute();
             await manager
+              .createQueryBuilder()
+              .insert()
+              .into(Account)
+              .values({ clientId: tx.clientId, coinSymbol: this.coinSymbol })
+              .onConflict('("clientId", "coinSymbol") DO NOTHING')
+              .execute();
+            await manager
               .createQueryBuilder(Account, 'account')
               .where({ clientId: tx.clientId, coinSymbol: this.coinSymbol })
               .setLock('pessimistic_write')
