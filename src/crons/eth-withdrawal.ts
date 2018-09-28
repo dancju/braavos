@@ -7,7 +7,7 @@ import Web3 from 'web3';
 import { Signature } from 'web3/eth/accounts';
 import { AmqpService } from '../amqp/amqp.service';
 import { ChainEnum, EthereumService } from '../chains';
-import { CoinEnum } from '../coins';
+import { CoinEnum, EthService } from '../coins';
 import { Account } from '../entities/account.entity';
 import { Addr } from '../entities/addr.entity';
 import { Coin } from '../entities/coin.entity';
@@ -25,7 +25,7 @@ export class EthWithdrawal extends NestSchedule {
   private readonly config: ConfigService;
   private readonly logger: bunyan;
   private readonly amqpService: AmqpService;
-  private ethereumService: EthereumService;
+  private ethereumService: EthService;
   private cronLock: any;
 
   constructor(
@@ -33,7 +33,7 @@ export class EthWithdrawal extends NestSchedule {
     logger: bunyan,
     web3: Web3,
     amqpService: AmqpService,
-    ethereumService: EthereumService,
+    ethereumService: EthService,
   ) {
     super();
     this.config = config;

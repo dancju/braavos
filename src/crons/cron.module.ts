@@ -33,7 +33,6 @@ import { EthWithdrawal } from './eth-withdrawal';
       useFactory: async (config: ConfigService) => ({
         ...config.get('pg'),
         bigNumberStrings: true,
-        name: 'crons',
         supportBigNumbers: true,
       }),
     }),
@@ -83,8 +82,6 @@ import { EthWithdrawal } from './eth-withdrawal';
         [CoinEnum.CFC]: cfcService,
       }),
     },
-    // TODO remove EthereumService from providers
-    EthereumService,
     // coin services
     BtcService,
     EthService,

@@ -5,7 +5,7 @@ import { ConfigService } from 'nestjs-config';
 import Web3 from 'web3';
 import { AmqpService } from '../amqp/amqp.service';
 import { ChainEnum, EthereumService } from '../chains';
-import { CoinEnum } from '../coins';
+import { CoinEnum, EthService } from '../coins';
 import { Addr } from '../entities/addr.entity';
 import { Coin } from '../entities/coin.entity';
 import { DepositStatus } from '../entities/deposit-status.enum';
@@ -20,7 +20,7 @@ export class EthDeposit extends NestSchedule {
   private readonly config: ConfigService;
   private readonly logger: bunyan;
   private readonly amqpService: AmqpService;
-  private ethereumService: EthereumService;
+  private ethereumService: EthService;
   private cronLock: any;
 
   constructor(
@@ -28,7 +28,7 @@ export class EthDeposit extends NestSchedule {
     logger: bunyan,
     web3: Web3,
     amqpService: AmqpService,
-    ethereumService: EthereumService,
+    ethereumService: EthService,
   ) {
     super();
     this.config = config;
