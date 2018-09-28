@@ -222,6 +222,9 @@ export abstract class Erc20Withdrawal extends NestSchedule {
                     this.amqpService.updateWithdrawal(ww);
                   }
                   this.logger.info('Finish update db | tokenName: ' + this.coinSymbol);
+                  if (wd[i].memo) {
+                    wd[i].memo = wd[i].memo!.toLowerCase();
+                  }
                   if (wd[i].memo === 'bmart') {
                     const bmartRes = await request
                       .post(`${bmartHost}/api/v1/withdraw/addWithdrawInfo`)
