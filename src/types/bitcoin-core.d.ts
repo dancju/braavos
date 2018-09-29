@@ -2,6 +2,9 @@
 // Contributor: Joe Miyamoto <joemphilps@gmail.com>
 // Contributor: Daniel Zhou <danichau93@gmail.com>
 // tslint:disable:interface-name
+// tslint:disable:max-union-size
+// tslint:disable:parameters-max-number
+// tslint:disable:use-type-alias
 
 declare module 'bitcoin-core' {
   export interface ClientConstructorOption {

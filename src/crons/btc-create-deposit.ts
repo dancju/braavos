@@ -14,13 +14,13 @@ const { bitcoin } = ChainEnum;
 
 @Injectable()
 export class BtcCreateDeposit extends NestSchedule {
-  private readonly rpc: BtcRpc;
   private readonly amqpService: AmqpService;
+  private readonly rpc: BtcRpc;
 
-  constructor(rpc: BtcRpc, amqpService: AmqpService) {
+  constructor(amqpService: AmqpService, rpc: BtcRpc) {
     super();
-    this.rpc = rpc;
     this.amqpService = amqpService;
+    this.rpc = rpc;
   }
 
   @Cron('*/1 * * * *', { startTime: new Date() })
@@ -41,7 +41,9 @@ export class BtcCreateDeposit extends NestSchedule {
     }
     await getManager().query(`
       update coin
-      set info = info || ('{ "depositCursor":' || '"${nextMilestone}"' || ' }')::jsonb
+      set
+        info =
+          info || ('{ "depositCursor":' || '"${nextMilestone}"' || ' }')::jsonb
       where symbol = 'BTC'
     `);
   }

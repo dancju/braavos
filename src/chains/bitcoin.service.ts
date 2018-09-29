@@ -62,7 +62,7 @@ export class BitcoinService extends ChainService {
       }).save();
       await this.rpc.importPrivKey(
         this.getPrivateKey(clientId, path0),
-        'braavos',
+        '',
         false,
       );
       await this.rpc.addWitnessAddress(this.getAddrP2pkh(path1));

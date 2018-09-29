@@ -43,16 +43,6 @@ describe('ETH (e2e)', () => {
     web3 = app.get(Web3);
   });
 
-  it('should have the test client', async (done) => {
-    expect(app).toBeDefined();
-    done();
-  });
-
-  it('should have the web3 connection', async (done) => {
-    // TODO
-    done();
-  });
-
   it('GET /coins', (done) => {
     request(app.getHttpServer())
       .get('/coins?coinSymbol=ETH')

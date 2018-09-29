@@ -6,13 +6,8 @@ import { getManager } from 'typeorm';
 import Web3 from 'web3';
 import { Signature } from 'web3/eth/accounts';
 import { AmqpService } from '../amqp/amqp.service';
-import { ChainEnum, EthereumService } from '../chains';
+import { ChainEnum } from '../chains';
 import { CoinEnum, EthService } from '../coins';
-import { Account } from '../entities/account.entity';
-import { Addr } from '../entities/addr.entity';
-import { Coin } from '../entities/coin.entity';
-import { DepositStatus } from '../entities/deposit-status.enum';
-import { Deposit } from '../entities/deposit.entity';
 import { WithdrawalStatus } from '../entities/withdrawal-status.enum';
 import { Withdrawal } from '../entities/withdrawal.entity';
 

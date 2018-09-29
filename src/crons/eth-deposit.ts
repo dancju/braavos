@@ -4,7 +4,7 @@ import { Cron, NestSchedule } from 'nest-schedule';
 import { ConfigService } from 'nestjs-config';
 import Web3 from 'web3';
 import { AmqpService } from '../amqp/amqp.service';
-import { ChainEnum, EthereumService } from '../chains';
+import { ChainEnum } from '../chains';
 import { CoinEnum, EthService } from '../coins';
 import { Addr } from '../entities/addr.entity';
 import { Coin } from '../entities/coin.entity';

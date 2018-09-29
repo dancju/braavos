@@ -3,7 +3,7 @@ import BtcRpc, { ListTransactionsResult } from 'bitcoin-core';
 import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
 import { ConfigService } from 'nestjs-config';
-import { EntityManager, Transaction, TransactionManager } from 'typeorm';
+import { EntityManager, getManager } from 'typeorm';
 import { AmqpService } from '../amqp/amqp.service';
 import { ChainEnum } from '../chains';
 import { CoinEnum } from '../coins';
@@ -37,21 +37,58 @@ export class BtcUpdateWithdrawal extends NestSchedule {
   }
 
   @Cron('*/10 * * * *', { startTime: new Date() })
-  @Transaction()
-  public async cron(
-    @TransactionManager() manager: EntityManager,
-  ): Promise<void> {
-    const coin = await manager
-      .createQueryBuilder(Coin, 'c')
-      .where({ symbol: BTC })
-      .setLock('pessimistic_write')
+  public async cron(): Promise<void> {
+    await getManager().transaction(async (manager) => {
+      const coin = await manager
+        .createQueryBuilder(Coin, 'c')
+        .where({ symbol: BTC })
+        .setLock('pessimistic_write')
+        .getOne();
+      if (!coin) {
+        throw new Error();
+      }
+      const task = await this.taskSelector(manager, coin);
+      if (task) {
+        await task();
+      }
+    });
+  }
+
+  private async taskSelector(
+    manager: EntityManager,
+    coin: Coin,
+  ): Promise<(() => Promise<void>) | null> {
+    // find unhandled withdrawal with minimal id
+    const w = await manager
+      .createQueryBuilder(Withdrawal, 'w')
+      .where({
+        status: WithdrawalStatus.created,
+        symbol: BTC,
+      })
+      .orderBy('id', 'ASC')
       .getOne();
-    if (!coin) {
-      throw new Error();
+    if (!w) {
+      return null;
     }
-    const task = await this.taskSelector(manager, coin);
-    if (task) {
-      await task();
+    while (true) {
+      const txs = await this.rpc.listTransactions(
+        'braavos',
+        64,
+        coin.info.withdrawalCursor,
+      );
+      if (txs.length === 0) {
+        return this.broadcast(manager);
+      }
+      for (const tx of txs.filter((t) => t.category === 'send')) {
+        // assure the comment being number and positive
+        if (!(Number(tx.comment) > 0)) {
+          throw new Error();
+        }
+        if (Number(tx.comment) >= w.id) {
+          return this.credit(manager, coin, tx);
+        }
+      }
+      coin.info.withdrawalCursor += txs.length;
     }
   }
 
@@ -102,43 +139,5 @@ export class BtcUpdateWithdrawal extends NestSchedule {
       this.logger.warn(ws);
       this.logger.warn(txs);
     };
-  }
-
-  private async taskSelector(
-    manager: EntityManager,
-    coin: Coin,
-  ): Promise<(() => Promise<void>) | null> {
-    // find unhandled withdrawal with minimal id
-    const w = await manager
-      .createQueryBuilder(Withdrawal, 'w')
-      .where({
-        status: WithdrawalStatus.created,
-        symbol: BTC,
-      })
-      .orderBy('id', 'ASC')
-      .getOne();
-    if (!w) {
-      return null;
-    }
-    while (true) {
-      const txs = await this.rpc.listTransactions(
-        'braavos',
-        64,
-        coin.info.withdrawalCursor,
-      );
-      if (txs.length === 0) {
-        return this.broadcast(manager);
-      }
-      for (const tx of txs.filter((t) => t.category === 'send')) {
-        // assure the comment being number and positive
-        if (!(Number(tx.comment) > 0)) {
-          throw new Error();
-        }
-        if (Number(tx.comment) >= w.id) {
-          return this.credit(manager, coin, tx);
-        }
-      }
-      coin.info.withdrawalCursor += txs.length;
-    }
   }
 }

@@ -17,7 +17,7 @@ export class Coin extends BaseEntity {
   public symbol!: CoinEnum;
 
   @Exclude()
-  @Column()
+  @Column({ enum: ChainEnum, type: 'enum' })
   public chain!: ChainEnum;
 
   @ApiModelProperty({ description: '充币手续费数量' })

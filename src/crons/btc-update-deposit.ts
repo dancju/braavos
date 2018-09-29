@@ -13,14 +13,14 @@ const { BTC } = CoinEnum;
 
 @Injectable()
 export class BtcUpdateDeposit extends NestSchedule {
-  private readonly rpc: BtcRpc;
   private readonly amqpService: AmqpService;
+  private readonly rpc: BtcRpc;
   private readonly confThreshold: number;
 
-  constructor(rpc: BtcRpc, amqpService: AmqpService, config: ConfigService) {
+  constructor(amqpService: AmqpService, rpc: BtcRpc, config: ConfigService) {
     super();
-    this.rpc = rpc;
     this.amqpService = amqpService;
+    this.rpc = rpc;
     this.confThreshold = config.get('bitcoin.btc.confThreshold');
     if (typeof this.confThreshold !== 'number') {
       throw new Error();

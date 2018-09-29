@@ -94,8 +94,8 @@ export class AmqpService {
       }
       if (!coinService.isValidAddress(body.recipient)) {
         this.logger.info(
-          `consuming withdrawal with invalid address from client #` +
-            `${clientId}: ${JSON.stringify(body)}`,
+          `consuming withdrawal with invalid address from client ` +
+            `#${clientId}: ${JSON.stringify(body)}`,
         );
         channel.ack(msg);
         return;
@@ -140,6 +140,7 @@ export class AmqpService {
             .execute(),
         ]);
       });
+      this.logger.debug('consuming withdrawal ' + JSON.stringify(body));
       channel.ack(msg);
     });
   }

@@ -11,6 +11,7 @@ import request from 'supertest';
 import { EntityManager } from 'typeorm';
 import { BtcCreateDeposit } from '../src/crons/btc-create-deposit';
 import { BtcUpdateDeposit } from '../src/crons/btc-update-deposit';
+import { BtcUpdateWithdrawal } from '../src/crons/btc-update-withdrawal';
 import { CronModule } from '../src/crons/cron.module';
 import { HttpModule } from '../src/http/http.module';
 
@@ -32,7 +33,7 @@ describe('BTC (e2e)', () => {
       imports: [HttpModule, CronModule],
     }).compile()).createNestApplication();
     await app.init();
-    // seeding database
+    // seed database
     await app.get(EntityManager).query(`
       insert into client (
         id, name, "publicKey"
@@ -43,7 +44,7 @@ describe('BTC (e2e)', () => {
     // prepare AMQP
     amqpConnection = await connect(app.get(ConfigService).get('amqp'));
     amqpChannel = await amqpConnection.createConfirmChannel();
-    // prepare Omnicored regtest
+    // prepare omnicored regtest
     rpc = app.get(BtcRpc);
     const info = await rpc.getBlockchainInfo();
     expect(info.chain).toStrictEqual('regtest');
@@ -122,11 +123,11 @@ describe('BTC (e2e)', () => {
             amount: '1',
             coinSymbol: 'BTC',
             key: 'foo',
-            recipient: '2PcRdHdFX8qm6rh6CHhSzR1w8XCBArJg86',
+            recipient: '2NF4JQJEmNKBfLoX8nCpuCeYYExcA5P9aum',
           }),
         ),
         {},
-        (err, ok) => {
+        (err) => {
           if (err) {
             done.fail(err);
           } else {
@@ -135,7 +136,44 @@ describe('BTC (e2e)', () => {
         },
       ),
     );
-    // TODO mq
+    await amqpChannel.waitForConfirms();
+    // TODO fix this bad implementation
+    await new Promise((resolve) => setTimeout(resolve, 4000));
+    expect(
+      (await request(app.getHttpServer())
+        .get('/withdrawals?offset=0&limit=64')
+        .use(signer)).body[0],
+    ).toMatchObject({
+      clientId: 0,
+      coinSymbol: 'BTC',
+      key: 'foo',
+      recipient: '2NF4JQJEmNKBfLoX8nCpuCeYYExcA5P9aum',
+      status: 'created',
+    });
+    await app.get(BtcUpdateWithdrawal).cron();
+    expect(
+      (await request(app.getHttpServer())
+        .get('/withdrawals?offset=0&limit=64')
+        .use(signer)).body[0],
+    ).toMatchObject({
+      clientId: 0,
+      coinSymbol: 'BTC',
+      key: 'foo',
+      recipient: '2NF4JQJEmNKBfLoX8nCpuCeYYExcA5P9aum',
+      status: 'finished',
+    });
+    await new Promise((resolve) => {
+      amqpChannel.consume('withdrawal_update', async (msg) => {
+        const body = JSON.parse(msg!.content.toString());
+        if (body.key === 'foo') {
+          amqpChannel.ack(msg!);
+          expect(body.status).toStrictEqual('confirmed');
+          resolve();
+        } else {
+          amqpChannel.nack(msg!);
+        }
+      });
+    });
     done();
   });
 

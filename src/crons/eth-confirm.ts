@@ -5,11 +5,9 @@ import { ConfigService } from 'nestjs-config';
 import { getManager } from 'typeorm';
 import Web3 from 'web3';
 import { AmqpService } from '../amqp/amqp.service';
-import { ChainEnum, EthereumService } from '../chains';
+import { ChainEnum } from '../chains';
 import { CoinEnum, EthService } from '../coins';
 import { Account } from '../entities/account.entity';
-import { Addr } from '../entities/addr.entity';
-import { Coin } from '../entities/coin.entity';
 import { DepositStatus } from '../entities/deposit-status.enum';
 import { Deposit } from '../entities/deposit.entity';
 
@@ -106,10 +104,8 @@ export class EthConfirm extends NestSchedule {
             this.logger.debug(`confirm tx: ${tx.id}`);
           });
           const d = await Deposit.findOne({ id: tx.id });
-          if (d) {
-            if (d.status === DepositStatus.confirmed) {
-              await this.amqpService.updateDeposit(d);
-            }
+          if (d && d.status === DepositStatus.confirmed) {
+            await this.amqpService.updateDeposit(d);
           }
         }),
       );
