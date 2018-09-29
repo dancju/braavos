@@ -4,6 +4,7 @@ import { ConfirmChannel, connect, Connection } from 'amqplib';
 import BtcRpc from 'bitcoin-core';
 import fs from 'fs';
 import 'jest';
+import yaml from 'js-yaml';
 import { defaults } from 'nest-schedule';
 import { ConfigService } from 'nestjs-config';
 import signature from 'superagent-http-signature';
@@ -114,68 +115,95 @@ describe('BTC (e2e)', () => {
     done();
   });
 
-  it('should handle withdrawals', async (done) => {
-    await new Promise((resolve) =>
-      amqpChannel.sendToQueue(
-        'withdrawal_creation',
-        Buffer.from(
-          JSON.stringify({
-            amount: '1',
-            coinSymbol: 'BTC',
-            key: 'foo',
-            recipient: '2NF4JQJEmNKBfLoX8nCpuCeYYExcA5P9aum',
-          }),
+  it(
+    'should handle withdrawals',
+    async (done) => {
+      const lW = yaml.safeLoad(
+        fs.readFileSync(__dirname + '/fixtures/bitcoin-withdrawals.yml'),
+      ) as Array<{ amount: number; recipient: string }>;
+      const lW0 = lW.slice(0, lW.length / 2);
+      const lW1 = lW.slice(lW.length / 2);
+      lW0.forEach((w, i) =>
+        amqpChannel.sendToQueue(
+          'withdrawal_creation',
+          Buffer.from(
+            JSON.stringify({
+              amount: w.amount,
+              coinSymbol: 'BTC',
+              key: i,
+              recipient: w.recipient,
+            }),
+          ),
         ),
-        {},
-        (err) => {
-          if (err) {
-            done.fail(err);
-          } else {
-            resolve();
-          }
-        },
-      ),
-    );
-    await amqpChannel.waitForConfirms();
-    // TODO fix this bad implementation
-    await new Promise((resolve) => setTimeout(resolve, 4000));
-    expect(
-      (await request(app.getHttpServer())
+      );
+      await amqpChannel.waitForConfirms();
+      // TODO fix smell
+      await new Promise((resolve) => setTimeout(resolve, 4000));
+      let res = (await request(app.getHttpServer())
         .get('/withdrawals?offset=0&limit=64')
-        .use(signer)).body[0],
-    ).toMatchObject({
-      clientId: 0,
-      coinSymbol: 'BTC',
-      key: 'foo',
-      recipient: '2NF4JQJEmNKBfLoX8nCpuCeYYExcA5P9aum',
-      status: 'created',
-    });
-    await app.get(BtcUpdateWithdrawal).cron();
-    expect(
-      (await request(app.getHttpServer())
-        .get('/withdrawals?offset=0&limit=64')
-        .use(signer)).body[0],
-    ).toMatchObject({
-      clientId: 0,
-      coinSymbol: 'BTC',
-      key: 'foo',
-      recipient: '2NF4JQJEmNKBfLoX8nCpuCeYYExcA5P9aum',
-      status: 'finished',
-    });
-    await new Promise((resolve) => {
-      amqpChannel.consume('withdrawal_update', async (msg) => {
-        const body = JSON.parse(msg!.content.toString());
-        if (body.key === 'foo') {
-          amqpChannel.ack(msg!);
-          expect(body.status).toStrictEqual('confirmed');
-          resolve();
-        } else {
-          amqpChannel.nack(msg!);
-        }
-      });
-    });
-    done();
-  });
+        .use(signer)
+        .expect(200)).body;
+      expect(res).toHaveLength(lW0.length);
+      res.sort((a, b) => a.amount - b.amount);
+      for (let i = 0; i < lW0.length; i++) {
+        expect(res[i]).toMatchObject({
+          clientId: 0,
+          coinSymbol: 'BTC',
+          key: String(i),
+          recipient: lW0[i].recipient,
+          status: 'created',
+        });
+        expect(Number(res[i].amount)).toStrictEqual(lW0[i].amount);
+      }
+      await app.get(BtcUpdateWithdrawal).cron();
+      lW1.forEach((w, i) =>
+        amqpChannel.sendToQueue(
+          'withdrawal_creation',
+          Buffer.from(
+            JSON.stringify({
+              amount: w.amount,
+              coinSymbol: 'BTC',
+              key: i,
+              recipient: w.recipient,
+            }),
+          ),
+        ),
+      );
+      await amqpChannel.waitForConfirms();
+      await new Promise((resolve) => setTimeout(resolve, 4000));
+      await app.get(BtcUpdateWithdrawal).cron();
+      // res = (await request(app.getHttpServer())
+      //   .get('/withdrawals?offset=0&limit=64')
+      //   .use(signer)
+      //   .expect(200)).body;
+      // expect(res).toHaveLength(lW.length);
+      // console.log(res);
+      // res.sort((a, b) => a.amount - b.amount);
+      // for (let i = 0; i < withdrawals.length; i++) {
+      //   expect(res[i]).toMatchObject({
+      //     clientId: 0,
+      //     coinSymbol: 'BTC',
+      //     key: String(i),
+      //     recipient: withdrawals[i].recipient,
+      //     status: 'finished',
+      //   });
+      // }
+      // x await new Promise((resolve) => {
+      //   amqpChannel.consume('withdrawal_update', async (msg) => {
+      //     const body = JSON.parse(msg!.content.toString());
+      //     if (body.key === 'foo') {
+      //       amqpChannel.ack(msg!);
+      //       expect(body.status).toStrictEqual('confirmed');
+      //       resolve();
+      //     } else {
+      //       amqpChannel.nack(msg!);
+      //     }
+      //   });
+      // });
+      done();
+    },
+    10000,
+  );
 
   afterAll(async () => {
     await app.get(EntityManager).query('DELETE FROM client WHERE id = 0;');

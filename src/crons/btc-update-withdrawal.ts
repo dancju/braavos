@@ -12,7 +12,6 @@ import { WithdrawalStatus } from '../entities/withdrawal-status.enum';
 import { Withdrawal } from '../entities/withdrawal.entity';
 
 const { BTC } = CoinEnum;
-const { bitcoin } = ChainEnum;
 
 @Injectable()
 export class BtcUpdateWithdrawal extends NestSchedule {
@@ -58,7 +57,6 @@ export class BtcUpdateWithdrawal extends NestSchedule {
     manager: EntityManager,
     coin: Coin,
   ): Promise<(() => Promise<void>) | null> {
-    // find unhandled withdrawal with minimal id
     const w = await manager
       .createQueryBuilder(Withdrawal, 'w')
       .where({
@@ -70,25 +68,20 @@ export class BtcUpdateWithdrawal extends NestSchedule {
     if (!w) {
       return null;
     }
+    let cursor = 0;
     while (true) {
-      const txs = await this.rpc.listTransactions(
-        'braavos',
-        64,
-        coin.info.withdrawalCursor,
-      );
+      const txs = await this.rpc.listTransactions('', 64, cursor);
       if (txs.length === 0) {
         return this.broadcast(manager);
       }
-      for (const tx of txs.filter((t) => t.category === 'send')) {
-        // assure the comment being number and positive
-        if (!(Number(tx.comment) > 0)) {
-          throw new Error();
-        }
+      for (const tx of txs.filter(
+        (t) => t.category === 'send' && Number(t.comment) > 0,
+      )) {
         if (Number(tx.comment) >= w.id) {
           return this.credit(manager, coin, tx);
         }
       }
-      coin.info.withdrawalCursor += txs.length;
+      cursor += txs.length;
     }
   }
 
@@ -105,15 +98,16 @@ export class BtcUpdateWithdrawal extends NestSchedule {
         .orderBy('id', 'ASC')
         .limit(this.step)
         .getMany();
-      await this.rpc.sendMany(
-        'braavos',
-        ws.reduce((acc: { [_: string]: string }, cur) => {
-          acc[cur.recipient] = cur.amount;
-          return acc;
-        }, {}),
-        this.confThreshold,
-        String(ws.slice(-1)[0].id),
-      );
+      const m: { [_: string]: string } = {};
+      let lastId;
+      for (const w of ws) {
+        if (w.recipient in m) {
+          break;
+        }
+        m[w.recipient] = w.amount;
+        lastId = w.id;
+      }
+      await this.rpc.sendMany('', m, this.confThreshold, String(lastId));
     };
   }
 
@@ -123,21 +117,67 @@ export class BtcUpdateWithdrawal extends NestSchedule {
     tx: ListTransactionsResult,
   ): Promise<() => Promise<void>> {
     return async () => {
-      const ws = await manager
+      let ws = await manager
         .createQueryBuilder(Withdrawal, 'w')
-        .where(`coinSymbol = 'BTC' AND status = 'created' AND id <= :key`, {
-          key: Number(tx.comment),
-        })
+        .where(`"coinSymbol" = 'BTC' AND "status" = 'created'`, {})
         .setLock('pessimistic_write')
         .getMany();
-      const txs = await this.rpc.listTransactions(
-        'braavos',
-        64,
-        coin.info.withdrawalCursor,
-      );
-      // TODO update status, credit fee
-      this.logger.warn(ws);
-      this.logger.warn(txs);
+      let txs: ListTransactionsResult[] = [];
+      let cursor = 0;
+      while (true) {
+        const i = (await this.rpc.listTransactions('', 64, cursor)).reverse();
+        if (i.length === 0) {
+          break;
+        }
+        txs = [
+          ...txs,
+          ...i.filter((t) => t.category === 'send' && Number(t.comment) > 0),
+        ];
+        cursor += i.length;
+        let flag = false;
+        i.forEach((t) => {
+          if (t.txid === coin.info.withdrawalCursor) {
+            flag = true;
+            return;
+          }
+        });
+        if (flag) {
+          break;
+        }
+      }
+      const milestone = Math.max(...txs.map((t) => Number(t.comment)));
+      ws = ws.filter((w) => w.id <= milestone);
+      txs = txs.filter((t) => Number(t.comment) === milestone);
+      if (ws.length !== txs.length) {
+        throw new Error();
+      }
+      ws.sort((a, b) => (a.recipient < b.recipient ? -1 : 1));
+      txs.sort((a, b) => (a.address < b.address ? -1 : 1));
+      for (let i = 0; i < ws.length; i++) {
+        if (
+          ws[i].recipient !== txs[i].address ||
+          Number(ws[i].amount) !== -txs[i].amount
+        ) {
+          throw new Error();
+        }
+        ws[i].txHash = txs[i].txid;
+        ws[i].feeSymbol = BTC;
+        ws[i].feeAmount = -txs[i].fee;
+        ws[i].status = WithdrawalStatus.finished;
+      }
+      await manager.save(ws);
+      await manager.query(`
+        update coin
+        set
+          info =
+            info ||
+            (
+              '{ "withdrawalCursor":' ||
+              '"${txs.slice(-1)[0].txid}"' ||
+              ' }'
+            )::jsonb
+        where symbol = 'BTC'
+      `);
     };
   }
 }

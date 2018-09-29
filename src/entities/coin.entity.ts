@@ -20,7 +20,7 @@ export class Coin extends BaseEntity {
   @Column({ enum: ChainEnum, type: 'enum' })
   public chain!: ChainEnum;
 
-  @ApiModelProperty({ description: '充币手续费数量' })
+  @ApiModelProperty({ description: '充币手续费数量', type: 'real' })
   @Column()
   public depositFeeAmount!: number;
 
@@ -28,7 +28,7 @@ export class Coin extends BaseEntity {
   @Column({ enum: CoinEnum, type: 'enum' })
   public depositFeeSymbol!: CoinEnum;
 
-  @ApiModelProperty({ description: '提币手续费数量' })
+  @ApiModelProperty({ description: '提币手续费数量', type: 'real' })
   @Column()
   public withdrawalFeeAmount!: number;
 

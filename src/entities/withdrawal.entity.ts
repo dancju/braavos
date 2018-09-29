@@ -48,7 +48,7 @@ export class Withdrawal extends BaseEntity {
   public amount!: string;
 
   @ApiModelProperty({ description: '手续费数量' })
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'real' })
   public feeAmount?: number;
 
   @ApiModelProperty({ description: '手续费单位符号' })
