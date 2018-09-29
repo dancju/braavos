@@ -119,7 +119,10 @@ describe('BTC (e2e)', () => {
     'should handle withdrawals',
     async (done) => {
       const lW = yaml.safeLoad(
-        fs.readFileSync(__dirname + '/fixtures/bitcoin-withdrawals.yml'),
+        fs.readFileSync(
+          __dirname + '/fixtures/bitcoin-withdrawals.yml',
+          'ascii',
+        ),
       ) as Array<{ amount: number; recipient: string }>;
       const lW0 = lW.slice(0, lW.length / 2);
       const lW1 = lW.slice(lW.length / 2);
@@ -144,7 +147,7 @@ describe('BTC (e2e)', () => {
         .use(signer)
         .expect(200)).body;
       expect(res).toHaveLength(lW0.length);
-      res.sort((a, b) => a.amount - b.amount);
+      res.sort((a: any, b: any) => Number(a.amount) - Number(b.amount));
       for (let i = 0; i < lW0.length; i++) {
         expect(res[i]).toMatchObject({
           clientId: 0,

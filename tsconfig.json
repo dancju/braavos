@@ -11,7 +11,7 @@
     "experimentalDecorators": true,
     "lib": ["dom", "es2018"],
     "module": "commonjs",
-    "noImplicitAny": false,
+    "noImplicitAny": true,
     "noLib": false,
     "outDir": "./dist",
     "removeComments": true,

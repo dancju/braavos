@@ -179,8 +179,8 @@ export abstract class Erc20Confirm extends NestSchedule {
             .toString();
         }
         const method = contract.methods.transfer(collectAddr, collectValue);
-        let txData;
-        let gasLimit;
+        let txData: string;
+        let gasLimit: number;
         try {
           txData = method.encodeABI();
           gasLimit = await method.estimateGas({ from: thisAddr });
