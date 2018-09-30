@@ -43,13 +43,15 @@ export class BitcoinService extends ChainService {
       ? /^(bc1|1|3)[a-zA-HJ-NP-Z0-9]{25,39}$/
       : /^(tb1|m|n|2)[a-zA-HJ-NP-Z0-9]{25,39}$/;
     const seed = config.get('crypto.seed')() as Buffer;
-    const xPrv = fromSeed(seed, this.network).toBase58();
+    const xPrv = fromSeed(seed, this.network)
+      .derivePath(`m/84'/0'/0'`)
+      .toBase58();
     this.prvNode = fromBase58(xPrv, this.network);
     this.rpc = rpc;
   }
 
   public async getAddr(clientId: number, path0: string): Promise<string> {
-    const path1 = clientId + `'/` + path0;
+    const path1 = clientId + `/` + path0;
     const addr = this.bech32
       ? this.getAddrP2wpkh(path1)
       : this.getAddrP2sh(path1);

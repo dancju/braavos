@@ -19,7 +19,7 @@ export class EthereumService extends ChainService {
   }
 
   public async getAddr(clientId: number, path0: string): Promise<string> {
-    const path1 = 'm/' + clientId + `'/` + path0;
+    const path1 = `m/44'/60'/0'/` + clientId + `/` + path0;
     const addr = toChecksumAddress(
       this.hdkey
         .derivePath(path1)
