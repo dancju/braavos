@@ -77,7 +77,7 @@ export class BitcoinService extends ChainService {
   }
 
   protected getPrivateKey(clientId: number, path0: string): string {
-    const path1 = clientId + `'/` + path0;
+    const path1 = clientId + `/` + path0;
     return this.prvNode.derivePath(path1).toWIF();
   }
 
