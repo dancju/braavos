@@ -23,9 +23,11 @@ export class BtcCreateDeposit extends NestSchedule {
     this.rpc = rpc;
   }
 
+  // TODO Lock depositMilestone
   @Cron('*/1 * * * *', { startTime: new Date() })
   public async cron(): Promise<void> {
-    const lastMilestone: string = (await Coin.findOne(BTC))!.info.depositCursor;
+    const lastMilestone: string = (await Coin.findOne(BTC))!.info
+      .depositMilestone;
     const nextMilestone: string = (await this.rpc.listTransactions(
       '*',
       1,
@@ -43,7 +45,8 @@ export class BtcCreateDeposit extends NestSchedule {
       update coin
       set
         info =
-          info || ('{ "depositCursor":' || '"${nextMilestone}"' || ' }')::jsonb
+          info ||
+          ('{ "depositMilestone":' || '"${nextMilestone}"' || ' }')::jsonb
       where symbol = 'BTC'
     `);
   }

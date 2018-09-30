@@ -29,7 +29,6 @@ export class BtcUpdateDeposit extends NestSchedule {
 
   @Cron('*/10 * * * *', { startTime: new Date() })
   public async cron(): Promise<void> {
-    const deposits: Deposit[] = [];
     await getManager().transaction(async (manager) => {
       for (const d of await manager
         .createQueryBuilder(Deposit, 'd')
@@ -65,9 +64,10 @@ export class BtcUpdateDeposit extends NestSchedule {
             Number(d.amount),
           ),
         ]);
-        deposits.push((await manager.findOne(Deposit, { id: d.id }))!);
+        this.amqpService.updateDeposit(
+          (await manager.findOne(Deposit, { id: d.id }))!,
+        );
       }
     });
-    deposits.forEach(this.amqpService.updateDeposit.bind(this.amqpService));
   }
 }

@@ -78,7 +78,7 @@ export class BtcUpdateWithdrawal extends NestSchedule {
         (t) => t.category === 'send' && Number(t.comment) > 0,
       )) {
         if (Number(tx.comment) >= w.id) {
-          return this.credit(manager, coin, tx);
+          return this.credit(manager, coin.info.withdrawalMilestone);
         }
       }
       cursor += txs.length;
@@ -113,8 +113,7 @@ export class BtcUpdateWithdrawal extends NestSchedule {
 
   private async credit(
     manager: EntityManager,
-    coin: Coin,
-    tx: ListTransactionsResult,
+    withdrawalMilestone: string,
   ): Promise<() => Promise<void>> {
     return async () => {
       let ws = await manager
@@ -136,7 +135,7 @@ export class BtcUpdateWithdrawal extends NestSchedule {
         cursor += i.length;
         let flag = false;
         i.forEach((t) => {
-          if (t.txid === coin.info.withdrawalCursor) {
+          if (t.txid === withdrawalMilestone) {
             flag = true;
             return;
           }
@@ -172,7 +171,7 @@ export class BtcUpdateWithdrawal extends NestSchedule {
           info =
             info ||
             (
-              '{ "withdrawalCursor":' ||
+              '{ "withdrawalMilestone":' ||
               '"${txs.slice(-1)[0].txid}"' ||
               ' }'
             )::jsonb
