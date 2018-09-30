@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
-import { ConfigService } from 'nestjs-config';
 import Web3 from 'web3';
 import { AmqpService } from '../amqp/amqp.service';
 import { ChainEnum } from '../chains';
 import { CoinEnum, EthService } from '../coins';
+import { ConfigService } from '../config/config.service';
 import { Addr } from '../entities/addr.entity';
 import { Coin } from '../entities/coin.entity';
 import { DepositStatus } from '../entities/deposit-status.enum';
@@ -49,13 +49,10 @@ export class EthDeposit extends NestSchedule {
         return;
       }
       this.cronLock.depositCron = true;
-      const minimumThreshold: number = this.config.get(
-        'ethereum.ether.deposit.minimumThreshold',
-      );
-      const pocketAddr: string = this.config.get(
-        'ethereum.ether.deposit.pocketAddr',
-      );
-      const step: number = this.config.get('ethereum.ether.deposit.step');
+      const minimumThreshold = this.config.ethereum.ETH.deposit
+        .minimumThreshold;
+      const pocketAddr = this.config.ethereum.pocketAddr;
+      const step = this.config.ethereum.ETH.deposit.step;
       this.logger.debug(new Date());
       const coin = await Coin.createQueryBuilder()
         .where({ symbol: ETH })

@@ -1,13 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import bunyan from 'bunyan';
+import crypto from 'crypto';
 import { Cron, NestSchedule } from 'nest-schedule';
-import { ConfigService } from 'nestjs-config';
+import querystring from 'querystring';
+import request from 'superagent';
 import { getManager } from 'typeorm';
 import Web3 from 'web3';
 import { Signature } from 'web3/eth/accounts';
 import { AmqpService } from '../amqp/amqp.service';
 import { ChainEnum } from '../chains';
 import { CoinEnum } from '../coins';
+import { ConfigService } from '../config/config.service';
 import { Account } from '../entities/account.entity';
 import { Addr } from '../entities/addr.entity';
 import { Coin } from '../entities/coin.entity';
@@ -16,9 +19,6 @@ import { Deposit } from '../entities/deposit.entity';
 import { KvPair } from '../entities/kv-pair.entity';
 import { WithdrawalStatus } from '../entities/withdrawal-status.enum';
 import { Withdrawal } from '../entities/withdrawal.entity';
-import request from 'superagent';
-import crypto from 'crypto';
-import querystring from 'querystring';
 
 const { ETH } = CoinEnum;
 const { ethereum } = ChainEnum;
@@ -63,16 +63,13 @@ export abstract class Erc20Withdrawal extends NestSchedule {
     }
     try {
       this.cronLock.withdrawalCron = true;
-      const contractAddr: string = this.config.get(
-        `erc20.${this.coinSymbol}.deposit.contractAddr`,
-      );
-      const decimals: number = this.config.get(
-        `erc20.${this.coinSymbol}.deposit.decimals`,
-      );
-      const bmartHost: string = this.config.get('erc20.bmart.bmartHost');
-      const bmartKey: string = this.config.get('erc20.bmart.bmartKey');
-      const bmartSecret: string = this.config.get('erc20.bmart.bmartSecret');
-
+      const contractAddr = this.config.ethereum.get(this.coinSymbol)
+        .contractAddr;
+      const decimals = this.config.ethereum.get(this.coinSymbol).deposit
+        .decimals;
+      const bmartHost = this.config.ethereum.bmart.bmartHost;
+      const bmartKey = this.config.ethereum.bmart.bmartKey;
+      const bmartSecret = this.config.ethereum.bmart.bmartSecret;
       const contract = new this.web3.eth.Contract(this.abi, contractAddr);
       const collectAddr = await this.tokenService.getAddr(0, '0');
       const prv = this.tokenService.getPrivateKey(0, '0');
@@ -221,7 +218,9 @@ export abstract class Erc20Withdrawal extends NestSchedule {
                   if (ww) {
                     this.amqpService.updateWithdrawal(ww);
                   }
-                  this.logger.info('Finish update db | tokenName: ' + this.coinSymbol);
+                  this.logger.info(
+                    'Finish update db | tokenName: ' + this.coinSymbol,
+                  );
                   if (wd[i].memo) {
                     wd[i].memo = wd[i].memo!.toLowerCase();
                   }

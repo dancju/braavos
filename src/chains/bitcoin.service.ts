@@ -1,7 +1,7 @@
 import { BIP32, fromBase58, fromSeed } from 'bip32';
 import BtcRpc from 'bitcoin-core';
 import { Network, payments } from 'bitcoinjs-lib';
-import { ConfigService } from 'nestjs-config';
+import { ConfigService } from '../config/config.service';
 import { Addr } from '../entities/addr.entity';
 import { ChainEnum } from './chain.enum';
 import { ChainService } from './chain.service';
@@ -33,23 +33,25 @@ export class BitcoinService extends ChainService {
 
   constructor(config: ConfigService, rpc: BtcRpc) {
     super();
-    this.bech32 = config.get('bitcoin.bech32') as boolean;
+    this.bech32 = config.bitcoin.bech32;
     if ('boolean' !== typeof this.bech32) {
       throw new Error();
     }
-    const isMainnet = config.get('master').isProduction();
+    const isMainnet = config.isProduction;
     this.network = isMainnet ? MAINNET : TESTNET;
     this.rAddr = isMainnet
       ? /^(bc1|1|3)[a-zA-HJ-NP-Z0-9]{25,39}$/
       : /^(tb1|m|n|2)[a-zA-HJ-NP-Z0-9]{25,39}$/;
-    const seed = config.get('crypto.seed')() as Buffer;
-    const xPrv = fromSeed(seed, this.network).toBase58();
+    const seed = config.seed;
+    const xPrv = fromSeed(seed, this.network)
+      .derivePath(`m/84'/0'/0'`)
+      .toBase58();
     this.prvNode = fromBase58(xPrv, this.network);
     this.rpc = rpc;
   }
 
   public async getAddr(clientId: number, path0: string): Promise<string> {
-    const path1 = clientId + `'/` + path0;
+    const path1 = clientId + `/` + path0;
     const addr = this.bech32
       ? this.getAddrP2wpkh(path1)
       : this.getAddrP2sh(path1);
@@ -75,7 +77,7 @@ export class BitcoinService extends ChainService {
   }
 
   protected getPrivateKey(clientId: number, path0: string): string {
-    const path1 = clientId + `'/` + path0;
+    const path1 = clientId + `/` + path0;
     return this.prvNode.derivePath(path1).toWIF();
   }
 

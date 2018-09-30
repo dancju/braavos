@@ -16,6 +16,7 @@ import {
   ApiOkResponse,
 } from '@nestjs/swagger';
 import { Matches } from 'class-validator';
+import { ChainService } from '../chains';
 import { CoinEnum } from '../coins';
 import { Client } from '../entities/client.entity';
 import { Coin } from '../entities/coin.entity';
@@ -30,10 +31,10 @@ import { SignatureGuard } from './signature.guard';
 @UseGuards(SignatureGuard)
 @UsePipes(ValidationPipe)
 export class HttpController {
-  private readonly coinServices: { [_ in CoinEnum]?: ICoinService };
+  private readonly coinServices: { [_ in CoinEnum]?: ChainService };
 
   constructor(
-    @Inject('CoinServiceRepo') coinServices: { [_ in CoinEnum]?: ICoinService },
+    @Inject('CoinServiceRepo') coinServices: { [_ in CoinEnum]?: ChainService },
   ) {
     this.coinServices = coinServices;
   }

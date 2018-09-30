@@ -1,6 +1,7 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { ConfigService } from './config/config.service';
 import { HttpModule } from './http/http.module';
 
 async function bootstrap() {
@@ -17,7 +18,7 @@ async function bootstrap() {
       .build(),
   );
   SwaggerModule.setup('api', app, document);
-  await app.listen(app.get('ConfigService').get('master').port);
+  await app.listen(app.get(ConfigService).httpPort);
 }
 
 bootstrap();
