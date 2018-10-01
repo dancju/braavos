@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import bunyan from 'bunyan';
-import { ConfigService } from 'nestjs-config';
 import Web3 from 'web3';
 import { AmqpService } from '../amqp/amqp.service';
 import { CfcService, CoinEnum } from '../coins';
+import { ConfigService } from '../config/config.service';
 import { Erc20Collect } from './erc20-collect';
 
 const { CFC } = CoinEnum;

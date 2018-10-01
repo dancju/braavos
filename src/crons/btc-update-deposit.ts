@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import BtcRpc from 'bitcoin-core';
 import { Cron, NestSchedule } from 'nest-schedule';
-import { ConfigService } from 'nestjs-config';
 import { getManager } from 'typeorm';
 import { AmqpService } from '../amqp/amqp.service';
 import { CoinEnum } from '../coins';
+import { ConfigService } from '../config/config.service';
 import { Account } from '../entities/account.entity';
 import { DepositStatus } from '../entities/deposit-status.enum';
 import { Deposit } from '../entities/deposit.entity';
@@ -21,7 +21,7 @@ export class BtcUpdateDeposit extends NestSchedule {
     super();
     this.amqpService = amqpService;
     this.rpc = rpc;
-    this.confThreshold = config.get('bitcoin.btc.confThreshold');
+    this.confThreshold = config.bitcoin.btc.confThreshold;
     if (typeof this.confThreshold !== 'number') {
       throw new Error();
     }

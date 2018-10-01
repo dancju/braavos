@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
-import { ConfigService } from 'nestjs-config';
 import { getManager } from 'typeorm';
 import Web3 from 'web3';
 import { Signature } from 'web3/eth/accounts';
 import { AmqpService } from '../amqp/amqp.service';
 import { ChainEnum, EthereumService } from '../chains';
 import { CoinEnum } from '../coins';
+import { ConfigService } from '../config/config.service';
 import { Account } from '../entities/account.entity';
 import { Addr } from '../entities/addr.entity';
 import { Coin } from '../entities/coin.entity';
@@ -57,9 +57,8 @@ export abstract class Erc20Confirm extends NestSchedule {
     }
     try {
       this.cronLock.confirmCron = true;
-      const confThreshold: number = this.config.get(
-        `erc20.${this.coinSymbol}.collect.confThreshold`,
-      );
+      const confThreshold = this.config.ethereum.get(this.coinSymbol).collect
+        .confThreshold;
       const uu = await Deposit.createQueryBuilder()
         .select()
         .where({
@@ -132,18 +131,12 @@ export abstract class Erc20Confirm extends NestSchedule {
     }
     try {
       this.cronLock.payPreFeeCron = true;
-      const contractAddr: string = this.config.get(
-        `erc20.${this.coinSymbol}.collect.contractAddr`,
-      );
-      const pocketAddr: string = this.config.get(
-        `erc20.${this.coinSymbol}.collect.pocketAddr`,
-      );
-      const pocketPrv: string = this.config.get(
-        `erc20.${this.coinSymbol}.collect.pocketPrv`,
-      );
-      const decimals: number = this.config.get(
-        `erc20.${this.coinSymbol}.collect.decimals`,
-      );
+      const contractAddr = this.config.ethereum.get(this.coinSymbol)
+        .contractAddr;
+      const pocketAddr = this.config.ethereum.pocketAddr;
+      const pocketPrv = this.config.ethereum.pocketPrv;
+      const decimals = this.config.ethereum.get(this.coinSymbol).collect
+        .decimals;
       const uu = await Deposit.createQueryBuilder()
         .select()
         .where({ coinSymbol: this.coinSymbol, status: DepositStatus.confirmed })

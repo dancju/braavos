@@ -20,7 +20,7 @@
     "strictNullChecks": true,
     "strictPropertyInitialization": true,
     "target": "es6",
-    "typeRoots": ["./src/types"]
+    "typeRoots": ["src/types"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "**/*.spec.ts"]

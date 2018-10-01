@@ -3,24 +3,19 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import BtcRpc from 'bitcoin-core';
 import bunyan from 'bunyan';
-import { ConfigModule, ConfigService } from 'nestjs-config';
 import { BtcService, CfcService, CoinEnum, EthService } from '../coins';
-import { Coin } from '../entities/coin.entity';
+import { ConfigModule } from '../config/config.module';
+import { ConfigService } from '../config/config.service';
 import { HttpController } from './http.controller';
 import { SignatureStrategy } from './signature.strategy';
 
 @Module({
   controllers: [HttpController],
   imports: [
-    ConfigModule.load(),
+    ConfigModule,
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: async (config: ConfigService) => ({
-        ...config.get('pg'),
-        bigNumberStrings: true,
-        supportBigNumbers: true,
-      }),
+      useExisting: ConfigService,
     }),
   ],
   providers: [
@@ -31,7 +26,7 @@ import { SignatureStrategy } from './signature.strategy';
       useFactory: (config: ConfigService) =>
         bunyan.createLogger({
           name: 'braavos-http',
-          streams: config.get('master').isProduction()
+          streams: config.isProduction
             ? [
                 { level: bunyan.DEBUG, stream: process.stdout },
                 new LoggingBunyan().stream(bunyan.DEBUG),
@@ -42,8 +37,7 @@ import { SignatureStrategy } from './signature.strategy';
     {
       inject: [ConfigService],
       provide: BtcRpc,
-      useFactory: (config: ConfigService) =>
-        new BtcRpc(config.get('bitcoin.rpc')),
+      useFactory: (config: ConfigService) => new BtcRpc(config.bitcoin.rpc),
     },
     BtcService,
     EthService,
