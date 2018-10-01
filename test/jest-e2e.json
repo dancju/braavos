@@ -1,4 +1,6 @@
 {
+  "globalSetup": "./global-setup.js",
+  "globalTeardown": "./global-teardown.js",
   "moduleFileExtensions": ["js", "json", "ts"],
   "rootDir": ".",
   "testRegex": ".e2e-spec.ts$",

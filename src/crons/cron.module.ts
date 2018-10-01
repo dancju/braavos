@@ -4,10 +4,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import BtcRpc from 'bitcoin-core';
 import bunyan from 'bunyan';
 import { AmqpModule } from 'nestjs-amqp';
-import { ConfigModule, ConfigService } from 'nestjs-config';
 import Web3 from 'web3';
 import { AmqpService } from '../amqp/amqp.service';
 import { BtcService, CfcService, CoinEnum, EthService } from '../coins';
+import { ConfigModule } from '../config/config.module';
+import { ConfigService } from '../config/config.service';
 import { BtcCreateDeposit } from './btc-create-deposit';
 import { BtcRefreshFee } from './btc-refresh-fee';
 import { BtcUpdateDeposit } from './btc-update-deposit';
@@ -22,21 +23,15 @@ import { EthDeposit } from './eth-deposit';
 import { EthWithdrawal } from './eth-withdrawal';
 
 @Module({
-  controllers: [],
   imports: [
-    ConfigModule.load(),
+    ConfigModule,
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: async (config: ConfigService) => ({
-        ...config.get('pg'),
-        bigNumberStrings: true,
-        supportBigNumbers: true,
-      }),
+      useExisting: ConfigService,
     }),
     AmqpModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => config.get('amqp'),
+      useFactory: (config: ConfigService) => config.amqp as any,
     }),
   ],
   providers: [
@@ -46,7 +41,7 @@ import { EthWithdrawal } from './eth-withdrawal';
       useFactory: (config: ConfigService) =>
         bunyan.createLogger({
           name: 'braavos-crons',
-          streams: config.get('master').isProduction()
+          streams: config.isProduction
             ? [
                 { level: bunyan.DEBUG, stream: process.stdout },
                 new LoggingBunyan().stream(bunyan.DEBUG),
@@ -57,14 +52,13 @@ import { EthWithdrawal } from './eth-withdrawal';
     {
       inject: [ConfigService],
       provide: BtcRpc,
-      useFactory: (config: ConfigService) =>
-        new BtcRpc(config.get('bitcoin.rpc')),
+      useFactory: (config: ConfigService) => new BtcRpc(config.bitcoin.rpc),
     },
     {
       inject: [ConfigService],
       provide: Web3,
       useFactory: (config: ConfigService) =>
-        new Web3(new Web3.providers.HttpProvider(config.get('ethereum.web3'))),
+        new Web3(new Web3.providers.HttpProvider(config.ethereum.web3)),
     },
     AmqpService,
     {

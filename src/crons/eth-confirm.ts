@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
-import { ConfigService } from 'nestjs-config';
 import { getManager } from 'typeorm';
 import Web3 from 'web3';
 import { AmqpService } from '../amqp/amqp.service';
 import { ChainEnum } from '../chains';
 import { CoinEnum, EthService } from '../coins';
+import { ConfigService } from '../config/config.service';
 import { Account } from '../entities/account.entity';
 import { DepositStatus } from '../entities/deposit-status.enum';
 import { Deposit } from '../entities/deposit.entity';
@@ -49,9 +49,7 @@ export class EthConfirm extends NestSchedule {
     }
     try {
       this.cronLock.confirmCron = true;
-      const confThreshold: number = this.config.get(
-        'ethereum.ether.collect.confThreshold',
-      );
+      const confThreshold = this.config.ethereum.ETH.collect.confThreshold;
       const uu = await Deposit.createQueryBuilder()
         .select()
         .where({ coinSymbol: ETH, status: DepositStatus.unconfirmed })

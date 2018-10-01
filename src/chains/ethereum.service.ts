@@ -1,20 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { isValidChecksumAddress, toChecksumAddress } from 'ethereumjs-util';
 import { EthereumHDKey, fromMasterSeed } from 'ethereumjs-wallet/hdkey';
-import { ConfigService } from 'nestjs-config';
+import { ConfigService } from '../config/config.service';
 import { Addr } from '../entities/addr.entity';
 import { ChainEnum } from './chain.enum';
 import { ChainService } from './chain.service';
 
 const { ethereum } = ChainEnum;
 
-@Injectable()
 export class EthereumService extends ChainService {
   protected readonly hdkey: EthereumHDKey;
 
   constructor(config: ConfigService) {
     super();
-    const seed = config.get('crypto.seed')() as Buffer;
+    const seed = config.seed;
     this.hdkey = fromMasterSeed(seed);
   }
 

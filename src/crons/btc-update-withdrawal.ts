@@ -2,11 +2,10 @@ import { Injectable } from '@nestjs/common';
 import BtcRpc, { ListTransactionsResult } from 'bitcoin-core';
 import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
-import { ConfigService } from 'nestjs-config';
 import { EntityManager, getManager } from 'typeorm';
 import { AmqpService } from '../amqp/amqp.service';
-import { ChainEnum } from '../chains';
 import { CoinEnum } from '../coins';
+import { ConfigService } from '../config/config.service';
 import { Coin } from '../entities/coin.entity';
 import { WithdrawalStatus } from '../entities/withdrawal-status.enum';
 import { Withdrawal } from '../entities/withdrawal.entity';
@@ -31,22 +30,17 @@ export class BtcUpdateWithdrawal extends NestSchedule {
     this.logger = logger;
     this.amqpService = amqpService;
     this.rpc = rpc;
-    this.confThreshold = config.get('bitcoin.btc.confThreshold');
-    this.step = config.get('bitcoin.btc.withdrawalStep');
+    this.confThreshold = config.bitcoin.btc.confThreshold;
+    this.step = config.bitcoin.btc.withdrawalStep;
   }
 
+  // TODO Lock withdrawalMilestone
   @Cron('*/10 * * * *', { startTime: new Date() })
   public async cron(): Promise<void> {
     await getManager().transaction(async (manager) => {
-      const coin = await manager
-        .createQueryBuilder(Coin, 'c')
-        .where({ symbol: BTC })
-        .setLock('pessimistic_write')
-        .getOne();
-      if (!coin) {
-        throw new Error();
-      }
-      const task = await this.taskSelector(manager, coin);
+      const lastMilestone = (await Coin.findOne(BTC))!.info
+        .withdrawalMilestone as string;
+      const task = await this.taskSelector(manager, lastMilestone);
       if (task) {
         await task();
       }
@@ -55,8 +49,8 @@ export class BtcUpdateWithdrawal extends NestSchedule {
 
   private async taskSelector(
     manager: EntityManager,
-    coin: Coin,
-  ): Promise<(() => Promise<void>) | null> {
+    lastMilestone: string,
+  ): Promise<(() => Promise<void>) | undefined> {
     const w = await manager
       .createQueryBuilder(Withdrawal, 'w')
       .where({
@@ -66,7 +60,7 @@ export class BtcUpdateWithdrawal extends NestSchedule {
       .orderBy('id', 'ASC')
       .getOne();
     if (!w) {
-      return null;
+      return;
     }
     let cursor = 0;
     while (true) {
@@ -78,7 +72,7 @@ export class BtcUpdateWithdrawal extends NestSchedule {
         (t) => t.category === 'send' && Number(t.comment) > 0,
       )) {
         if (Number(tx.comment) >= w.id) {
-          return this.credit(manager, coin.info.withdrawalMilestone);
+          return this.credit(manager, lastMilestone);
         }
       }
       cursor += txs.length;
@@ -111,6 +105,7 @@ export class BtcUpdateWithdrawal extends NestSchedule {
     };
   }
 
+  // TODO credit fee
   private async credit(
     manager: EntityManager,
     withdrawalMilestone: string,
@@ -121,32 +116,22 @@ export class BtcUpdateWithdrawal extends NestSchedule {
         .where(`"coinSymbol" = 'BTC' AND "status" = 'created'`, {})
         .setLock('pessimistic_write')
         .getMany();
-      let txs: ListTransactionsResult[] = [];
-      let cursor = 0;
-      while (true) {
-        const i = (await this.rpc.listTransactions('', 64, cursor)).reverse();
-        if (i.length === 0) {
-          break;
-        }
-        txs = [
-          ...txs,
-          ...i.filter((t) => t.category === 'send' && Number(t.comment) > 0),
-        ];
-        cursor += i.length;
-        let flag = false;
-        i.forEach((t) => {
-          if (t.txid === withdrawalMilestone) {
-            flag = true;
-            return;
-          }
-        });
-        if (flag) {
-          break;
-        }
-      }
-      const milestone = Math.max(...txs.map((t) => Number(t.comment)));
-      ws = ws.filter((w) => w.id <= milestone);
-      txs = txs.filter((t) => Number(t.comment) === milestone);
+      let txs = await this.getTxs(withdrawalMilestone);
+      await manager.query(`
+        update coin
+        set
+          info =
+            info ||
+            (
+              '{ "withdrawalMilestone":' ||
+              '"${txs.slice(-1)[0].txid}"' ||
+              ' }'
+            )::jsonb
+        where symbol = 'BTC'
+      `);
+      const pivot = Math.max(...txs.map((t) => Number(t.comment)));
+      ws = ws.filter((w) => w.id <= pivot);
+      txs = txs.filter((t) => Number(t.comment) === pivot);
       if (ws.length !== txs.length) {
         throw new Error();
       }
@@ -165,18 +150,34 @@ export class BtcUpdateWithdrawal extends NestSchedule {
         ws[i].status = WithdrawalStatus.finished;
       }
       await manager.save(ws);
-      await manager.query(`
-        update coin
-        set
-          info =
-            info ||
-            (
-              '{ "withdrawalMilestone":' ||
-              '"${txs.slice(-1)[0].txid}"' ||
-              ' }'
-            )::jsonb
-        where symbol = 'BTC'
-      `);
+      await Promise.all(
+        ws.map(async (w) => {
+          await this.amqpService.updateWithdrawal(w);
+        }),
+      );
     };
+  }
+
+  private async getTxs(
+    withdrawalMilestone: string,
+  ): Promise<ListTransactionsResult[]> {
+    let txs: ListTransactionsResult[] = [];
+    let cursor = 0;
+    while (true) {
+      const tx = (await this.rpc.listTransactions('', 64, cursor)).reverse();
+      if (tx.length === 0) {
+        return txs;
+      }
+      txs = [
+        ...txs,
+        ...tx.filter((t) => t.category === 'send' && Number(t.comment) > 0),
+      ];
+      cursor += tx.length;
+      for (const t of tx) {
+        if (t.txid === withdrawalMilestone) {
+          return txs;
+        }
+      }
+    }
   }
 }

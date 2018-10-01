@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
-import { ConfigService } from 'nestjs-config';
 import { getManager } from 'typeorm';
 import Web3 from 'web3';
 import { Signature } from 'web3/eth/accounts';
 import { AmqpService } from '../amqp/amqp.service';
 import { ChainEnum } from '../chains';
 import { CoinEnum, EthService } from '../coins';
+import { ConfigService } from '../config/config.service';
 import { WithdrawalStatus } from '../entities/withdrawal-status.enum';
 import { Withdrawal } from '../entities/withdrawal.entity';
 
@@ -61,7 +61,7 @@ export class EthWithdrawal extends NestSchedule {
           .orderBy(`info->'nonce'`)
           .getMany();
         if (wd.length <= 0) {
-          // logger.debug('no record')
+          this.logger.debug('no record');
           break;
         }
         for (const i in wd) {
@@ -75,29 +75,32 @@ export class EthWithdrawal extends NestSchedule {
           if (wd[i].info.nonce === null || wd[i].info.nonce === undefined) {
             await getManager().transaction(async (manager) => {
               await manager.query(`
-              select * from kv_pair
-              where key = 'ethWithdrawalNonce'
-              for update
-            `);
+                select * from kv_pair
+                where key = 'ethWithdrawalNonce'
+                for update
+              `);
               const uu = await manager.query(`
-              update kv_pair
-              set value = to_json(value::text::integer + 1)
-              where key = 'ethWithdrawalNonce'
-              returning value as nonce`);
+                update kv_pair
+                set value = to_json(value::text::integer + 1)
+                where key = 'ethWithdrawalNonce'
+                returning value as nonce
+              `);
               dbNonce = uu[0].nonce;
               dbNonce = dbNonce - 1;
               await manager.query(`
-              update withdrawal
-              set info = (info || ('{"nonce":' || (${dbNonce}) || '}')::jsonb)
-              where id = ${wd[i].id}
-            `);
+                update withdrawal
+                set info = (info || ('{"nonce":' || (${dbNonce}) || '}')::jsonb)
+                where id = ${wd[i].id}
+              `);
             });
           } else {
             dbNonce = wd[i].info.nonce;
           }
           /* compare nonce: db - fullNode */
           if (dbNonce < fullNodeNonce) {
-            this.logger.fatal(`db nonce is less than full node nonce, db info: ${wd}`);
+            this.logger.fatal(
+              `db nonce is less than full node nonce, db info: ${wd}`,
+            );
             return;
           } else if (dbNonce > fullNodeNonce) {
             this.logger.info('still have some txs to be handled');

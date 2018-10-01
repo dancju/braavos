@@ -1,15 +1,15 @@
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from 'nestjs-config';
+import { Inject, Injectable } from '@nestjs/common';
 import { EthereumService } from '../chains';
 import { CoinEnum } from '../coins';
+import { ConfigService } from '../config/config.service';
 import { Account } from '../entities/account.entity';
 import { Client } from '../entities/client.entity';
 
 const { CFC, ETH } = CoinEnum;
 
 @Injectable()
-export class EthService extends EthereumService implements ICoinService {
-  constructor(config: ConfigService) {
+export class EthService extends EthereumService {
+  constructor(@Inject('ConfigService') config: ConfigService) {
     super(config);
     // init for debug
     // try {

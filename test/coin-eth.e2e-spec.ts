@@ -3,12 +3,11 @@ import { Test } from '@nestjs/testing';
 import { connect, Connection } from 'amqplib';
 import fs from 'fs';
 import 'jest';
-import { defaults } from 'nest-schedule';
-import { ConfigService } from 'nestjs-config';
+import * as schedule from 'nest-schedule';
 import signature from 'superagent-http-signature';
 import request from 'supertest';
-import { EntityManager } from 'typeorm';
 import Web3 from 'web3';
+import { ConfigService } from '../src/config/config.service';
 import { CronModule } from '../src/crons/cron.module';
 import { HttpModule } from '../src/http/http.module';
 
@@ -24,21 +23,13 @@ describe('ETH (e2e)', () => {
   });
 
   beforeAll(async () => {
-    defaults.enable = false;
+    schedule.defaults.enable = false;
     app = (await Test.createTestingModule({
       imports: [HttpModule, CronModule],
     }).compile()).createNestApplication();
     await app.init();
-    // seeding database
-    await app.get(EntityManager).query(`
-      insert into client (
-        id, name, "publicKey"
-      ) values (
-        0, 'test', '${fs.readFileSync(__dirname + '/fixtures/public.pem')}'
-      )
-    `);
     // prepare AMQP
-    amqpConnection = await connect(app.get(ConfigService).get('amqp'));
+    amqpConnection = await connect(app.get(ConfigService).amqp);
     // prepare Web3
     web3 = app.get(Web3);
   });
@@ -68,7 +59,6 @@ describe('ETH (e2e)', () => {
   });
 
   afterAll(async () => {
-    await app.get(EntityManager).query('DELETE FROM client WHERE id = 0;');
     await amqpConnection.close();
     await app.close();
   });

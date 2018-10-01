@@ -5,6 +5,7 @@ import { plainToClass } from 'class-transformer';
 import { validate } from 'class-validator';
 import { InjectAmqpConnection } from 'nestjs-amqp';
 import { getManager } from 'typeorm';
+import { ChainService } from '../chains';
 import { CoinEnum } from '../coins';
 import { Account } from '../entities/account.entity';
 import { Deposit } from '../entities/deposit.entity';
@@ -15,12 +16,12 @@ import { CreateWithdrawalDto } from './create-withdrawal.dto';
 export class AmqpService {
   private readonly logger: bunyan;
   private readonly connection: Connection;
-  private readonly coinServices: { [_ in CoinEnum]?: ICoinService };
+  private readonly coinServices: { [_ in CoinEnum]?: ChainService };
 
   constructor(
     logger: bunyan,
     @InjectAmqpConnection() connection: Connection,
-    @Inject('CoinServiceRepo') coinServices: { [_ in CoinEnum]?: ICoinService },
+    @Inject('CoinServiceRepo') coinServices: { [_ in CoinEnum]?: ChainService },
   ) {
     this.logger = logger;
     this.connection = connection;
@@ -52,15 +53,14 @@ export class AmqpService {
     await Promise.all([
       channel.assertQueue('deposit_creation'),
       channel.assertQueue('deposit_update'),
+      channel.assertQueue('withdrawal_creation'),
       channel.assertQueue('withdrawal_update'),
     ]);
   }
 
   private async createWithdrawal(): Promise<void> {
     const channel = await this.connection.createChannel();
-    const queue = 'withdrawal_creation';
-    await channel.assertQueue(queue);
-    await channel.consume(queue, async (msg) => {
+    await channel.consume('withdrawal_creation', async (msg) => {
       if (!msg) {
         throw new Error();
       }

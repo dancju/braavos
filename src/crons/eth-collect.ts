@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
-import { ConfigService } from 'nestjs-config';
 import { getManager } from 'typeorm';
 import Web3 from 'web3';
 import { Signature } from 'web3/eth/accounts';
@@ -16,7 +15,6 @@ const { ethereum } = ChainEnum;
 
 @Injectable()
 export class EthCollect extends NestSchedule {
-  private readonly config: ConfigService;
   private readonly logger: bunyan;
   private readonly amqpService: AmqpService;
   private readonly web3: Web3;
@@ -24,14 +22,12 @@ export class EthCollect extends NestSchedule {
   private cronLock: any;
 
   constructor(
-    config: ConfigService,
     logger: bunyan,
     web3: Web3,
     amqpService: AmqpService,
     ethereumService: EthService,
   ) {
     super();
-    this.config = config;
     this.logger = logger;
     this.web3 = web3;
     this.amqpService = amqpService;
@@ -96,7 +92,9 @@ export class EthCollect extends NestSchedule {
           }
           /* compare nonce db - fullNode */
           if (dbNonce < fullNodeNonce) {
-            this.logger.fatal(`db nonce is less than full node nonce db info: ${tx}`);
+            this.logger.fatal(
+              `db nonce is less than full node nonce db info: ${tx}`,
+            );
             return;
           } else if (dbNonce > fullNodeNonce) {
             this.logger.info(`still have some txs to be handled | eth`);

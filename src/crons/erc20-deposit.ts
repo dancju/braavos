@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
-import { ConfigService } from 'nestjs-config';
 import Web3 from 'web3';
 import { AmqpService } from '../amqp/amqp.service';
 import { ChainEnum } from '../chains';
 import { CoinEnum } from '../coins';
+import { ConfigService } from '../config/config.service';
 import { Addr } from '../entities/addr.entity';
 import { Coin } from '../entities/coin.entity';
 import { DepositStatus } from '../entities/deposit-status.enum';
@@ -52,28 +52,16 @@ export abstract class Erc20Deposit extends NestSchedule {
     }
     this.cronLock.depositCron = true;
     try {
-      const abiFrom: string = this.config.get(
-        `erc20.${this.coinSymbol}.deposit._from`,
-      );
-      const abiTo: string = this.config.get(
-        `erc20.${this.coinSymbol}.deposit._to`,
-      );
-      const abiValue: string = this.config.get(
-        `erc20.${this.coinSymbol}.deposit._value`,
-      );
-      const contractAddr: string = this.config.get(
-        `erc20.${this.coinSymbol}.deposit.contractAddr`,
-      );
-      const decimals: number = this.config.get(
-        `erc20.${this.coinSymbol}.deposit.decimals`,
-      );
-      const minThreshold: number = this.config.get(
-        `erc20.${this.coinSymbol}.deposit.minThreshold`,
-      );
-      const step: number = this.config.get(
-        `erc20.${this.coinSymbol}.deposit.step`,
-      );
-
+      const abiFrom = this.config.ethereum.get(this.coinSymbol).deposit._from;
+      const abiTo = this.config.ethereum.get(this.coinSymbol).deposit._to;
+      const abiValue = this.config.ethereum.get(this.coinSymbol).deposit._value;
+      const contractAddr = this.config.ethereum.get(this.coinSymbol)
+        .contractAddr;
+      const decimals = this.config.ethereum.get(this.coinSymbol).deposit
+        .decimals;
+      const minThreshold = this.config.ethereum.get(this.coinSymbol).deposit
+        .minThreshold;
+      const step = this.config.ethereum.get(this.coinSymbol).deposit.step;
       const coin = await Coin.findOne(this.coinSymbol);
       if (!coin) {
         return;
@@ -89,7 +77,9 @@ export abstract class Erc20Deposit extends NestSchedule {
 
       let height = await this.web3.eth.getBlockNumber();
       if (height < blockIndex) {
-        this.logger.warn('Ethereum full node is lower than db | tokenName: ' + this.coinSymbol);
+        this.logger.warn(
+          'Ethereum full node is lower than db | tokenName: ' + this.coinSymbol,
+        );
         this.cronLock.depositCron = false;
         return;
       }
@@ -103,7 +93,9 @@ export abstract class Erc20Deposit extends NestSchedule {
         const eIndex = e.blockNumber;
         /* catch up eIndex */
         for (; blockIndex <= eIndex - 1; blockIndex++) {
-          // logger.debug("blockIndex: " + blockIndex + " | tokenName: " + tokenName);
+          this.logger.debug(
+            'blockIndex: ' + blockIndex + ' | tokenName: ' + this.coinSymbol,
+          );
           /* update db block index */
           coin.info.cursor = blockIndex;
           await coin.save();
@@ -197,7 +189,9 @@ export abstract class Erc20Deposit extends NestSchedule {
       }
       /* handle left block */
       for (; blockIndex <= height; blockIndex++) {
-        // logger.debug("blockIndex: " + blockIndex + " | tokenName: " + tokenName);
+        this.logger.debug(
+          'blockIndex: ' + blockIndex + ' | tokenName: ' + this.coinSymbol,
+        );
         /* update db block index */
         coin.info.cursor = blockIndex;
         await coin.save();
