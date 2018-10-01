@@ -13,8 +13,10 @@ export class InitialMigration1537423629359 implements MigrationInterface {
       CREATE TYPE "withdrawal_status_enum" AS ENUM('created', 'finished');
 
       CREATE TABLE "chain" (
-        "name" "chain_name_enum" PRIMARY KEY,
-        "coldAddr" varchar NOT NULL
+        "name"      "chain_name_enum" PRIMARY KEY,
+        "coldAddr"  varchar           NOT NULL,
+        "info"      jsonb             NOT NULL DEFAULT '{}',
+        "updatedAt" TIMESTAMP         NOT NULL DEFAULT now()
       );
 
       CREATE TABLE "coin" (
