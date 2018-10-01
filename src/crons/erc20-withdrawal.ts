@@ -49,7 +49,7 @@ export abstract class Erc20Withdrawal extends NestSchedule {
     this.abi = tokenService.abi;
   }
 
-  @Cron('*/12 * * * * *', { startTime: new Date() })
+  @Cron('*/10 * * * * *', { startTime: new Date() })
   public async withdrawalCron(): Promise<void> {
     if (this.cronLock.withdrawalCron === true) {
       this.logger.warn('last erc20 withdrawal cron still in handling');

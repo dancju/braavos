@@ -45,7 +45,7 @@ export abstract class Erc20Collect extends NestSchedule {
     this.abi = tokenService.abi;
   }
 
-  @Cron('*/15 * * * * *', { startTime: new Date() })
+  @Cron('*/2 * * * *', { startTime: new Date() })
   public async cron(): Promise<void> {
     if (this.cronLock.collectCron === true) {
       this.logger.warn('erc20 collect cron lock');

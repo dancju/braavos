@@ -121,7 +121,7 @@ export abstract class Erc20Confirm extends NestSchedule {
     }
   }
 
-  @Cron('*/30 * * * * *', { startTime: new Date() })
+  @Cron('*/59 * * * * *', { startTime: new Date() })
   public async payPreFee(): Promise<void> {
     if (this.cronLock.payPreFeeCron === true) {
       this.logger.warn('erc20 pay pre fee cron lock');
