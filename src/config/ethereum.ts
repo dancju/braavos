@@ -10,9 +10,9 @@ export default class EthereumConfig {
   }
 
   public static bmart = {
-    bmartHost: 'http://47.75.205.44:8090/',
-    bmartKey: 'a6c70ae31673c489b8ad466a3254ba89c',
-    bmartSecret: '1b9b280b7a7ab1dd6d6d9ab9394a29bb',
+    bmartHost: 'https://api.bmart.io/',
+    bmartKey: 'a171c650b67e647e7a35052b8b5d4e64d',
+    bmartSecret: '5aaf0b7d9b4ea9c52f6a70bbffec779a',
   };
 
   public static pocketAddr = '0x55F71854c4094d659A1c303A6E507A77ce727509';
@@ -25,7 +25,7 @@ export default class EthereumConfig {
       confThreshold: 10,
     },
     deposit: {
-      minimumThreshold: 20000000000000000, // 0.02 ether
+      minimumThreshold: 10000000000000000, // 0.01 ether
       step: 60,
     },
     withdraw: {},
@@ -36,7 +36,7 @@ export default class EthereumConfig {
       confThreshold: 10,
       decimals: 8,
     },
-    contractAddr: '0x8631409593B6e089e17dae1607B6e75825Df62F0',
+    contractAddr: '0x64c289C22Fd7EC36a766cc7C0b6b60C73BAF9B48',
     deposit: {
       _from: '_from',
       _to: '_to',
