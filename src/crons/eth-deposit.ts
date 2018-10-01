@@ -71,7 +71,7 @@ export class EthDeposit extends NestSchedule {
       let height = await this.web3.eth.getBlockNumber();
       height = height - 3;
       if (height < blockIndex) {
-        // logger.warn('Ethereum full node is lower than db');
+        this.logger.warn('Ethereum full node is lower than db');
         this.cronLock.depositCron = false;
         return;
       }

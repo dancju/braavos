@@ -109,10 +109,14 @@ export abstract class Erc20Collect extends NestSchedule {
           }
           /* compare nonce db - fullNode */
           if (dbNonce < fullNodeNonce) {
-            // logger.fatal(`db nonce is less than full node nonce db info: ${tx}`);
+            this.logger.fatal(
+              `db nonce is less than full node nonce db info: ${tx}`,
+            );
             return;
           } else if (dbNonce > fullNodeNonce) {
-            // logger.info(`still have some txs to be handled | ${tokenName}`);
+            this.logger.info(
+              `still have some txs to be handled | ${this.coinSymbol}`,
+            );
             return;
           } else {
             /* dbNonce === fullNodeNoce, broadcast transaction */
@@ -120,7 +124,7 @@ export abstract class Erc20Collect extends NestSchedule {
             /* judge whether collect value has been sent to account */
             const collectHash = tx.info.collectHash;
             if (!collectHash) {
-              // logger.debug('');
+              this.logger.debug('');
               return;
             }
             const collectBalance = this.web3.utils.toBN(
@@ -160,7 +164,9 @@ export abstract class Erc20Collect extends NestSchedule {
                 .toBN(balance)
                 .lt(this.web3.utils.toBN(collectValue))
             ) {
-              // logger.error(`erc20 balance is less than than db record | address: ${thisAddr}`);
+              this.logger.error(
+                `erc20 balance is less than than db record | address: ${thisAddr}`,
+              );
               return;
             }
             const collectAddr = await this.tokenService.getAddr(0, '0');
@@ -170,7 +176,7 @@ export abstract class Erc20Collect extends NestSchedule {
               txData = method.encodeABI();
               await method.estimateGas({ from: thisAddr });
             } catch (error) {
-              // logger.error(error);
+              this.logger.error(error);
               return;
             }
             const gasLimit = tx.info.gasLimit;
@@ -179,7 +185,7 @@ export abstract class Erc20Collect extends NestSchedule {
               .toBN(gasLimit)
               .mul(this.web3.utils.toBN(thisGasPrice));
             if (collectBalance.lt(gasFee)) {
-              // logger.error("wallet balance is not enough");
+              this.logger.error('wallet balance is not enough');
               return;
             }
             const signTx = (await this.web3.eth.accounts.signTransaction(

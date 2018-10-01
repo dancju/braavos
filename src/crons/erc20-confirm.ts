@@ -5,12 +5,10 @@ import { getManager } from 'typeorm';
 import Web3 from 'web3';
 import { Signature } from 'web3/eth/accounts';
 import { AmqpService } from '../amqp/amqp.service';
-import { ChainEnum, EthereumService } from '../chains';
+import { ChainEnum } from '../chains';
 import { CoinEnum } from '../coins';
 import { ConfigService } from '../config/config.service';
 import { Account } from '../entities/account.entity';
-import { Addr } from '../entities/addr.entity';
-import { Coin } from '../entities/coin.entity';
 import { DepositStatus } from '../entities/deposit-status.enum';
 import { Deposit } from '../entities/deposit.entity';
 
@@ -194,7 +192,7 @@ export abstract class Erc20Confirm extends NestSchedule {
           await this.web3.eth.getBalance(pocketAddr),
         );
         if (pocketBalance.lt(gasFee)) {
-          // logger.error("pocket wallet balance is not enough");
+          this.logger.error('pocket wallet balance is not enough');
           this.cronLock.payPreFeeCron = false;
           return;
         }

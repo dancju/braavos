@@ -34,9 +34,6 @@ export class BitcoinService extends ChainService {
   constructor(config: ConfigService, rpc: BtcRpc) {
     super();
     this.bech32 = config.bitcoin.bech32;
-    if ('boolean' !== typeof this.bech32) {
-      throw new Error();
-    }
     const isMainnet = config.isProduction;
     this.network = isMainnet ? MAINNET : TESTNET;
     this.rAddr = isMainnet

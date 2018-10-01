@@ -61,7 +61,7 @@ export class EthWithdrawal extends NestSchedule {
           .orderBy(`info->'nonce'`)
           .getMany();
         if (wd.length <= 0) {
-          // logger.debug('no record')
+          this.logger.debug('no record');
           break;
         }
         for (const i in wd) {
@@ -75,32 +75,35 @@ export class EthWithdrawal extends NestSchedule {
           if (wd[i].info.nonce === null || wd[i].info.nonce === undefined) {
             await getManager().transaction(async (manager) => {
               await manager.query(`
-              select * from kv_pair
-              where key = 'ethWithdrawalNonce'
-              for update
-            `);
+                select * from kv_pair
+                where key = 'ethWithdrawalNonce'
+                for update
+              `);
               const uu = await manager.query(`
-              update kv_pair
-              set value = to_json(value::text::integer + 1)
-              where key = 'ethWithdrawalNonce'
-              returning value as nonce`);
+                update kv_pair
+                set value = to_json(value::text::integer + 1)
+                where key = 'ethWithdrawalNonce'
+                returning value as nonce
+              `);
               dbNonce = uu[0].nonce;
               dbNonce = dbNonce - 1;
               await manager.query(`
-              update withdrawal
-              set info = (info || ('{"nonce":' || (${dbNonce}) || '}')::jsonb)
-              where id = ${wd[i].id}
-            `);
+                update withdrawal
+                set info = (info || ('{"nonce":' || (${dbNonce}) || '}')::jsonb)
+                where id = ${wd[i].id}
+              `);
             });
           } else {
             dbNonce = wd[i].info.nonce;
           }
           /* compare nonce: db - fullNode */
           if (dbNonce < fullNodeNonce) {
-            // logger.fatal(`db nonce is less than full node nonce, db info: ${wd}`);
+            this.logger.fatal(
+              `db nonce is less than full node nonce, db info: ${wd}`,
+            );
             return;
           } else if (dbNonce > fullNodeNonce) {
-            // logger.info('still have some txs to be handled');
+            this.logger.info('still have some txs to be handled');
             continue;
           } else {
             /* dbNonce === fullNodeNonce, broadcast transaction */
@@ -147,10 +150,10 @@ export class EthWithdrawal extends NestSchedule {
                   if (ww) {
                     await this.amqpService.updateWithdrawal(ww);
                   }
-                  // logger.info('Finish update db');
+                  this.logger.info('Finish update db');
                 });
             } catch (error) {
-              // logger.error(error);
+              this.logger.error(error);
             }
           }
         }

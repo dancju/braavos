@@ -21,12 +21,6 @@ export class BtcRefreshFee extends NestSchedule {
     this.txSizeKb = config.bitcoin.btc.fee.txSizeKb;
     this.logger = logger;
     this.rpc = rpc;
-    if (
-      typeof this.confTarget !== 'number' ||
-      typeof this.txSizeKb !== 'number'
-    ) {
-      throw new Error();
-    }
   }
 
   @Cron('*/10 * * * *', { startTime: new Date() })

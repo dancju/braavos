@@ -26,13 +26,9 @@ export class BtcCreateDeposit extends NestSchedule {
   // TODO Lock depositMilestone
   @Cron('*/1 * * * *', { startTime: new Date() })
   public async cron(): Promise<void> {
-    const lastMilestone: string = (await Coin.findOne(BTC))!.info
-      .depositMilestone;
-    const nextMilestone: string = (await this.rpc.listTransactions(
-      '*',
-      1,
-      0,
-    ))[0].txid;
+    const lastMilestone = (await Coin.findOne(BTC))!.info
+      .depositMilestone as string;
+    const nextMilestone = (await this.rpc.listTransactions('*', 1, 0))[0].txid;
     let cursor = 0;
     while (true) {
       const txs = (await this.rpc.listTransactions('*', 64, cursor)).reverse();

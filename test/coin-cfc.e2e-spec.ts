@@ -3,7 +3,7 @@ import { Test } from '@nestjs/testing';
 import { connect, Connection } from 'amqplib';
 import fs from 'fs';
 import 'jest';
-import { defaults } from 'nest-schedule';
+import * as schedule from 'nest-schedule';
 import signature from 'superagent-http-signature';
 import request from 'supertest';
 import { EntityManager } from 'typeorm';
@@ -24,7 +24,7 @@ describe('CFC (e2e)', () => {
   });
 
   beforeAll(async () => {
-    defaults.enable = false;
+    schedule.defaults.enable = false;
     app = (await Test.createTestingModule({
       imports: [HttpModule, CronModule],
     }).compile()).createNestApplication();

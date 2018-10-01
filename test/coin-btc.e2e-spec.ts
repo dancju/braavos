@@ -5,6 +5,7 @@ import BtcRpc from 'bitcoin-core';
 import fs from 'fs';
 import 'jest';
 import yaml from 'js-yaml';
+import * as schedule from 'nest-schedule';
 import signature from 'superagent-http-signature';
 import request from 'supertest';
 import { ConfigService } from '../src/config/config.service';
@@ -27,11 +28,11 @@ describe('BTC (e2e)', () => {
   });
 
   beforeAll(async () => {
+    schedule.defaults.enable = false;
     app = (await Test.createTestingModule({
       imports: [HttpModule, CronModule],
     }).compile()).createNestApplication();
     await app.init();
-    expect(app).toBeDefined();
     // prepare AMQP
     amqpConnection = await connect(app.get(ConfigService).amqp);
     amqpChannel = await amqpConnection.createConfirmChannel();
@@ -110,9 +111,7 @@ describe('BTC (e2e)', () => {
           'ascii',
         ),
       ) as Array<{ amount: number; recipient: string }>;
-      const lW0 = lW.slice(0, lW.length / 2);
-      const lW1 = lW.slice(lW.length / 2);
-      lW0.forEach((w, i) =>
+      lW.forEach((w, i) =>
         amqpChannel.sendToQueue(
           'withdrawal_creation',
           Buffer.from(
@@ -126,69 +125,27 @@ describe('BTC (e2e)', () => {
         ),
       );
       await amqpChannel.waitForConfirms();
-      // TODO fix smell
-      await new Promise((resolve) => setTimeout(resolve, 4000));
-      let res = (await request(app.getHttpServer())
-        .get('/withdrawals?offset=0&limit=64')
-        .use(signer)
-        .expect(200)).body;
-      expect(res).toHaveLength(lW0.length);
-      res.sort((a: any, b: any) => Number(a.amount) - Number(b.amount));
-      for (let i = 0; i < lW0.length; i++) {
-        expect(res[i]).toMatchObject({
-          clientId: 0,
-          coinSymbol: 'BTC',
-          key: String(i),
-          recipient: lW0[i].recipient,
-          status: 'created',
+      await app.get(BtcUpdateWithdrawal).cron();
+      await app.get(BtcUpdateWithdrawal).cron();
+      await app.get(BtcUpdateWithdrawal).cron();
+      await app.get(BtcUpdateWithdrawal).cron();
+      const res = (await new Promise((resolve) => {
+        const updates: { [_: string]: any } = {};
+        const queue = 'withdrawal_update';
+        amqpChannel.assertQueue(queue);
+        amqpChannel.consume(queue, async (msg) => {
+          const body = JSON.parse(msg!.content.toString());
+          updates[body.key as string] = body;
+          amqpChannel.ack(msg!);
+          if (Object.keys(updates).length === lW.length) {
+            resolve(Object.values(updates));
+          }
         });
-        expect(Number(res[i].amount)).toStrictEqual(lW0[i].amount);
+      })) as any[];
+      for (let i = 0; i < lW.length; i++) {
+        expect(res[i].recipient).toStrictEqual(lW[i].recipient);
+        expect(Number(res[i].amount)).toStrictEqual(lW[i].amount);
       }
-      await app.get(BtcUpdateWithdrawal).cron();
-      lW1.forEach((w, i) =>
-        amqpChannel.sendToQueue(
-          'withdrawal_creation',
-          Buffer.from(
-            JSON.stringify({
-              amount: w.amount,
-              coinSymbol: 'BTC',
-              key: i,
-              recipient: w.recipient,
-            }),
-          ),
-        ),
-      );
-      await amqpChannel.waitForConfirms();
-      await new Promise((resolve) => setTimeout(resolve, 4000));
-      await app.get(BtcUpdateWithdrawal).cron();
-      res = (await request(app.getHttpServer())
-        .get('/withdrawals?offset=0&limit=64')
-        .use(signer)
-        .expect(200)).body;
-      // expect(res).toHaveLength(lW.length);
-      // console.log(res);
-      // res.sort((a, b) => a.amount - b.amount);
-      // for (let i = 0; i < withdrawals.length; i++) {
-      //   expect(res[i]).toMatchObject({
-      //     clientId: 0,
-      //     coinSymbol: 'BTC',
-      //     key: String(i),
-      //     recipient: withdrawals[i].recipient,
-      //     status: 'finished',
-      //   });
-      // }
-      // x await new Promise((resolve) => {
-      //   amqpChannel.consume('withdrawal_update', async (msg) => {
-      //     const body = JSON.parse(msg!.content.toString());
-      //     if (body.key === 'foo') {
-      //       amqpChannel.ack(msg!);
-      //       expect(body.status).toStrictEqual('confirmed');
-      //       resolve();
-      //     } else {
-      //       amqpChannel.nack(msg!);
-      //     }
-      //   });
-      // });
       done();
     },
     10000,

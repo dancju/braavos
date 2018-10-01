@@ -22,9 +22,6 @@ export class BtcUpdateDeposit extends NestSchedule {
     this.amqpService = amqpService;
     this.rpc = rpc;
     this.confThreshold = config.bitcoin.btc.confThreshold;
-    if (typeof this.confThreshold !== 'number') {
-      throw new Error();
-    }
   }
 
   @Cron('*/10 * * * *', { startTime: new Date() })

@@ -11,12 +11,6 @@ import { AmqpService } from '../amqp/amqp.service';
 import { ChainEnum } from '../chains';
 import { CoinEnum } from '../coins';
 import { ConfigService } from '../config/config.service';
-import { Account } from '../entities/account.entity';
-import { Addr } from '../entities/addr.entity';
-import { Coin } from '../entities/coin.entity';
-import { DepositStatus } from '../entities/deposit-status.enum';
-import { Deposit } from '../entities/deposit.entity';
-import { KvPair } from '../entities/kv-pair.entity';
 import { WithdrawalStatus } from '../entities/withdrawal-status.enum';
 import { Withdrawal } from '../entities/withdrawal.entity';
 
@@ -84,7 +78,7 @@ export abstract class Erc20Withdrawal extends NestSchedule {
           .orderBy(`info->'nonce'`)
           .getMany();
         if (wd.length <= 0) {
-          // logger.debug('no record');
+          this.logger.debug('no record');
           this.cronLock.withdrawalCron = false;
           break;
         }
@@ -123,11 +117,11 @@ export abstract class Erc20Withdrawal extends NestSchedule {
 
           /* compare nonce db - fullNode */
           if (dbNonce < fullNodeNonce) {
-            // logger.fatal(`still have some txs to be handled`);
+            this.logger.fatal(`still have some txs to be handled`);
             this.cronLock.withdrawalCron = false;
             return;
           } else if (dbNonce > fullNodeNonce) {
-            // logger.info('still have some txs to be handled');
+            this.logger.info('still have some txs to be handled');
             continue;
           } else {
             /* dbNonce === fullNodeNonce, broadcast transaction */
@@ -169,7 +163,7 @@ export abstract class Erc20Withdrawal extends NestSchedule {
               await this.web3.eth.getBalance(collectAddr),
             );
             if (collectBalance.lt(gasFee)) {
-              // logger.error("Collect wallet eth balance is not enough");
+              this.logger.error('Collect wallet eth balance is not enough');
               this.cronLock.withdrawalCron = false;
               return;
             }
@@ -180,12 +174,11 @@ export abstract class Erc20Withdrawal extends NestSchedule {
             if (
               this.web3.utils.toBN(ercBalance).lt(this.web3.utils.toBN(amount))
             ) {
-              // logger.error(`erc20 balance is less than db record`);
+              this.logger.error(`erc20 balance is less than db record`);
               this.cronLock.withdrawalCron = false;
               return;
             }
             /* start erc20 withdraw */
-            // logger.info
             const signTx = (await this.web3.eth.accounts.signTransaction(
               {
                 data: txData,
@@ -225,7 +218,7 @@ export abstract class Erc20Withdrawal extends NestSchedule {
                     wd[i].memo = wd[i].memo!.toLowerCase();
                   }
                   if (wd[i].memo === 'bmart') {
-                    const bmartRes = await request
+                    await request
                       .post(`${bmartHost}/api/v1/withdraw/addWithdrawInfo`)
                       .query(
                         (() => {

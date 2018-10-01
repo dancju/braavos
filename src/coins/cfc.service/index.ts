@@ -10,7 +10,7 @@ export class CfcService extends EthereumService {
   constructor(@Inject('ConfigService') config: ConfigService) {
     super(config);
     this.abi = JSON.parse(
-      fs.readFileSync(path.resolve(__dirname, `./abi.json`), 'utf8'),
+      fs.readFileSync(path.resolve(__dirname, `./abi.json`), 'ascii'),
     );
   }
 }

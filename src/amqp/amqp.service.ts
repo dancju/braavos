@@ -53,15 +53,14 @@ export class AmqpService {
     await Promise.all([
       channel.assertQueue('deposit_creation'),
       channel.assertQueue('deposit_update'),
+      channel.assertQueue('withdrawal_creation'),
       channel.assertQueue('withdrawal_update'),
     ]);
   }
 
   private async createWithdrawal(): Promise<void> {
     const channel = await this.connection.createChannel();
-    const queue = 'withdrawal_creation';
-    await channel.assertQueue(queue);
-    await channel.consume(queue, async (msg) => {
+    await channel.consume('withdrawal_creation', async (msg) => {
       if (!msg) {
         throw new Error();
       }

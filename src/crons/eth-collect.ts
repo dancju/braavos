@@ -92,10 +92,12 @@ export class EthCollect extends NestSchedule {
           }
           /* compare nonce db - fullNode */
           if (dbNonce < fullNodeNonce) {
-            // logger.fatal(`db nonce is less than full node nonce db info: ${tx}`);
+            this.logger.fatal(
+              `db nonce is less than full node nonce db info: ${tx}`,
+            );
             return;
           } else if (dbNonce > fullNodeNonce) {
-            // logger.info(`still have some txs to be handled | eth`);
+            this.logger.info(`still have some txs to be handled | eth`);
             return;
           } else {
             /* dbNonce === fullNodeNonce, broadcast transaction */
