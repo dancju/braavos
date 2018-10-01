@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import bunyan from 'bunyan';
+import crypto from 'crypto';
 import { Cron, NestSchedule } from 'nest-schedule';
 import { ConfigService } from 'nestjs-config';
+import querystring from 'querystring';
+import request from 'superagent';
 import { getManager } from 'typeorm';
 import Web3 from 'web3';
 import { Signature } from 'web3/eth/accounts';
@@ -16,9 +19,6 @@ import { Deposit } from '../entities/deposit.entity';
 import { KvPair } from '../entities/kv-pair.entity';
 import { WithdrawalStatus } from '../entities/withdrawal-status.enum';
 import { Withdrawal } from '../entities/withdrawal.entity';
-import request from 'superagent';
-import crypto from 'crypto';
-import querystring from 'querystring';
 
 const { ETH } = CoinEnum;
 const { ethereum } = ChainEnum;
@@ -87,7 +87,7 @@ export abstract class Erc20Withdrawal extends NestSchedule {
           .orderBy(`info->'nonce'`)
           .getMany();
         if (wd.length <= 0) {
-          // logger.debug('no record');
+          this.logger.debug(`no record | ${this.coinSymbol}`);
           this.cronLock.withdrawalCron = false;
           break;
         }
@@ -126,11 +126,11 @@ export abstract class Erc20Withdrawal extends NestSchedule {
 
           /* compare nonce db - fullNode */
           if (dbNonce < fullNodeNonce) {
-            // logger.fatal(`still have some txs to be handled`);
+            this.logger.error(`db nonce less than full node none | ${this.coinSymbol}`);
             this.cronLock.withdrawalCron = false;
             return;
           } else if (dbNonce > fullNodeNonce) {
-            // logger.info('still have some txs to be handled');
+            this.logger.info('still have some txs to be handled');
             continue;
           } else {
             /* dbNonce === fullNodeNonce, broadcast transaction */
@@ -172,7 +172,7 @@ export abstract class Erc20Withdrawal extends NestSchedule {
               await this.web3.eth.getBalance(collectAddr),
             );
             if (collectBalance.lt(gasFee)) {
-              // logger.error("Collect wallet eth balance is not enough");
+              this.logger.error(`Collect wallet eth balance is not enough`);
               this.cronLock.withdrawalCron = false;
               return;
             }
@@ -183,7 +183,7 @@ export abstract class Erc20Withdrawal extends NestSchedule {
             if (
               this.web3.utils.toBN(ercBalance).lt(this.web3.utils.toBN(amount))
             ) {
-              // logger.error(`erc20 balance is less than db record`);
+              this.logger.error(`erc20 balance is less than db record`);
               this.cronLock.withdrawalCron = false;
               return;
             }

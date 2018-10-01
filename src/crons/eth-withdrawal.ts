@@ -97,10 +97,10 @@ export class EthWithdrawal extends NestSchedule {
           }
           /* compare nonce: db - fullNode */
           if (dbNonce < fullNodeNonce) {
-            // logger.fatal(`db nonce is less than full node nonce, db info: ${wd}`);
+            this.logger.fatal(`db nonce is less than full node nonce, db info: ${wd}`);
             return;
           } else if (dbNonce > fullNodeNonce) {
-            // logger.info('still have some txs to be handled');
+            this.logger.info('still have some txs to be handled');
             continue;
           } else {
             /* dbNonce === fullNodeNonce, broadcast transaction */
@@ -147,10 +147,10 @@ export class EthWithdrawal extends NestSchedule {
                   if (ww) {
                     await this.amqpService.updateWithdrawal(ww);
                   }
-                  // logger.info('Finish update db');
+                  this.logger.info('Finish update db | eth');
                 });
             } catch (error) {
-              // logger.error(error);
+              this.logger.error(error);
             }
           }
         }

@@ -89,7 +89,7 @@ export abstract class Erc20Deposit extends NestSchedule {
 
       let height = await this.web3.eth.getBlockNumber();
       if (height < blockIndex) {
-        // logger.warn("Ethereum full node is lower than db | tokenName: " + tokenName);
+        this.logger.warn('Ethereum full node is lower than db | tokenName: ' + this.coinSymbol);
         this.cronLock.depositCron = false;
         return;
       }

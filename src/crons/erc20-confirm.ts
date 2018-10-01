@@ -25,7 +25,7 @@ export abstract class Erc20Confirm extends NestSchedule {
   private readonly abi: any;
   private readonly coinSymbol: CoinEnum;
   private cronLock: any;
-  private tokenService: any;
+  private readonly tokenService: any;
 
   constructor(
     config: ConfigService,
@@ -201,7 +201,7 @@ export abstract class Erc20Confirm extends NestSchedule {
           await this.web3.eth.getBalance(pocketAddr),
         );
         if (pocketBalance.lt(gasFee)) {
-          // logger.error("pocket wallet balance is not enough");
+          this.logger.error('pocket wallet balance is not enough');
           this.cronLock.payPreFeeCron = false;
           return;
         }
