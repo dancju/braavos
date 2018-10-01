@@ -3941,7 +3941,7 @@ iconv-lite@0.4.23:
   dependencies:
     safer-buffer ">= 2.1.2 < 3"
 
-iconv-lite@^0.4.4:
+iconv-lite@0.4.24, iconv-lite@^0.4.4:
   version "0.4.24"
   resolved "https://registry.yarnpkg.com/iconv-lite/-/iconv-lite-0.4.24.tgz#2022b4b25fbddc21d2f524974a474aafe733908b"
   integrity sha512-v3MXnZAcvnywkTUEZomIActle7RXXeedOR31wwl7VlyoXO4Qi9arvSenNQWne1TcRwhCL1HwLI21bEqdpj8/rA==
@@ -7146,7 +7146,7 @@ semver-diff@^2.0.0:
   dependencies:
     semver "^5.0.3"
 
-"semver@2 || 3 || 4 || 5", semver@5.x, semver@^5.0.1, semver@^5.0.3, semver@^5.1.0, semver@^5.3.0, semver@^5.4.1, semver@^5.5.0, semver@^5.5.1:
+"semver@2 || 3 || 4 || 5", semver@^5.0.1, semver@^5.0.3, semver@^5.1.0, semver@^5.3.0, semver@^5.4.1, semver@^5.5, semver@^5.5.0, semver@^5.5.1:
   version "5.5.1"
   resolved "https://registry.yarnpkg.com/semver/-/semver-5.5.1.tgz#7dfdd8814bdb7cabc7be0fb1d734cfb66c940477"
   integrity sha512-PqpAxfrEhlSUWge8dwIp4tZnQ25DIOthpiaHNIthsjEFQD6EvqUKUDM7L8O2rShkFccYo1VjJR0coWfNkCubRw==
@@ -7984,9 +7984,9 @@ trim@0.0.1:
   integrity sha1-WFhUf2spB1fulczMZm+1AITEYN0=
 
 ts-jest@^23.1.4:
-  version "23.10.2"
-  resolved "https://registry.yarnpkg.com/ts-jest/-/ts-jest-23.10.2.tgz#10212ec4aba3cb6c75578b09460589ee80cf527a"
-  integrity sha512-X3jbheTla5Ne5G6n05DV4uSbvXdyAjTJ4xNC4yffwkQWwkCkIE6WCQ0aC4RCb+bzokryaqPwSZPE/BfUyd7ObA==
+  version "23.10.3"
+  resolved "https://registry.yarnpkg.com/ts-jest/-/ts-jest-23.10.3.tgz#f42de669888dfd2795b1491016b1813230d553fa"
+  integrity sha512-Lgyfw1MYPfqAs1qrFBmqXu8LRrde8ItH70pmp1iQuRbkVXaap7QcaEpN+yiSxuppfvO8rqezVv8wOYZkKhR5wA==
   dependencies:
     bs-logger "0.x"
     buffer-from "1.x"
@@ -7994,7 +7994,7 @@ ts-jest@^23.1.4:
     json5 "2.x"
     make-error "1.x"
     mkdirp "0.x"
-    semver "5.x"
+    semver "^5.5"
     yargs-parser "10.x"
 
 ts-loader@^5.1.0:
@@ -8682,9 +8682,9 @@ webidl-conversions@^4.0.2:
   integrity sha512-YQ+BmxuTgd6UXZW3+ICGfyqRyHXVlD5GtQr5+qjiNW7bF0cqrzX500HVXPBOvgXb5YnzDd+h0zqyv61KUD7+Sg==
 
 webpack-cli@^3.1.0:
-  version "3.1.1"
-  resolved "https://registry.yarnpkg.com/webpack-cli/-/webpack-cli-3.1.1.tgz#92be3e324c1788208a301172139febb476566262"
-  integrity sha512-th5EUyVeGcAAVlFOcJg11fapD/xoLRE4j/eSfrmMAo3olPjvB7lgEPUtCbRP0OGmstvnQBl4VZP+zluXWDiBxg==
+  version "3.1.2"
+  resolved "https://registry.yarnpkg.com/webpack-cli/-/webpack-cli-3.1.2.tgz#17d7e01b77f89f884a2bbf9db545f0f6a648e746"
+  integrity sha512-Cnqo7CeqeSvC6PTdts+dywNi5CRlIPbLx1AoUPK2T6vC1YAugMG3IOoO9DmEscd+Dghw7uRlnzV1KwOe5IrtgQ==
   dependencies:
     chalk "^2.4.1"
     cross-spawn "^6.0.5"
@@ -8750,11 +8750,11 @@ webpack@^4.2.0:
     yaeti "^0.0.6"
 
 whatwg-encoding@^1.0.1, whatwg-encoding@^1.0.3:
-  version "1.0.4"
-  resolved "https://registry.yarnpkg.com/whatwg-encoding/-/whatwg-encoding-1.0.4.tgz#63fb016b7435b795d9025632c086a5209dbd2621"
-  integrity sha512-vM9KWN6MP2mIHZ86ytcyIv7e8Cj3KTfO2nd2c8PFDqcI4bxFmQp83ibq4wadq7rL9l9sZV6o9B0LTt8ygGAAXg==
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/whatwg-encoding/-/whatwg-encoding-1.0.5.tgz#5abacf777c32166a51d085d6b4f3e7d27113ddb0"
+  integrity sha512-b5lim54JOPN9HtzvK9HFXvBma/rnfFeqsic0hSpjtDbVxR3dJKLc+KB4V6GgiGOvl7CY/KNh8rxSo9DKQrnUEw==
   dependencies:
-    iconv-lite "0.4.23"
+    iconv-lite "0.4.24"
 
 whatwg-mimetype@^2.1.0:
   version "2.2.0"
