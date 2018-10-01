@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
-import { ConfigService } from 'nestjs-config';
 import { getManager } from 'typeorm';
 import Web3 from 'web3';
 import { Signature } from 'web3/eth/accounts';
 import { AmqpService } from '../amqp/amqp.service';
 import { ChainEnum } from '../chains';
 import { CoinEnum, EthService } from '../coins';
+import { ConfigService } from '../config/config.service';
 import { WithdrawalStatus } from '../entities/withdrawal-status.enum';
 import { Withdrawal } from '../entities/withdrawal.entity';
 

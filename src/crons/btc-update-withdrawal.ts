@@ -2,11 +2,11 @@ import { Injectable } from '@nestjs/common';
 import BtcRpc, { ListTransactionsResult } from 'bitcoin-core';
 import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
-import { ConfigService } from 'nestjs-config';
 import { EntityManager, getManager } from 'typeorm';
 import { AmqpService } from '../amqp/amqp.service';
 import { ChainEnum } from '../chains';
 import { CoinEnum } from '../coins';
+import { ConfigService } from '../config/config.service';
 import { Coin } from '../entities/coin.entity';
 import { WithdrawalStatus } from '../entities/withdrawal-status.enum';
 import { Withdrawal } from '../entities/withdrawal.entity';
@@ -31,8 +31,8 @@ export class BtcUpdateWithdrawal extends NestSchedule {
     this.logger = logger;
     this.amqpService = amqpService;
     this.rpc = rpc;
-    this.confThreshold = config.get('bitcoin.btc.confThreshold');
-    this.step = config.get('bitcoin.btc.withdrawalStep');
+    this.confThreshold = config.bitcoin.btc.confThreshold;
+    this.step = config.bitcoin.btc.withdrawalStep;
   }
 
   @Cron('*/10 * * * *', { startTime: new Date() })

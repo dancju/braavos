@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
-import { ConfigService } from 'nestjs-config';
 import { getManager } from 'typeorm';
 import Web3 from 'web3';
 import { Signature } from 'web3/eth/accounts';
 import { AmqpService } from '../amqp/amqp.service';
 import { ChainEnum } from '../chains';
 import { CoinEnum } from '../coins';
+import { ConfigService } from '../config/config.service';
 import { DepositStatus } from '../entities/deposit-status.enum';
 import { Deposit } from '../entities/deposit.entity';
 
@@ -53,12 +53,10 @@ export abstract class Erc20Collect extends NestSchedule {
     }
     try {
       this.cronLock.collectCron = true;
-      const contractAddr: string = this.config.get(
-        `erc20.${this.coinSymbol}.collect.contractAddr`,
-      );
-      const decimals: number = this.config.get(
-        `erc20.${this.coinSymbol}.collect.decimals`,
-      );
+      const contractAddr = this.config.ethereum.get(this.coinSymbol)
+        .contractAddr;
+      const decimals = this.config.ethereum.get(this.coinSymbol).collect
+        .decimals;
       const contract = new this.web3.eth.Contract(this.abi, contractAddr);
       /* query & update confirmed transactions */
       const confTx = await Deposit.createQueryBuilder()

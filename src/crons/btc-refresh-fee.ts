@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 import BtcRpc from 'bitcoin-core';
 import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
-import { ConfigService } from 'nestjs-config';
 import { CoinEnum } from '../coins';
+import { ConfigService } from '../config/config.service';
 import { Coin } from '../entities/coin.entity';
 
 const { BTC } = CoinEnum;
@@ -17,8 +17,8 @@ export class BtcRefreshFee extends NestSchedule {
 
   constructor(config: ConfigService, logger: bunyan, rpc: BtcRpc) {
     super();
-    this.confTarget = config.get('bitcoin.btc.fee').confTarget;
-    this.txSizeKb = config.get('bitcoin.btc.fee').txSizeKb;
+    this.confTarget = config.bitcoin.btc.fee.confTarget;
+    this.txSizeKb = config.bitcoin.btc.fee.txSizeKb;
     this.logger = logger;
     this.rpc = rpc;
     if (
