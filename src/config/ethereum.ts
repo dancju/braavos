@@ -1,7 +1,13 @@
 import { CoinEnum } from '../coins';
 
 export default class EthereumConfig {
-  public static web3 = process.env.WEB3_RPC!;
+  public static get web3() {
+    const res = process.env.WEB3_RPC;
+    if (!res || !res.startsWith('http')) {
+      throw new Error();
+    }
+    return res;
+  }
 
   public static bmart = {
     bmartHost: 'http://47.75.205.44:8090/',

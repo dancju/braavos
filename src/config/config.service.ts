@@ -51,7 +51,7 @@ export class ConfigService implements TypeOrmOptionsFactory {
 
   get amqp() {
     const res = process.env.AMQP;
-    if (typeof res !== 'string') {
+    if (!res) {
       throw new Error();
     }
     return res;
