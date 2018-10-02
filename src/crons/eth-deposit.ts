@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
 import Web3 from 'web3';
+import { Transaction } from 'web3/eth/types';
 import { AmqpService } from '../amqp/amqp.service';
 import { ChainEnum } from '../chains';
 import { CoinEnum, EthService } from '../coins';
@@ -82,28 +83,12 @@ export class EthDeposit extends NestSchedule {
         const block = await this.web3.eth.getBlock(blockIndex, true);
         await Promise.all(
           block.transactions.map(async (tx) => {
-            const receipt = await this.web3.eth.getTransactionReceipt(tx.hash);
-            if (receipt.status === false) {
-              return;
-            }
-            if (!tx.to) {
-              /* tx.to is null, contract creation transaction, ignore it */
+            const cond = await this.preCondition(tx, pocketAddr, minimumThreshold);
+            if (cond === false) {
               return;
             }
             const user = await Addr.findOne({ addr: tx.to, chain: ethereum });
             if (!user) {
-              return;
-            }
-            /* pocket address send ether to this address in order to pay erc20 transfer fee, ignore it */
-            if (tx.from === pocketAddr) {
-              return;
-            }
-            /* tiny deposit, ignore it */
-            if (
-              this.web3.utils
-                .toBN(tx.value)
-                .lt(this.web3.utils.toBN(minimumThreshold))
-            ) {
               return;
             }
             const checkTx = await Deposit.findOne({
@@ -151,5 +136,29 @@ export class EthDeposit extends NestSchedule {
       this.logger.error(err);
       this.cronLock.depositCron = false;
     }
+  }
+
+  private async preCondition(tx: Transaction, pocketAddr: string, minimumThreshold: number): Promise<boolean> {
+    const receipt = await this.web3.eth.getTransactionReceipt(tx.hash);
+    if (receipt.status === false) {
+      return false;
+    }
+    if (!tx.to) {
+      /* tx.to is null, contract creation transaction, ignore it */
+      return false;
+    }
+    /* pocket address send ether to this address in order to pay erc20 transfer fee, ignore it */
+    if (tx.from === pocketAddr) {
+      return false;
+    }
+    /* tiny deposit, ignore it */
+    if (
+      this.web3.utils
+        .toBN(tx.value)
+        .lt(this.web3.utils.toBN(minimumThreshold))
+    ) {
+      return false;
+    }
+    return true;
   }
 }
