@@ -22,7 +22,7 @@ export abstract class Erc20Deposit extends NestSchedule {
   private readonly web3: Web3;
   private readonly abi: any;
   private readonly coinSymbol: CoinEnum;
-  private cronLock: any;
+  private readonly cronLock: any;
 
   constructor(
     config: ConfigService,

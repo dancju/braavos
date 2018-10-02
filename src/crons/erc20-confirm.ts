@@ -22,7 +22,7 @@ export abstract class Erc20Confirm extends NestSchedule {
   private readonly amqpService: AmqpService;
   private readonly abi: any;
   private readonly coinSymbol: CoinEnum;
-  private cronLock: any;
+  private readonly cronLock: any;
   private readonly tokenService: any;
 
   constructor(

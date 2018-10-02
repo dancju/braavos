@@ -18,8 +18,8 @@ export class EthCollect extends NestSchedule {
   private readonly logger: bunyan;
   private readonly amqpService: AmqpService;
   private readonly web3: Web3;
-  private ethereumService: EthService;
-  private cronLock: any;
+  private readonly ethereumService: EthService;
+  private readonly cronLock: any;
 
   constructor(
     logger: bunyan,

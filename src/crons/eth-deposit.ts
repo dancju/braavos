@@ -20,8 +20,8 @@ export class EthDeposit extends NestSchedule {
   private readonly config: ConfigService;
   private readonly logger: bunyan;
   private readonly amqpService: AmqpService;
-  private ethereumService: EthService;
-  private cronLock: any;
+  private readonly ethereumService: EthService;
+  private readonly cronLock: any;
 
   constructor(
     config: ConfigService,

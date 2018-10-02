@@ -25,8 +25,8 @@ export abstract class Erc20Withdrawal extends NestSchedule {
   private readonly web3: Web3;
   private readonly abi: any;
   private readonly coinSymbol: CoinEnum;
-  private cronLock: any;
-  private tokenService: any;
+  private readonly cronLock: any;
+  private readonly tokenService: any;
 
   constructor(
     config: ConfigService,
