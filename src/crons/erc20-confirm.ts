@@ -5,14 +5,11 @@ import { getManager } from 'typeorm';
 import Web3 from 'web3';
 import { Signature } from 'web3/eth/accounts';
 import { AmqpService } from '../amqp/amqp.service';
-import { ChainEnum } from '../chains';
 import { CoinEnum } from '../coins';
 import { ConfigService } from '../config/config.service';
 import { Account } from '../entities/account.entity';
 import { DepositStatus } from '../entities/deposit-status.enum';
 import { Deposit } from '../entities/deposit.entity';
-
-const { ethereum } = ChainEnum;
 
 @Injectable()
 export abstract class Erc20Confirm extends NestSchedule {

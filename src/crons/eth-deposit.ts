@@ -42,7 +42,7 @@ export class EthDeposit extends NestSchedule {
   }
 
   @Cron('*/30 * * * * *', { startTime: new Date() })
-  public async depositCron(): Promise<void> {
+  public async cron(): Promise<void> {
     try {
       if (this.cronLock.depositCron === true) {
         this.logger.warn('last depositCron still in handling');
