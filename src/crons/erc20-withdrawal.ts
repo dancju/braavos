@@ -8,14 +8,12 @@ import { getManager } from 'typeorm';
 import Web3 from 'web3';
 import { Signature } from 'web3/eth/accounts';
 import { AmqpService } from '../amqp/amqp.service';
-import { ChainEnum } from '../chains';
 import { CoinEnum } from '../coins';
 import { ConfigService } from '../config/config.service';
 import { WithdrawalStatus } from '../entities/withdrawal-status.enum';
 import { Withdrawal } from '../entities/withdrawal.entity';
 
 const { ETH } = CoinEnum;
-const { ethereum } = ChainEnum;
 
 @Injectable()
 export abstract class Erc20Withdrawal extends NestSchedule {
@@ -50,7 +48,7 @@ export abstract class Erc20Withdrawal extends NestSchedule {
   }
 
   @Cron('*/10 * * * * *', { startTime: new Date() })
-  public async withdrawalCron(): Promise<void> {
+  public async cron(): Promise<void> {
     if (this.cronLock.withdrawalCron === true) {
       this.logger.warn('last erc20 withdrawal cron still in handling');
       return;

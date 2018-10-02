@@ -146,7 +146,8 @@ export class BtcUpdateWithdrawal extends NestSchedule {
         }
         ws[i].txHash = txs[i].txid;
         ws[i].feeSymbol = BTC;
-        ws[i].feeAmount = -txs[i].fee;
+        // TODO 向上取整
+        ws[i].feeAmount = -txs[i].fee / txs.length;
         ws[i].status = WithdrawalStatus.finished;
       }
       await manager.save(ws);

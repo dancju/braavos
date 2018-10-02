@@ -4,7 +4,6 @@ import { Cron, NestSchedule } from 'nest-schedule';
 import { getManager } from 'typeorm';
 import Web3 from 'web3';
 import { Signature } from 'web3/eth/accounts';
-import { AmqpService } from '../amqp/amqp.service';
 import { ChainEnum } from '../chains';
 import { CoinEnum } from '../coins';
 import { ConfigService } from '../config/config.service';
@@ -17,7 +16,6 @@ const { ethereum } = ChainEnum;
 export abstract class Erc20Collect extends NestSchedule {
   private readonly config: ConfigService;
   private readonly logger: bunyan;
-  private readonly amqpService: AmqpService;
   private readonly web3: Web3;
   private readonly abi: any;
   private readonly coinSymbol: CoinEnum;
@@ -27,7 +25,6 @@ export abstract class Erc20Collect extends NestSchedule {
   constructor(
     config: ConfigService,
     logger: bunyan,
-    amqpService: AmqpService,
     web3: Web3,
     coinSymbol: CoinEnum,
     tokenService: any,
@@ -36,7 +33,6 @@ export abstract class Erc20Collect extends NestSchedule {
     this.config = config;
     this.logger = logger;
     this.web3 = web3;
-    this.amqpService = amqpService;
     this.coinSymbol = coinSymbol;
     this.cronLock = {
       collectCron: false,

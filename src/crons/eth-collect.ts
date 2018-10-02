@@ -4,7 +4,6 @@ import { Cron, NestSchedule } from 'nest-schedule';
 import { getManager } from 'typeorm';
 import Web3 from 'web3';
 import { Signature } from 'web3/eth/accounts';
-import { AmqpService } from '../amqp/amqp.service';
 import { ChainEnum } from '../chains';
 import { CoinEnum, EthService } from '../coins';
 import { DepositStatus } from '../entities/deposit-status.enum';
@@ -16,7 +15,6 @@ const { ethereum } = ChainEnum;
 @Injectable()
 export class EthCollect extends NestSchedule {
   private readonly logger: bunyan;
-  private readonly amqpService: AmqpService;
   private readonly web3: Web3;
   private readonly ethereumService: EthService;
   private readonly cronLock: any;
@@ -24,13 +22,11 @@ export class EthCollect extends NestSchedule {
   constructor(
     logger: bunyan,
     web3: Web3,
-    amqpService: AmqpService,
     ethereumService: EthService,
   ) {
     super();
     this.logger = logger;
     this.web3 = web3;
-    this.amqpService = amqpService;
     this.ethereumService = ethereumService;
     this.cronLock = {
       collectCron: false,
@@ -38,7 +34,7 @@ export class EthCollect extends NestSchedule {
   }
 
   @Cron('*/50 * * * * *', { startTime: new Date() })
-  public async collectCron(): Promise<void> {
+  public async cron(): Promise<void> {
     if (this.cronLock.collectCron === true) {
       this.logger.warn('last collectCron still in handling');
       return;

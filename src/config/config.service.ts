@@ -34,14 +34,18 @@ export class ConfigService implements TypeOrmOptionsFactory {
   }
 
   public createTypeOrmOptions(): TypeOrmModuleOptions {
-    if (process.env.TYPEORM_CONNECTION !== 'postgres') {
+    if (
+      process.env.TYPEORM_CONNECTION !== 'postgres' ||
+      !process.env.TYPEORM_ENTITIES ||
+      !process.env.TYPEORM_MIGRATIONS
+    ) {
       throw new Error();
     }
     return {
       database: process.env.TYPEORM_DATABASE,
-      entities: [process.env.TYPEORM_ENTITIES!],
+      entities: [process.env.TYPEORM_ENTITIES],
       host: process.env.TYPEORM_HOST,
-      migrations: [process.env.TYPEORM_MIGRATIONS!],
+      migrations: [process.env.TYPEORM_MIGRATIONS],
       password: process.env.TYPEORM_PASSWORD,
       port: Number(process.env.TYPEORM_PORT),
       type: 'postgres',

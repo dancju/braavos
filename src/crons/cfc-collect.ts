@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import bunyan from 'bunyan';
 import Web3 from 'web3';
-import { AmqpService } from '../amqp/amqp.service';
 import { CfcService, CoinEnum } from '../coins';
 import { ConfigService } from '../config/config.service';
 import { Erc20Collect } from './erc20-collect';
@@ -14,9 +13,8 @@ export class CfcCollect extends Erc20Collect {
     config: ConfigService,
     logger: bunyan,
     web3: Web3,
-    amqpService: AmqpService,
     cfcService: CfcService,
   ) {
-    super(config, logger, amqpService, web3, CFC, cfcService);
+    super(config, logger, web3, CFC, cfcService);
   }
 }

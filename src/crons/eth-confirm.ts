@@ -12,7 +12,6 @@ import { DepositStatus } from '../entities/deposit-status.enum';
 import { Deposit } from '../entities/deposit.entity';
 
 const { ETH } = CoinEnum;
-const { ethereum } = ChainEnum;
 
 @Injectable()
 export class EthConfirm extends NestSchedule {
@@ -42,7 +41,7 @@ export class EthConfirm extends NestSchedule {
   }
 
   @Cron('*/10 * * * * *', { startTime: new Date() })
-  public async confirmCron(): Promise<void> {
+  public async cron(): Promise<void> {
     if (this.cronLock.confirmCron === true) {
       this.logger.warn('last confirmCron still in handling');
       return;
