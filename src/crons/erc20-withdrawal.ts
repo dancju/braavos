@@ -7,6 +7,7 @@ import request from 'superagent';
 import { getManager } from 'typeorm';
 import Web3 from 'web3';
 import { Signature } from 'web3/eth/accounts';
+import Contract from 'web3/eth/contract';
 import { AmqpService } from '../amqp/amqp.service';
 import { CoinEnum } from '../coins';
 import { ConfigService } from '../config/config.service';
@@ -25,6 +26,9 @@ export abstract class Erc20Withdrawal extends NestSchedule {
   private readonly coinSymbol: CoinEnum;
   private readonly cronLock: any;
   private readonly tokenService: any;
+  private bmartHost: string;
+  private bmartKey: string;
+  private bmartSecret: string;
 
   constructor(
     config: ConfigService,
@@ -45,6 +49,9 @@ export abstract class Erc20Withdrawal extends NestSchedule {
     };
     this.tokenService = tokenService;
     this.abi = tokenService.abi;
+    this.bmartHost = this.config.ethereum.bmart.bmartHost;
+    this.bmartKey = this.config.ethereum.bmart.bmartKey;
+    this.bmartSecret = this.config.ethereum.bmart.bmartSecret;
   }
 
   @Cron('*/10 * * * * *', { startTime: new Date() })
@@ -59,9 +66,9 @@ export abstract class Erc20Withdrawal extends NestSchedule {
         .contractAddr;
       const decimals = this.config.ethereum.get(this.coinSymbol).deposit
         .decimals;
-      const bmartHost = this.config.ethereum.bmart.bmartHost;
-      const bmartKey = this.config.ethereum.bmart.bmartKey;
-      const bmartSecret = this.config.ethereum.bmart.bmartSecret;
+      this.bmartHost = this.config.ethereum.bmart.bmartHost;
+      this.bmartKey = this.config.ethereum.bmart.bmartKey;
+      this.bmartSecret = this.config.ethereum.bmart.bmartSecret;
       const contract = new this.web3.eth.Contract(this.abi, contractAddr);
       const collectAddr = await this.tokenService.getAddr(0, '0');
       const prv = this.tokenService.getPrivateKey(0, '0');
@@ -80,42 +87,17 @@ export abstract class Erc20Withdrawal extends NestSchedule {
           this.cronLock.withdrawalCron = false;
           break;
         }
-        for (const i in wd) {
-          if (!wd[i]) {
-            continue;
-          }
-          let dbNonce: any;
+        for (const v of wd) {
+          const dbNonce: any = await this.getDbNonce(v);
           const fullNodeNonce = await this.web3.eth.getTransactionCount(
             collectAddr,
           );
-          if (wd[i].info.nonce === null || wd[i].info.nonce === undefined) {
-            await getManager().transaction(async (manager) => {
-              await manager.query(`
-                select * from kv_pair
-                where key = 'ethWithdrawalNonce'
-                for update
-              `);
-              const uu = await manager.query(`
-                update kv_pair
-                set value = to_json(value::text::integer + 1)
-                where key = 'ethWithdrawalNonce'
-                returning value as nonce
-              `);
-              dbNonce = uu[0].nonce;
-              dbNonce = dbNonce - 1;
-              await manager.query(`
-                update withdrawal
-                set info = (info || ('{"nonce":' || (${dbNonce}) || '}')::jsonb)
-                where id = ${wd[i].id}
-              `);
-            });
-          } else {
-            dbNonce = wd[i].info.nonce;
-          }
 
           /* compare nonce db - fullNode */
           if (dbNonce < fullNodeNonce) {
-            this.logger.error(`db nonce less than full node none | ${this.coinSymbol}`);
+            this.logger.error(
+              `db nonce less than full node none | ${this.coinSymbol}`,
+            );
             this.cronLock.withdrawalCron = false;
             return;
           } else if (dbNonce > fullNodeNonce) {
@@ -123,127 +105,15 @@ export abstract class Erc20Withdrawal extends NestSchedule {
             continue;
           } else {
             /* dbNonce === fullNodeNonce, broadcast transaction */
-            const stringAmount = wd[i].amount.split('.');
-            const preAmount = this.web3.utils.toBN(
-              stringAmount[0] + stringAmount[1],
-            );
-            let amount: string;
-            if (decimals <= 8) {
-              amount = preAmount
-                .div(this.web3.utils.toBN(Math.pow(10, 8 - decimals)))
-                .toString();
-            } else {
-              amount = preAmount
-                .mul(this.web3.utils.toBN(Math.pow(10, decimals - 8)))
-                .toString();
-            }
-            const method = contract.methods.transfer(wd[i].recipient, amount);
-            let txData;
-            let gasLimit;
-            try {
-              txData = method.encodeABI();
-              gasLimit = await method.estimateGas({ from: collectAddr });
-            } catch (err) {
-              this.logger.error(err);
-              this.cronLock.withdrawalCron = false;
-              return;
-            }
-            const realGasPrice = await this.web3.eth.getGasPrice();
-            const thisGasPrice = this.web3.utils
-              .toBN(realGasPrice)
-              .add(this.web3.utils.toBN(30000000000))
-              .toString();
-            /* Judge if collect wallet eth balance is suffient to pay the fee */
-            const gasFee = this.web3.utils
-              .toBN(gasLimit)
-              .mul(this.web3.utils.toBN(thisGasPrice));
-            const collectBalance = this.web3.utils.toBN(
-              await this.web3.eth.getBalance(collectAddr),
-            );
-            if (collectBalance.lt(gasFee)) {
-              this.logger.error('Collect wallet eth balance is not enough');
-              this.cronLock.withdrawalCron = false;
-              return;
-            }
-            /* Judge if collect wallet has enough erc20 token */
-            const ercBalance = await contract.methods
-              .balanceOf(collectAddr)
-              .call();
-            if (
-              this.web3.utils.toBN(ercBalance).lt(this.web3.utils.toBN(amount))
-            ) {
-              this.logger.error(`erc20 balance is less than db record`);
-              this.cronLock.withdrawalCron = false;
-              return;
-            }
-            /* start erc20 withdraw */
-            const signTx = (await this.web3.eth.accounts.signTransaction(
-              {
-                data: txData,
-                gas: gasLimit,
-                gasPrice: thisGasPrice,
-                nonce: dbNonce,
-                to: contract.options.address,
-              },
+            await this.handleTx(
+              v,
+              decimals,
+              collectAddr,
+              contract,
               prv,
-            )) as Signature;
-
-            try {
-              const tx = await this.web3.eth
-                .sendSignedTransaction(signTx.rawTransaction)
-                .on('transactionHash', async (hash) => {
-                  this.logger.info(
-                    `withdrawTxHash ${this.coinSymbol}: ${hash}`,
-                  );
-                  await Withdrawal.createQueryBuilder()
-                    .update()
-                    .set({
-                      feeAmount: 0,
-                      feeSymbol: ETH,
-                      status: WithdrawalStatus.finished,
-                      txHash: hash,
-                    })
-                    .where({ id: wd[i].id })
-                    .execute();
-                  const ww = await Withdrawal.findOne({ id: wd[i].id });
-                  if (ww) {
-                    this.amqpService.updateWithdrawal(ww);
-                  }
-                  this.logger.info(
-                    'Finish update db | tokenName: ' + this.coinSymbol,
-                  );
-                  if (wd[i].memo) {
-                    wd[i].memo = wd[i].memo!.toLowerCase();
-                  }
-                  if (wd[i].memo === 'bmart') {
-                    await request
-                      .post(`${bmartHost}/api/v1/withdraw/addWithdrawInfo`)
-                      .query(
-                        (() => {
-                          const req: any = {
-                            amount: wd[i].amount,
-                            contractAddress: contractAddr,
-                            from: collectAddr,
-                            identify: 81,
-                            key: bmartKey,
-                            secret: bmartSecret,
-                            to: wd[i].recipient,
-                            txid: hash,
-                          };
-                          req.sign = crypto
-                            .createHash('sha1')
-                            .update(querystring.stringify(req))
-                            .digest('hex');
-                          delete req.secret;
-                          return req;
-                        })(),
-                      );
-                    this.logger.info('Finish datastream');
-                  }
-                });
-            } catch (err) {
-              this.logger.error(err);
-            }
+              dbNonce,
+              contractAddr,
+            );
           }
         }
       }
@@ -252,6 +122,171 @@ export abstract class Erc20Withdrawal extends NestSchedule {
     } catch (err) {
       this.logger.error(err);
       this.cronLock.withdrawalCron = false;
+    }
+  }
+
+  private async handleTx(
+    v: Withdrawal,
+    decimals: number,
+    collectAddr: any,
+    contract: Contract,
+    prv: string,
+    dbNonce: any,
+    contractAddr: string,
+  ): Promise<void> {
+    const stringAmount = v.amount.split('.');
+    const preAmount = this.web3.utils.toBN(stringAmount[0] + stringAmount[1]);
+    let amount: string;
+    if (decimals <= 8) {
+      amount = preAmount
+        .div(this.web3.utils.toBN(Math.pow(10, 8 - decimals)))
+        .toString();
+    } else {
+      amount = preAmount
+        .mul(this.web3.utils.toBN(Math.pow(10, decimals - 8)))
+        .toString();
+    }
+    const method = contract.methods.transfer(v.recipient, amount);
+    let txData;
+    let gasLimit;
+    try {
+      txData = method.encodeABI();
+      gasLimit = await method.estimateGas({ from: collectAddr });
+    } catch (err) {
+      this.logger.error(err);
+      this.cronLock.withdrawalCron = false;
+      return;
+    }
+    const realGasPrice = await this.web3.eth.getGasPrice();
+    const thisGasPrice = this.web3.utils
+      .toBN(realGasPrice)
+      .add(this.web3.utils.toBN(30000000000))
+      .toString();
+    /* Judge if collect wallet eth balance is suffient to pay the fee */
+    const gasFee = this.web3.utils
+      .toBN(gasLimit)
+      .mul(this.web3.utils.toBN(thisGasPrice));
+    const collectBalance = this.web3.utils.toBN(
+      await this.web3.eth.getBalance(collectAddr),
+    );
+    if (collectBalance.lt(gasFee)) {
+      this.logger.error('Collect wallet eth balance is not enough');
+      this.cronLock.withdrawalCron = false;
+      return;
+    }
+    /* Judge if collect wallet has enough erc20 token */
+    const ercBalance = await contract.methods.balanceOf(collectAddr).call();
+    if (this.web3.utils.toBN(ercBalance).lt(this.web3.utils.toBN(amount))) {
+      this.logger.error(`erc20 balance is less than db record`);
+      this.cronLock.withdrawalCron = false;
+      return;
+    }
+    /* start erc20 withdraw */
+    const signTx = (await this.web3.eth.accounts.signTransaction(
+      {
+        data: txData,
+        gas: gasLimit,
+        gasPrice: thisGasPrice,
+        nonce: dbNonce,
+        to: contract.options.address,
+      },
+      prv,
+    )) as Signature;
+
+    await this.broadcastTx(
+      signTx,
+      v,
+      contractAddr,
+      collectAddr,
+    );
+  }
+
+  private async getDbNonce(v: Withdrawal): Promise<any> {
+    let dbNonce: any;
+    if (v.info.nonce === null || v.info.nonce === undefined) {
+      await getManager().transaction(async (manager) => {
+        await manager.query(`
+          select * from kv_pair
+          where key = 'ethWithdrawalNonce'
+          for update
+        `);
+        const uu = await manager.query(`
+          update kv_pair
+          set value = to_json(value::text::integer + 1)
+          where key = 'ethWithdrawalNonce'
+          returning value as nonce
+        `);
+        dbNonce = uu[0].nonce;
+        dbNonce = dbNonce - 1;
+        await manager.query(`
+          update withdrawal
+          set info = (info || ('{"nonce":' || (${dbNonce}) || '}')::jsonb)
+          where id = ${v.id}
+        `);
+      });
+    } else {
+      dbNonce = v.info.nonce;
+    }
+    return dbNonce;
+  }
+
+  private async broadcastTx(
+    signTx: Signature,
+    v: Withdrawal,
+    contractAddr: string,
+    collectAddr: any,
+  ): Promise<void> {
+    try {
+      const tx = await this.web3.eth
+        .sendSignedTransaction(signTx.rawTransaction)
+        .on('transactionHash', async (hash) => {
+          this.logger.info(`withdrawTxHash ${this.coinSymbol}: ${hash}`);
+          await Withdrawal.createQueryBuilder()
+            .update()
+            .set({
+              feeAmount: 0,
+              feeSymbol: ETH,
+              status: WithdrawalStatus.finished,
+              txHash: hash,
+            })
+            .where({ id: v.id })
+            .execute();
+          const ww = await Withdrawal.findOne({ id: v.id });
+          if (ww) {
+            this.amqpService.updateWithdrawal(ww);
+          }
+          this.logger.info('Finish update db | tokenName: ' + this.coinSymbol);
+          if (v.memo) {
+            v.memo = v.memo!.toLowerCase();
+          }
+          if (v.memo === 'bmart') {
+            await request
+              .post(`${this.bmartHost}/api/v1/withdraw/addWithdrawInfo`)
+              .query(
+                (() => {
+                  const req: any = {
+                    amount: v.amount,
+                    contractAddress: contractAddr,
+                    from: collectAddr,
+                    identify: 81,
+                    key: this.bmartKey,
+                    secret: this.bmartSecret,
+                    to: v.recipient,
+                    txid: hash,
+                  };
+                  req.sign = crypto
+                    .createHash('sha1')
+                    .update(querystring.stringify(req))
+                    .digest('hex');
+                  delete req.secret;
+                  return req;
+                })(),
+              );
+            this.logger.info('Finish datastream');
+          }
+        });
+    } catch (err) {
+      this.logger.error(err);
     }
   }
 }

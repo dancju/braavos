@@ -62,38 +62,11 @@ export class EthWithdrawal extends NestSchedule {
           this.logger.debug('no record');
           break;
         }
-        for (const i in wd) {
-          if (!wd[i]) {
-            continue;
-          }
-          let dbNonce: any;
+        for (const v of wd) {
+          const dbNonce: any = await this.getDbNonce(v);
           const fullNodeNonce = await this.web3.eth.getTransactionCount(
             collectAddr,
           );
-          if (wd[i].info.nonce === null || wd[i].info.nonce === undefined) {
-            await getManager().transaction(async (manager) => {
-              await manager.query(`
-                select * from kv_pair
-                where key = 'ethWithdrawalNonce'
-                for update
-              `);
-              const uu = await manager.query(`
-                update kv_pair
-                set value = to_json(value::text::integer + 1)
-                where key = 'ethWithdrawalNonce'
-                returning value as nonce
-              `);
-              dbNonce = uu[0].nonce;
-              dbNonce = dbNonce - 1;
-              await manager.query(`
-                update withdrawal
-                set info = (info || ('{"nonce":' || (${dbNonce}) || '}')::jsonb)
-                where id = ${wd[i].id}
-              `);
-            });
-          } else {
-            dbNonce = wd[i].info.nonce;
-          }
           /* compare nonce: db - fullNode */
           if (dbNonce < fullNodeNonce) {
             this.logger.fatal(
@@ -104,55 +77,7 @@ export class EthWithdrawal extends NestSchedule {
             this.logger.info('still have some txs to be handled');
             continue;
           } else {
-            /* dbNonce === fullNodeNonce, broadcast transaction */
-            const realGasPrice = await this.web3.eth.getGasPrice();
-            /* add 30Gwei */
-            const thisGasPrice = this.web3.utils
-              .toBN(realGasPrice)
-              .add(this.web3.utils.toBN(30000000000))
-              .toString();
-            const value = this.web3.utils.toBN(
-              this.web3.utils.toWei(wd[i].amount, 'ether'),
-            );
-            const balance = await this.web3.eth.getBalance(collectAddr);
-            if (this.web3.utils.toBN(balance).lte(value)) {
-              this.logger.error('wallet balance not enough');
-              this.cronLock.withdrawalCron = false;
-              return;
-            }
-            const signTx = (await this.web3.eth.accounts.signTransaction(
-              {
-                gas: 22000,
-                gasPrice: thisGasPrice,
-                nonce: dbNonce,
-                to: wd[i].recipient,
-                value: value.toString(),
-              },
-              prv,
-            )) as Signature;
-            this.logger.debug(`
-              gasPrice: ${thisGasPrice}
-              rawTransaction: ${signTx.rawTransaction}
-            `);
-            try {
-              await this.web3.eth
-                .sendSignedTransaction(signTx.rawTransaction)
-                .on('transactionHash', async (hash) => {
-                  this.logger.info('withdrawTxHash: ' + hash);
-                  await Withdrawal.createQueryBuilder()
-                    .update()
-                    .set({ txHash: hash, status: WithdrawalStatus.finished })
-                    .where({ id: wd[i].id })
-                    .execute();
-                  const ww = await Withdrawal.findOne({ id: wd[i].id });
-                  if (ww) {
-                    await this.amqpService.updateWithdrawal(ww);
-                  }
-                  this.logger.info('Finish update db | eth');
-                });
-            } catch (error) {
-              this.logger.error(error);
-            }
+            await this.handleTx(v, collectAddr, dbNonce, prv);
           }
         }
       }
@@ -162,6 +87,97 @@ export class EthWithdrawal extends NestSchedule {
     } catch (err) {
       this.logger.error(err);
       this.cronLock.withdrawalCron = false;
+    }
+  }
+
+  private async handleTx(
+    v: Withdrawal,
+    collectAddr: string,
+    dbNonce: any,
+    prv: string,
+  ): Promise<void> {
+    /* dbNonce === fullNodeNonce, broadcast transaction */
+    const realGasPrice = await this.web3.eth.getGasPrice();
+    /* add 30Gwei */
+    const thisGasPrice = this.web3.utils
+      .toBN(realGasPrice)
+      .add(this.web3.utils.toBN(30000000000))
+      .toString();
+    const value = this.web3.utils.toBN(
+      this.web3.utils.toWei(v.amount, 'ether'),
+    );
+    /* checkt balance */
+    const balance = await this.web3.eth.getBalance(collectAddr);
+    if (this.web3.utils.toBN(balance).lte(value)) {
+      this.logger.error('wallet balance not enough');
+      this.cronLock.withdrawalCron = false;
+      return;
+    }
+    const signTx = (await this.web3.eth.accounts.signTransaction(
+      {
+        gas: 22000,
+        gasPrice: thisGasPrice,
+        nonce: dbNonce,
+        to: v.recipient,
+        value: value.toString(),
+      },
+      prv,
+    )) as Signature;
+    this.logger.debug(`
+      gasPrice: ${thisGasPrice}
+      rawTransaction: ${signTx.rawTransaction}
+    `);
+    this.broadcastTx(signTx, v.id);
+  }
+
+  private async getDbNonce(wd: Withdrawal): Promise<any> {
+    let dbNonce: any;
+    if (wd.info.nonce === null || wd.info.nonce === undefined) {
+      await getManager().transaction(async (manager) => {
+        await manager.query(`
+          select * from kv_pair
+          where key = 'ethWithdrawalNonce'
+          for update
+        `);
+        const uu = await manager.query(`
+          update kv_pair
+          set value = to_json(value::text::integer + 1)
+          where key = 'ethWithdrawalNonce'
+          returning value as nonce
+        `);
+        dbNonce = uu[0].nonce;
+        dbNonce = dbNonce - 1;
+        await manager.query(`
+          update withdrawal
+          set info = (info || ('{"nonce":' || (${dbNonce}) || '}')::jsonb)
+          where id = ${wd.id}
+        `);
+      });
+    } else {
+      dbNonce = wd.info.nonce;
+    }
+    return dbNonce;
+  }
+
+  private async broadcastTx(signTx: Signature, wdId: number): Promise<void> {
+    try {
+      await this.web3.eth
+        .sendSignedTransaction(signTx.rawTransaction)
+        .on('transactionHash', async (hash) => {
+          this.logger.info('withdrawTxHash: ' + hash);
+          await Withdrawal.createQueryBuilder()
+            .update()
+            .set({ txHash: hash, status: WithdrawalStatus.finished })
+            .where({ id: wdId })
+            .execute();
+          const ww = await Withdrawal.findOne({ id: wdId });
+          if (ww) {
+            await this.amqpService.updateWithdrawal(ww);
+          }
+          this.logger.info('Finish update db | eth');
+        });
+    } catch (error) {
+      this.logger.error(error);
     }
   }
 }

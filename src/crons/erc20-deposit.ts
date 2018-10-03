@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
 import Web3 from 'web3';
+import { EventLog } from 'web3/types';
 import { AmqpService } from '../amqp/amqp.service';
 import { ChainEnum } from '../chains';
 import { CoinEnum } from '../coins';
@@ -102,87 +103,7 @@ export abstract class Erc20Deposit extends NestSchedule {
         }
         blockIndex = eIndex;
         /* handle this event */
-        const txHash = e.transactionHash;
-        const tokenTx = e.returnValues;
-        /* the parameters here depends on the structure of contract */
-        const fromAddr = tokenTx[abiFrom];
-        const recipientAddr = tokenTx[abiTo];
-        const amount = tokenTx[abiValue].toString();
-        if (recipientAddr !== undefined) {
-          const user = await Addr.createQueryBuilder()
-            .where({ addr: recipientAddr, chain: ethereum })
-            .getOne();
-          if (user) {
-            // if deposit amount less than threshold, ignore it
-            if (
-              this.web3.utils
-                .toBN(amount)
-                .lt(this.web3.utils.toBN(minThreshold))
-            ) {
-              continue;
-            }
-            const checkTx = await Deposit.createQueryBuilder()
-              .where({
-                coinSymbol: this.coinSymbol,
-                txHash,
-              })
-              .getOne();
-            if (!checkTx) {
-              let dbAmount = '';
-              let cnt = 0;
-              const len = amount.length;
-              for (let i = len - 1; i >= 0; i--, cnt++) {
-                dbAmount = amount[i] + dbAmount;
-                if (cnt === decimals - 1) {
-                  dbAmount = '.' + dbAmount;
-                }
-              }
-              if (cnt < decimals) {
-                while (cnt < decimals) {
-                  dbAmount = '0' + dbAmount;
-                  cnt++;
-                }
-                dbAmount = '0.' + dbAmount;
-              } else if (cnt === decimals) {
-                dbAmount = '0' + dbAmount;
-              }
-              let dbDecimal = 8;
-              const tmp = dbAmount.split('.');
-              dbAmount = '';
-              for (
-                let i = 0;
-                i < tmp[1].length && dbDecimal > 0;
-                i++, dbDecimal--
-              ) {
-                dbAmount = dbAmount + tmp[1][i];
-              }
-              dbAmount = tmp[0] + '.' + dbAmount;
-              this.logger.debug(`erc20 deposit:
-                amount: ${amount}
-                clientId: ${user.clientId}
-                txHash: ${txHash}
-              `);
-              const d = Deposit.create({
-                addrPath: user.path,
-                amount: dbAmount,
-                clientId: user.clientId,
-                coinSymbol: this.coinSymbol,
-                feeAmount: 0,
-                feeSymbol: ETH,
-                status: DepositStatus.unconfirmed,
-                txHash,
-              });
-              d.info = {
-                blockHash: e.blockHash,
-                blockHeight: e.blockNumber,
-                recipientAddr,
-                senderAddr: fromAddr,
-              };
-              await d.save();
-              await this.amqpService.createDeposit(d);
-            }
-          }
-        }
+        await this.handleEvent(e, abiFrom, abiTo, abiValue, minThreshold, decimals);
         coin.info.cursor = blockIndex;
         await coin.save();
         blockIndex += 1;
@@ -203,4 +124,98 @@ export abstract class Erc20Deposit extends NestSchedule {
       this.cronLock.depositCron = false;
     }
   }
+
+  private async handleEvent(
+    e: EventLog,
+    abiFrom: string,
+    abiTo: string,
+    abiValue: string,
+    minThreshold: number,
+    decimals: number,
+  ): Promise<void> {
+    /* handle this event */
+    const txHash = e.transactionHash;
+    const tokenTx = e.returnValues;
+    /* the parameters here depends on the structure of contract */
+    const fromAddr = tokenTx[abiFrom];
+    const recipientAddr = tokenTx[abiTo];
+    const amount = tokenTx[abiValue].toString();
+    if (recipientAddr !== undefined) {
+      const user = await Addr.createQueryBuilder()
+        .where({ addr: recipientAddr, chain: ethereum })
+        .getOne();
+      if (user) {
+        // if deposit amount less than threshold, ignore it
+        if (
+          this.web3.utils
+            .toBN(amount)
+            .lt(this.web3.utils.toBN(minThreshold))
+        ) {
+          return;
+        }
+        const checkTx = await Deposit.createQueryBuilder()
+          .where({
+            coinSymbol: this.coinSymbol,
+            txHash,
+          })
+          .getOne();
+        if (!checkTx) {
+          const dbAmount: string = await this.calDbAmount(amount, decimals);
+          this.logger.debug(`erc20 deposit:
+            amount: ${amount}
+            clientId: ${user.clientId}
+            txHash: ${txHash}
+          `);
+          const d = Deposit.create({
+            addrPath: user.path,
+            amount: dbAmount,
+            clientId: user.clientId,
+            coinSymbol: this.coinSymbol,
+            feeAmount: 0,
+            feeSymbol: ETH,
+            status: DepositStatus.unconfirmed,
+            txHash,
+          });
+          d.info = {
+            blockHash: e.blockHash,
+            blockHeight: e.blockNumber,
+            recipientAddr,
+            senderAddr: fromAddr,
+          };
+          await d.save();
+          await this.amqpService.createDeposit(d);
+        }
+      }
+    }
+  }
+
+  private async calDbAmount(amount: any, decimals: number): Promise<string> {
+    let dbAmount = '';
+    let cnt = 0;
+    const len = amount.length;
+    for (let i = len - 1; i >= 0; i--, cnt++) {
+      dbAmount = amount[i] + dbAmount;
+      if (cnt === decimals - 1) {
+        dbAmount = '.' + dbAmount;
+      }
+    }
+    if (cnt < decimals) {
+      while (cnt < decimals) {
+        dbAmount = '0' + dbAmount;
+        cnt++;
+      }
+      dbAmount = '0.' + dbAmount;
+    } else if (cnt === decimals) {
+      dbAmount = '0' + dbAmount;
+    }
+    let dbDecimal = 8;
+    const tmp = dbAmount.split('.');
+    dbAmount = '';
+    for (let i = 0; i < tmp[1].length && dbDecimal > 0; i++, dbDecimal--) {
+      dbAmount = dbAmount + tmp[1][i];
+    }
+    dbAmount = tmp[0] + '.' + dbAmount;
+    return dbAmount;
+  }
+
 }
