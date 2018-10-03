@@ -12,11 +12,15 @@ services:
     ports:
       - 5672:5672
       - 15672:15672
-  omnicored:
-    image: dancju/omnicored:0.3.1
+  bitcoind:
+    image: ruimarinho/bitcoin-core:0.16-alpine
     tty: true
     ports:
-      - 18332:18332
+      - 18443:18443
     volumes:
-      - ./fixtures/omnicored-entrypoint.sh:/entrypoint.sh
+      - ./fixtures/bitcoind-entrypoint.sh:/entrypoint.sh
     entrypoint: /entrypoint.sh
+  ganache:
+    image: trufflesuite/ganache-cli:v6.1.8
+    ports:
+      - 8545:8545

@@ -6,6 +6,7 @@ import { EntityManager, getManager } from 'typeorm';
 import { AmqpService } from '../amqp/amqp.service';
 import { CoinEnum } from '../coins';
 import { ConfigService } from '../config/config.service';
+import { Account } from '../entities/account.entity';
 import { Coin } from '../entities/coin.entity';
 import { WithdrawalStatus } from '../entities/withdrawal-status.enum';
 import { Withdrawal } from '../entities/withdrawal.entity';
@@ -105,7 +106,6 @@ export class BtcUpdateWithdrawal extends NestSchedule {
     };
   }
 
-  // TODO credit fee
   private async credit(
     manager: EntityManager,
     withdrawalMilestone: string,
@@ -146,9 +146,15 @@ export class BtcUpdateWithdrawal extends NestSchedule {
         }
         ws[i].txHash = txs[i].txid;
         ws[i].feeSymbol = BTC;
-        // TODO 向上取整
+        // TODO BigNumber 向上取整
         ws[i].feeAmount = -txs[i].fee / txs.length;
         ws[i].status = WithdrawalStatus.finished;
+        await manager.decrement(
+          Account,
+          { clientId: ws[i].clientId, coinSymbol: BTC },
+          'balance',
+          ws[i].feeAmount!,
+        );
       }
       await manager.save(ws);
       await Promise.all(

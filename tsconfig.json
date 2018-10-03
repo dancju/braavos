@@ -12,6 +12,7 @@
     "lib": ["dom", "es2018"],
     "module": "commonjs",
     "noImplicitAny": true,
+    "noImplicitThis": true,
     "noLib": false,
     "outDir": "./dist",
     "removeComments": true,
@@ -20,7 +21,8 @@
     "strictNullChecks": true,
     "strictPropertyInitialization": true,
     "target": "es6",
-    "typeRoots": ["src/types"]
+    "typeRoots": ["src/types"],
+    "types": ["node"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "**/*.spec.ts"]

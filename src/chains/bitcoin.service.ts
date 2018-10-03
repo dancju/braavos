@@ -64,7 +64,6 @@ export class BitcoinService extends ChainService {
         '',
         false,
       );
-      await this.rpc.addWitnessAddress(this.getAddrP2pkh(path1));
     }
     return addr;
   }
@@ -76,15 +75,6 @@ export class BitcoinService extends ChainService {
   protected getPrivateKey(clientId: number, path0: string): string {
     const path1 = clientId + `/` + path0;
     return this.prvNode.derivePath(path1).toWIF();
-  }
-
-  // pay to public key hash
-  private getAddrP2pkh(derivePath: string): string {
-    const { address } = payments.p2pkh({
-      network: this.network,
-      pubkey: this.prvNode.derivePath(derivePath).publicKey,
-    });
-    return address;
   }
 
   // pay to script hash

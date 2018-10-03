@@ -33,10 +33,10 @@ describe('BTC (e2e)', () => {
       imports: [HttpModule, CronModule],
     }).compile()).createNestApplication();
     await app.init();
-    // prepare AMQP
+    // connect to AMQP
     amqpConnection = await connect(app.get(ConfigService).amqp);
     amqpChannel = await amqpConnection.createConfirmChannel();
-    // prepare omnicored regtest
+    // connect to bitcoind regtest
     rpc = app.get(BtcRpc);
     const info = await rpc.getBlockchainInfo();
     expect(info.chain).toStrictEqual('regtest');
@@ -125,6 +125,7 @@ describe('BTC (e2e)', () => {
         ),
       );
       await amqpChannel.waitForConfirms();
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       await app.get(BtcUpdateWithdrawal).cron();
       await app.get(BtcUpdateWithdrawal).cron();
       await app.get(BtcUpdateWithdrawal).cron();

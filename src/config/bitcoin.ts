@@ -3,16 +3,14 @@ export default class EthereumConfig {
 
   static get rpc() {
     return {
-      host: process.env.OMNICORED_HOST,
-      network: ((): 'mainnet' | 'regtest' | 'testnet' => {
-        const res = process.env.OMNICORED_NETWORK;
-        if (res !== 'mainnet' && res !== 'regtest' && res !== 'testnet') {
-          throw new Error();
-        }
-        return res;
-      })(),
-      password: process.env.OMNICORED_PASSWORD,
-      username: process.env.OMNICORED_USERNAME,
+      host: process.env.BITCOIND_HOST,
+      network: process.env.BITCOIND_NETWORK as
+        | 'mainnet'
+        | 'testnet'
+        | 'regtest',
+      password: process.env.BITCOIND_PASSWORD,
+      port: process.env.BITCOIND_PORT,
+      username: process.env.BITCOIND_USERNAME,
     };
   }
 
