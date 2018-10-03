@@ -257,7 +257,7 @@ export abstract class Erc20Withdrawal extends NestSchedule {
           }
           this.logger.info('Finish update db | tokenName: ' + this.coinSymbol);
           if (v.memo) {
-            v.memo = v.memo!.toLowerCase();
+            v.memo = v.memo.toLowerCase();
           }
           if (v.memo === 'bmart') {
             await request
