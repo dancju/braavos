@@ -39,7 +39,7 @@ export class EthWithdrawal extends NestSchedule {
     };
   }
 
-  @Cron('*/20 * * * * *', { startTime: new Date() })
+  @Cron('*/20 * * * * *')
   public async cron(): Promise<void> {
     if (this.cronLock.withdrawalCron === true) {
       this.logger.warn('last withdrawalCron still in handling');

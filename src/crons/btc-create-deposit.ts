@@ -23,7 +23,7 @@ export class BtcCreateDeposit extends NestSchedule {
     this.rpc = rpc;
   }
 
-  @Cron('*/1 * * * *', { startTime: new Date() })
+  @Cron('*/1 * * * *')
   public async cron(): Promise<void> {
     await getManager().transaction(async (manager) => {
       const btc = (await manager

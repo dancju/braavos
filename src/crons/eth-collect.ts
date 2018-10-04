@@ -33,7 +33,7 @@ export class EthCollect extends NestSchedule {
     };
   }
 
-  @Cron('*/50 * * * * *', { startTime: new Date() })
+  @Cron('*/50 * * * * *')
   public async cron(): Promise<void> {
     if (this.cronLock.collectCron === true) {
       this.logger.warn('last collectCron still in handling');

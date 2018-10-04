@@ -54,7 +54,7 @@ export abstract class Erc20Withdrawal extends NestSchedule {
     this.bmartSecret = this.config.ethereum.bmart.bmartSecret;
   }
 
-  @Cron('*/10 * * * * *', { startTime: new Date() })
+  @Cron('*/10 * * * * *')
   public async cron(): Promise<void> {
     if (this.cronLock.withdrawalCron === true) {
       this.logger.warn('last erc20 withdrawal cron still in handling');

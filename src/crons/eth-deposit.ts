@@ -42,7 +42,7 @@ export class EthDeposit extends NestSchedule {
     };
   }
 
-  @Cron('*/30 * * * * *', { startTime: new Date() })
+  @Cron('*/30 * * * * *')
   public async cron(): Promise<void> {
     try {
       if (this.cronLock.depositCron === true) {
