@@ -23,28 +23,38 @@ export class BtcCreateDeposit extends NestSchedule {
     this.rpc = rpc;
   }
 
-  // TODO Lock depositMilestone
   @Cron('*/1 * * * *', { startTime: new Date() })
   public async cron(): Promise<void> {
-    const lastMilestone = (await Coin.findOne(BTC))!.info
-      .depositMilestone as string;
-    const nextMilestone = (await this.rpc.listTransactions('*', 1, 0))[0].txid;
-    let cursor = 0;
-    while (true) {
-      const txs = (await this.rpc.listTransactions('*', 64, cursor)).reverse();
-      if (await this.bazainga(txs, lastMilestone)) {
-        break;
+    await getManager().transaction(async (manager) => {
+      const btc = (await manager
+        .createQueryBuilder(Coin, 'c')
+        .where({ symbol: BTC })
+        .setLock('pessimistic_write')
+        .getOne())!;
+      const lastMilestone = btc.info.depositMilestone as string;
+      const nextMilestone = (await this.rpc.listTransactions('*', 1, 0))[0]
+        .txid;
+      let cursor = 0;
+      while (true) {
+        const txs = (await this.rpc.listTransactions(
+          '*',
+          64,
+          cursor,
+        )).reverse();
+        if (await this.bazainga(txs, lastMilestone)) {
+          break;
+        }
+        cursor += txs.length;
       }
-      cursor += txs.length;
-    }
-    await getManager().query(`
-      update coin
-      set
-        info =
-          info ||
-          ('{ "depositMilestone":' || '"${nextMilestone}"' || ' }')::jsonb
-      where symbol = 'BTC'
-    `);
+      await manager.query(`
+        update coin
+        set
+          info =
+            info ||
+            ('{ "depositMilestone":' || '"${nextMilestone}"' || ' }')::jsonb
+        where symbol = 'BTC'
+      `);
+    });
   }
 
   private async bazainga(

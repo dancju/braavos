@@ -35,12 +35,15 @@ export class BtcUpdateWithdrawal extends NestSchedule {
     this.step = config.bitcoin.btc.withdrawalStep;
   }
 
-  // TODO Lock withdrawalMilestone
   @Cron('*/10 * * * *', { startTime: new Date() })
   public async cron(): Promise<void> {
     await getManager().transaction(async (manager) => {
-      const lastMilestone = (await Coin.findOne(BTC))!.info
-        .withdrawalMilestone as string;
+      const btc = (await manager
+        .createQueryBuilder(Coin, 'c')
+        .where({ symbol: BTC })
+        .setLock('pessimistic_write')
+        .getOne())!;
+      const lastMilestone = btc.info.withdrawalMilestone as string;
       const task = await this.taskSelector(manager, lastMilestone);
       if (task) {
         await task();

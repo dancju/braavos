@@ -126,10 +126,12 @@ describe('BTC (e2e)', () => {
       );
       await amqpChannel.waitForConfirms();
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      await app.get(BtcUpdateWithdrawal).cron();
-      await app.get(BtcUpdateWithdrawal).cron();
-      await app.get(BtcUpdateWithdrawal).cron();
-      await app.get(BtcUpdateWithdrawal).cron();
+      await Promise.all([
+        app.get(BtcUpdateWithdrawal).cron(),
+        app.get(BtcUpdateWithdrawal).cron(),
+        app.get(BtcUpdateWithdrawal).cron(),
+        app.get(BtcUpdateWithdrawal).cron(),
+      ]);
       const res = (await new Promise((resolve) => {
         const updates: { [_: string]: any } = {};
         const queue = 'withdrawal_update';

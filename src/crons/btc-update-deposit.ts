@@ -24,7 +24,7 @@ export class BtcUpdateDeposit extends NestSchedule {
     this.confThreshold = config.bitcoin.btc.confThreshold;
   }
 
-  @Cron('*/10 * * * *', { startTime: new Date() })
+  @Cron('*/1 * * * *', { startTime: new Date() })
   public async cron(): Promise<void> {
     await getManager().transaction(async (manager) => {
       for (const d of await manager

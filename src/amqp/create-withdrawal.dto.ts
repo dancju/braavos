@@ -21,6 +21,5 @@ export class CreateWithdrawalDto {
   public memo?: string;
 
   @ApiModelProperty({ description: '数量' })
-  // TODO convert number to string
   public amount!: string;
 }
