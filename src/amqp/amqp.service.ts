@@ -43,24 +43,28 @@ export class AmqpService {
   }
 
   private async publish(queue: string, message: any): Promise<void> {
-    const channel = await this.connection.createChannel();
-    await channel.assertQueue(queue);
-    channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)));
+    try {
+      const channel = await this.connection.createConfirmChannel();
+      await channel.assertQueue(queue);
+      channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)));
+    } catch (err) {
+      this.logger.error(`sendToQueue(${queue}, ${message}) failed`);
+    }
   }
 
   private async assertQueues(): Promise<void> {
     const channel = await this.connection.createChannel();
     await Promise.all([
-      channel.assertQueue('deposit_creation'),
-      channel.assertQueue('deposit_update'),
-      channel.assertQueue('withdrawal_update'),
+      channel.assertQueue('deposit_creation', { durable: true }),
+      channel.assertQueue('deposit_update', { durable: true }),
+      channel.assertQueue('withdrawal_update', { durable: true }),
     ]);
   }
 
   private async createWithdrawal(): Promise<void> {
     const channel = await this.connection.createChannel();
     const queue = 'withdrawal_creation';
-    await channel.assertQueue(queue);
+    await channel.assertQueue(queue, { durable: true });
     await channel.consume(queue, async (msg) => {
       if (!msg) {
         throw new Error();

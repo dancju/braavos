@@ -125,7 +125,7 @@ describe('BTC (e2e)', () => {
         ),
       );
       await amqpChannel.waitForConfirms();
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       await app.get(BtcUpdateWithdrawal).cron();
       await app.get(BtcUpdateWithdrawal).cron();
       await app.get(BtcUpdateWithdrawal).cron();
