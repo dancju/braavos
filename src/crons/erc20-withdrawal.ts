@@ -193,12 +193,7 @@ export abstract class Erc20Withdrawal extends NestSchedule {
       prv,
     )) as Signature;
 
-    await this.broadcastTx(
-      signTx,
-      v,
-      contractAddr,
-      collectAddr,
-    );
+    await this.broadcastTx(signTx, v, contractAddr, collectAddr);
   }
 
   private async getDbNonce(v: Withdrawal): Promise<any> {

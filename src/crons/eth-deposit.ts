@@ -83,7 +83,11 @@ export class EthDeposit extends NestSchedule {
         const block = await this.web3.eth.getBlock(blockIndex, true);
         await Promise.all(
           block.transactions.map(async (tx) => {
-            const cond = await this.preCondition(tx, pocketAddr, minimumThreshold);
+            const cond = await this.preCondition(
+              tx,
+              pocketAddr,
+              minimumThreshold,
+            );
             if (cond === false) {
               return;
             }
@@ -138,7 +142,11 @@ export class EthDeposit extends NestSchedule {
     }
   }
 
-  private async preCondition(tx: Transaction, pocketAddr: string, minimumThreshold: number): Promise<boolean> {
+  private async preCondition(
+    tx: Transaction,
+    pocketAddr: string,
+    minimumThreshold: number,
+  ): Promise<boolean> {
     const receipt = await this.web3.eth.getTransactionReceipt(tx.hash);
     if (receipt.status === false) {
       return false;
@@ -153,9 +161,7 @@ export class EthDeposit extends NestSchedule {
     }
     /* tiny deposit, ignore it */
     if (
-      this.web3.utils
-        .toBN(tx.value)
-        .lt(this.web3.utils.toBN(minimumThreshold))
+      this.web3.utils.toBN(tx.value).lt(this.web3.utils.toBN(minimumThreshold))
     ) {
       return false;
     }

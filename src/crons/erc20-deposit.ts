@@ -103,7 +103,14 @@ export abstract class Erc20Deposit extends NestSchedule {
         }
         blockIndex = eIndex;
         /* handle this event */
-        await this.handleEvent(e, abiFrom, abiTo, abiValue, minThreshold, decimals);
+        await this.handleEvent(
+          e,
+          abiFrom,
+          abiTo,
+          abiValue,
+          minThreshold,
+          decimals,
+        );
         coin.info.cursor = blockIndex;
         await coin.save();
         blockIndex += 1;
@@ -147,9 +154,7 @@ export abstract class Erc20Deposit extends NestSchedule {
       if (user) {
         // if deposit amount less than threshold, ignore it
         if (
-          this.web3.utils
-            .toBN(amount)
-            .lt(this.web3.utils.toBN(minThreshold))
+          this.web3.utils.toBN(amount).lt(this.web3.utils.toBN(minThreshold))
         ) {
           return;
         }
@@ -217,5 +222,4 @@ export abstract class Erc20Deposit extends NestSchedule {
     dbAmount = tmp[0] + '.' + dbAmount;
     return dbAmount;
   }
-
 }
