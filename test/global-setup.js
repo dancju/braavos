@@ -16,5 +16,4 @@ module.exports = async () => {
   await connection.close();
 };
 
-// TODO remove { noImplicitAny: false } by wrap bitcoin-core.d.ts into a package
-require('ts-node').register({ compilerOptions: { noImplicitAny: false } });
+require('ts-node').register({ files: true });
