@@ -56,7 +56,7 @@ describe('CFC (e2e)', () => {
     request(app.getHttpServer())
       .get('/addrs?coinSymbol=CFC&path=1')
       .use(signer)
-      .expect(200, '0x577E5592a9DE963f1DC0260bC6EB58f6eAbAA1BD', done);
+      .expect(200, '0xa51177407ee1799f75cE8664E56B080b7Bd8704d', done);
   });
 
   afterAll(async () => {

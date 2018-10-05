@@ -24,3 +24,6 @@ services:
     image: trufflesuite/ganache-cli:v6.1.8
     ports:
       - 8545:8545
+    command:
+      -a 20
+      --mnemonic '啊 哈 哈'

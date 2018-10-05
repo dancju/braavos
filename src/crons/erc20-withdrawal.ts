@@ -49,9 +49,9 @@ export abstract class Erc20Withdrawal extends NestSchedule {
     };
     this.tokenService = tokenService;
     this.abi = tokenService.abi;
-    this.bmartHost = this.config.ethereum.bmart.bmartHost;
-    this.bmartKey = this.config.ethereum.bmart.bmartKey;
-    this.bmartSecret = this.config.ethereum.bmart.bmartSecret;
+    this.bmartHost = this.config.ethereum.bmartHost;
+    this.bmartKey = this.config.ethereum.bmartKey;
+    this.bmartSecret = this.config.ethereum.bmartSecret;
   }
 
   @Cron('*/10 * * * * *')
@@ -66,9 +66,6 @@ export abstract class Erc20Withdrawal extends NestSchedule {
         .contractAddr;
       const decimals = this.config.ethereum.get(this.coinSymbol).deposit
         .decimals;
-      this.bmartHost = this.config.ethereum.bmart.bmartHost;
-      this.bmartKey = this.config.ethereum.bmart.bmartKey;
-      this.bmartSecret = this.config.ethereum.bmart.bmartSecret;
       const contract = new this.web3.eth.Contract(this.abi, contractAddr);
       const collectAddr = await this.tokenService.getAddr(0, '0');
       const prv = this.tokenService.getPrivateKey(0, '0');
@@ -254,7 +251,7 @@ export abstract class Erc20Withdrawal extends NestSchedule {
           if (v.memo) {
             v.memo = v.memo.toLowerCase();
           }
-          if (v.memo === 'bmart') {
+          if (v.memo === 'bmart' && this.bmartHost !== 'test') {
             await request
               .post(`${this.bmartHost}/api/v1/withdraw/addWithdrawInfo`)
               .query(

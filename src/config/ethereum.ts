@@ -9,16 +9,45 @@ export default class EthereumConfig {
     return res;
   }
 
-  public static bmart = {
-    bmartHost: 'https://api.bmart.io/',
-    bmartKey: 'a171c650b67e647e7a35052b8b5d4e64d',
-    bmartSecret: '5aaf0b7d9b4ea9c52f6a70bbffec779a',
-  };
+  public static get bmartHost() {
+    const res = process.env.BMART_HOST;
+    if (!res) {
+      throw new Error();
+    }
+    return res;
+  }
 
-  public static pocketAddr = '0x55F71854c4094d659A1c303A6E507A77ce727509';
+  public static get bmartKey() {
+    const res = process.env.BMART_KEY;
+    if (!res) {
+      throw new Error();
+    }
+    return res;
+  }
 
-  public static pocketPrv =
-    '0xecee39f1c2c73e661ba48f8d8110dd4ef4af98fe7fe451f6cb91cb53d6adcc37';
+  public static get bmartSecret() {
+    const res = process.env.BMART_SECRET;
+    if (!res) {
+      throw new Error();
+    }
+    return res;
+  }
+
+  public static get pocketAddr() {
+    const res = process.env.POCKET_ADDR;
+    if (!res) {
+      throw new Error();
+    }
+    return res;
+  }
+
+  public static get pocketPrv() {
+    const res = process.env.POCKET_PRV;
+    if (!res) {
+      throw new Error();
+    }
+    return res;
+  }
 
   public static ETH = {
     collect: {

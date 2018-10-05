@@ -65,14 +65,6 @@ export class EthConfirm extends NestSchedule {
           if (height - blockHeight < confThreshold) {
             return;
           }
-          const acc = await Account.createQueryBuilder()
-            .select()
-            .where({ clientId: tx.clientId, coinSymbol: ETH })
-            .getOne();
-          if (!acc) {
-            this.logger.error(`don't have this account`);
-            return;
-          }
           await getManager().transaction(async (manager) => {
             await manager
               .createQueryBuilder()

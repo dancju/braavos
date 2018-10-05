@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import BtcRpc from 'bitcoin-core';
 import bunyan from 'bunyan';
+import Web3 from 'web3';
 import { BtcService, CfcService, CoinEnum, EthService } from '../coins';
 import { ConfigModule } from '../config/config.module';
 import { ConfigService } from '../config/config.service';
@@ -38,6 +39,12 @@ import { SignatureStrategy } from './signature.strategy';
       inject: [ConfigService],
       provide: BtcRpc,
       useFactory: (config: ConfigService) => new BtcRpc(config.bitcoin.rpc),
+    },
+    {
+      inject: [ConfigService],
+      provide: Web3,
+      useFactory: (config: ConfigService) =>
+        new Web3(new Web3.providers.HttpProvider(config.ethereum.web3)),
     },
     BtcService,
     EthService,
