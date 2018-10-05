@@ -24,6 +24,6 @@
     "typeRoots": ["src/types"],
     "types": ["node"]
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "test/**/*.e2e-spec.ts"],
   "exclude": ["**/*.spec.ts"]
 }
