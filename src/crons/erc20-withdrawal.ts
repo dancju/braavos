@@ -26,9 +26,9 @@ export abstract class Erc20Withdrawal extends NestSchedule {
   private readonly coinSymbol: CoinEnum;
   private readonly cronLock: any;
   private readonly tokenService: any;
-  private bmartHost: string;
-  private bmartKey: string;
-  private bmartSecret: string;
+  private readonly bmartHost: string;
+  private readonly bmartKey: string;
+  private readonly bmartSecret: string;
 
   constructor(
     config: ConfigService,

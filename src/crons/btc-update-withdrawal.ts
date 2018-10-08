@@ -38,11 +38,14 @@ export class BtcUpdateWithdrawal extends NestSchedule {
   @Cron('*/10 * * * *')
   public async cron(): Promise<void> {
     await getManager().transaction(async (manager) => {
-      const btc = (await manager
+      const btc = await manager
         .createQueryBuilder(Coin, 'c')
         .where({ symbol: BTC })
         .setLock('pessimistic_write')
-        .getOne())!;
+        .getOne();
+      if (!btc) {
+        throw new Error();
+      }
       const lastMilestone = btc.info.withdrawalMilestone as string;
       const task = await this.taskSelector(manager, lastMilestone);
       if (task) {
@@ -54,7 +57,7 @@ export class BtcUpdateWithdrawal extends NestSchedule {
   private async taskSelector(
     manager: EntityManager,
     lastMilestone: string,
-  ): Promise<(() => Promise<void>) | undefined> {
+  ): Promise<(() => Promise<void>) | void> {
     const w = await manager
       .createQueryBuilder(Withdrawal, 'w')
       .where({
