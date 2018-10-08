@@ -132,6 +132,15 @@ export abstract class Erc20Withdrawal extends NestSchedule {
     contractAddr: string,
   ): Promise<void> {
     const stringAmount = v.amount.split('.');
+    if (!stringAmount[1]) {
+      stringAmount[1] = '0';
+    }
+    if (stringAmount[1].length < 8) {
+      const dis = 8 - stringAmount[1].length;
+      for (let i = 0; i < dis; i++) {
+        stringAmount[1] += '0';
+      }
+    }
     const preAmount = this.web3.utils.toBN(stringAmount[0] + stringAmount[1]);
     let amount: string;
     if (decimals <= 8) {

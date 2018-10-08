@@ -60,24 +60,32 @@ export default class EthereumConfig {
     withdraw: {},
   };
 
-  public static CFC = {
-    collect: {
-      confThreshold: 10,
-      decimals: 8,
-    },
-    contractAddr: '0x64c289C22Fd7EC36a766cc7C0b6b60C73BAF9B48',
-    deposit: {
-      _from: '_from',
-      _to: '_to',
-      _value: '_value',
-      decimals: 8,
-      minThreshold: 10,
-      step: 300,
-    },
-    withdraw: {
-      decimals: 8,
-    },
-  };
+  public static get CFC() {
+    return {
+      collect: {
+        confThreshold: 10,
+        decimals: 8,
+      },
+      contractAddr: (() => {
+        const res = process.env.CFC_CONTRACT_ADDR;
+        if (!res) {
+          throw new Error();
+        }
+        return res;
+      })(),
+      deposit: {
+        _from: '_from',
+        _to: '_to',
+        _value: '_value',
+        decimals: 8,
+        minThreshold: 10,
+        step: 300,
+      },
+      withdraw: {
+        decimals: 8,
+      },
+    };
+  }
 
   public static get(symbol: CoinEnum) {
     // tslint:disable-next-line:no-small-switch

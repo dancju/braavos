@@ -207,6 +207,10 @@ describe('ETH (e2e)', () => {
           .toBN(web3.utils.toWei(res[i].amount, 'ether'))
           .toString();
         expect(vv).toStrictEqual(pp);
+        preBalance.set(lW[i].recipient, 0);
+      }
+      for (const v of lW) {
+        expect(preBalance.get(v.recipient)).toStrictEqual(0);
       }
       done();
     },
