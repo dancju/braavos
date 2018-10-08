@@ -48,7 +48,7 @@ export class BitcoinService extends ChainService {
   }
 
   public async getAddr(clientId: number, path0: string): Promise<string> {
-    const path1 = clientId + `/` + path0;
+    const path1 = `${clientId}/${path0}`;
     const addr = this.bech32
       ? this.getAddrP2wpkh(path1)
       : this.getAddrP2sh(path1);
@@ -73,7 +73,7 @@ export class BitcoinService extends ChainService {
   }
 
   protected getPrivateKey(clientId: number, path0: string): string {
-    const path1 = clientId + `/` + path0;
+    const path1 = `${clientId}/${path0}`;
     return this.prvNode.derivePath(path1).toWIF();
   }
 

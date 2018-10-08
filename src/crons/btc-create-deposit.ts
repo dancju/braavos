@@ -26,11 +26,14 @@ export class BtcCreateDeposit extends NestSchedule {
   @Cron('*/1 * * * *')
   public async cron(): Promise<void> {
     await getManager().transaction(async (manager) => {
-      const btc = (await manager
+      const btc = await manager
         .createQueryBuilder(Coin, 'c')
         .where({ symbol: BTC })
         .setLock('pessimistic_write')
-        .getOne())!;
+        .getOne();
+      if (!btc) {
+        throw new Error();
+      }
       const lastMilestone = btc.info.depositMilestone as string;
       const nextMilestone = (await this.rpc.listTransactions('*', 1, 0))[0]
         .txid;

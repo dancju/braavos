@@ -5,10 +5,7 @@ import { ConfigService } from '../config/config.service';
 
 @Injectable()
 export class EthService extends EthereumService {
-  constructor(
-    @Inject('ConfigService') config: ConfigService,
-    web3: Web3,
-  ) {
+  constructor(@Inject('ConfigService') config: ConfigService, web3: Web3) {
     super(config, web3);
   }
 }

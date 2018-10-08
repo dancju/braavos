@@ -62,7 +62,7 @@ export class BtcUpdateDeposit extends NestSchedule {
           ),
         ]);
         this.amqpService.updateDeposit(
-          (await manager.findOne(Deposit, { id: d.id }))!,
+          await manager.findOneOrFail(Deposit, { id: d.id }),
         );
       }
     });
