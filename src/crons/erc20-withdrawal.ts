@@ -6,7 +6,7 @@ import querystring from 'querystring';
 import request from 'superagent';
 import { getManager } from 'typeorm';
 import Web3 from 'web3';
-import { Signature } from 'web3/eth/accounts';
+import { TxSignature } from 'web3/eth/accounts';
 import Contract from 'web3/eth/contract';
 import { AmqpService } from '../amqp/amqp.service';
 import { CoinEnum } from '../coins';
@@ -188,7 +188,7 @@ export abstract class Erc20Withdrawal extends NestSchedule {
       return;
     }
     /* start erc20 withdraw */
-    const signTx = (await this.web3.eth.accounts.signTransaction(
+    const signTx = await this.web3.eth.accounts.signTransaction(
       {
         data: txData,
         gas: gasLimit,
@@ -197,8 +197,7 @@ export abstract class Erc20Withdrawal extends NestSchedule {
         to: contract.options.address,
       },
       prv,
-    )) as Signature;
-
+    );
     await this.broadcastTx(signTx, v, contractAddr, collectAddr);
   }
 
@@ -232,7 +231,7 @@ export abstract class Erc20Withdrawal extends NestSchedule {
   }
 
   private async broadcastTx(
-    signTx: Signature,
+    signTx: TxSignature,
     v: Withdrawal,
     contractAddr: string,
     collectAddr: any,

@@ -8,7 +8,6 @@ import * as schedule from 'nest-schedule';
 import signature from 'superagent-http-signature';
 import request from 'supertest';
 import Web3 from 'web3';
-import { Signature } from 'web3/eth/accounts';
 import { ConfigService } from '../src/config/config.service';
 import { CronModule } from '../src/crons/cron.module';
 import { EthCollect } from '../src/crons/eth-collect';
@@ -23,14 +22,10 @@ const transfer = async (
   to: string,
   value: string,
 ): Promise<string> => {
-  const signTx = (await web3.eth.accounts.signTransaction(
-    {
-      gas: 21000,
-      to,
-      value,
-    },
+  const signTx = await web3.eth.accounts.signTransaction(
+    { gas: 21000, to, value },
     prv,
-  )) as Signature;
+  );
   const tx = await web3.eth.sendSignedTransaction(signTx.rawTransaction);
   return tx.transactionHash;
 };

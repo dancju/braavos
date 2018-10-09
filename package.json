@@ -3,11 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "postinstall": "yarn postinstall-1; yarn postinstall-2; yarn postinstall-3; yarn postinstall-4",
+    "postinstall": "yarn postinstall-1 && yarn postinstall-2",
     "postinstall-1": "sed -i.bak 's/status: string;/status: boolean;/' ./node_modules/@types/web3/types.d.ts",
-    "postinstall-2": "sed -i.bak '10s/message: string;/messageHash: string;/' ./node_modules/@types/web3/eth/accounts.d.ts",
-    "postinstall-3": "sed -i.bak '11s/hash: string;/rawTransaction: string;/' ./node_modules/@types/web3/eth/accounts.d.ts",
-    "postinstall-4": "sed -i.bak 's/var scryptNative = require(\".\\/build\\/Release\\/scrypt\")/var scryptNative = require(\"scrypt\")/' ./node_modules/scrypt/index.js",
+    "postinstall-2": "sed -i.bak 's/var scryptNative = require(\".\\/build\\/Release\\/scrypt\")/var scryptNative = require(\"scrypt\")/' ./node_modules/scrypt/index.js",
     "lint": "tslint --project ./tsconfig.json --fix './{src,test}/**/*.ts' && prettier --write \"**/*.ts\"",
     "start:http": "nodemon -e ts -w ./src -i src/**/*.spec.ts -x ts-node --files src/http.main.ts",
     "start:crons": "nodemon -e ts -w ./src -i src/**/*.spec.ts -x ts-node --files src/crons.main.ts",
@@ -37,7 +35,7 @@
     "bunyan": "^1.8.12",
     "class-transformer": "^0.1.9",
     "class-validator": "^0.9.1",
-    "consul": "^0.30.0",
+    "consul": "^0.34.0",
     "dotenv": "^6.0.0",
     "ethereumjs-util": "^5.2.0",
     "ethereumjs-wallet": "^0.6.2",
@@ -70,6 +68,7 @@
     "tslint-sonarts": "^1.8.0"
   },
   "jest": {
+    "coverageDirectory": "../coverage",
     "moduleFileExtensions": [
       "json",
       "js",
@@ -80,7 +79,6 @@
     "testResultsProcessor": "jest-sonar-reporter",
     "transform": {
       "^.+\\.ts$": "ts-jest"
-    },
-    "coverageDirectory": "../coverage"
+    }
   }
 }

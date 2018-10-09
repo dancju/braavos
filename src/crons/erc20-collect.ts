@@ -3,7 +3,6 @@ import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
 import { getManager } from 'typeorm';
 import Web3 from 'web3';
-import { Signature } from 'web3/eth/accounts';
 import Contract from 'web3/eth/contract';
 import { ChainEnum } from '../chains';
 import { CoinEnum } from '../coins';
@@ -167,7 +166,7 @@ export abstract class Erc20Collect extends NestSchedule {
       this.logger.error(`wallet balance is not enough | ${this.coinSymbol}`);
       return;
     }
-    const signTx = (await this.web3.eth.accounts.signTransaction(
+    const signTx = await this.web3.eth.accounts.signTransaction(
       {
         data: txData,
         gas: gasLimit,
@@ -176,7 +175,7 @@ export abstract class Erc20Collect extends NestSchedule {
         to: contract.options.address,
       },
       prv,
-    )) as Signature;
+    );
     try {
       await this.web3.eth
         .sendSignedTransaction(signTx.rawTransaction)

@@ -9,7 +9,6 @@ import path from 'path';
 import signature from 'superagent-http-signature';
 import request from 'supertest';
 import Web3 from 'web3';
-import { Signature } from 'web3/eth/accounts';
 import Contract from 'web3/eth/contract';
 import { ConfigService } from '../src/config/config.service';
 import { CfcCollect } from '../src/crons/cfc-collect';
@@ -25,14 +24,14 @@ const transfer = async (
   to: string,
   value: string,
 ): Promise<string> => {
-  const signTx = (await web3.eth.accounts.signTransaction(
+  const signTx = await web3.eth.accounts.signTransaction(
     {
       gas: 21000,
       to,
       value,
     },
     prv,
-  )) as Signature;
+  );
   const tx = await web3.eth.sendSignedTransaction(signTx.rawTransaction);
   return tx.transactionHash;
 };

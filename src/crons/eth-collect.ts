@@ -3,7 +3,6 @@ import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
 import { getManager } from 'typeorm';
 import Web3 from 'web3';
-import { Signature } from 'web3/eth/accounts';
 import { ChainEnum } from '../chains';
 import { CoinEnum, EthService } from '../coins';
 import { DepositStatus } from '../entities/deposit-status.enum';
@@ -106,7 +105,7 @@ export class EthCollect extends NestSchedule {
             const txFee = this.web3.utils.toBN(21000).mul(thisGasPrice);
             let value = this.web3.utils.toBN(balance);
             value = value.sub(txFee);
-            const signTx = (await this.web3.eth.accounts.signTransaction(
+            const signTx = await this.web3.eth.accounts.signTransaction(
               {
                 gas: 21000,
                 gasPrice: thisGasPrice.toString(),
@@ -115,7 +114,7 @@ export class EthCollect extends NestSchedule {
                 value: value.toString(),
               },
               prv,
-            )) as Signature;
+            );
             this.logger.debug('collect signTx' + signTx.rawTransaction);
             try {
               await this.web3.eth

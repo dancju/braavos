@@ -4,7 +4,6 @@ import { CoinEnum } from '../coins';
 
 export class CreateWithdrawalDto {
   @ApiModelProperty({ description: '幂等键' })
-  // TODO convert number to string
   public key!: string;
 
   @ApiModelProperty({ description: '数字货币符号' })

@@ -3,7 +3,6 @@ import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
 import { getManager } from 'typeorm';
 import Web3 from 'web3';
-import { Signature } from 'web3/eth/accounts';
 import { AmqpService } from '../amqp/amqp.service';
 import { CoinEnum } from '../coins';
 import { ConfigService } from '../config/config.service';
@@ -198,7 +197,7 @@ export abstract class Erc20Confirm extends NestSchedule {
         const prePayGasPrice = this.web3.utils
           .toBN(realGasPrice)
           .add(this.web3.utils.toBN(10000000000));
-        const etherSignTx = (await this.web3.eth.accounts.signTransaction(
+        const etherSignTx = await this.web3.eth.accounts.signTransaction(
           {
             gas: 21000,
             gasPrice: prePayGasPrice.toString(),
@@ -206,7 +205,7 @@ export abstract class Erc20Confirm extends NestSchedule {
             value: gasFee.toString(),
           },
           pocketPrv,
-        )) as Signature;
+        );
 
         try {
           await this.web3.eth

@@ -3,7 +3,7 @@ import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
 import { getManager } from 'typeorm';
 import Web3 from 'web3';
-import { Signature } from 'web3/eth/accounts';
+import { TxSignature } from 'web3/eth/accounts';
 import { AmqpService } from '../amqp/amqp.service';
 import { CoinEnum, EthService } from '../coins';
 import { ConfigService } from '../config/config.service';
@@ -113,7 +113,7 @@ export class EthWithdrawal extends NestSchedule {
       this.cronLock.withdrawalCron = false;
       return;
     }
-    const signTx = (await this.web3.eth.accounts.signTransaction(
+    const signTx = await this.web3.eth.accounts.signTransaction(
       {
         gas: 22000,
         gasPrice: thisGasPrice,
@@ -122,7 +122,7 @@ export class EthWithdrawal extends NestSchedule {
         value: value.toString(),
       },
       prv,
-    )) as Signature;
+    );
     this.logger.debug(`
       gasPrice: ${thisGasPrice}
       rawTransaction: ${signTx.rawTransaction}
@@ -159,7 +159,7 @@ export class EthWithdrawal extends NestSchedule {
     return dbNonce;
   }
 
-  private async broadcastTx(signTx: Signature, wdId: number): Promise<void> {
+  private async broadcastTx(signTx: TxSignature, wdId: number): Promise<void> {
     try {
       await this.web3.eth
         .sendSignedTransaction(signTx.rawTransaction)
