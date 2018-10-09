@@ -43,7 +43,7 @@ export class EthConfirm extends NestSchedule {
   @Cron('*/10 * * * * *')
   public async cron(): Promise<void> {
     if (this.cronLock.confirmCron === true) {
-      this.logger.warn('last confirmCron still in handling');
+      this.logger.debug('last confirmCron still in handling');
       return;
     }
     try {

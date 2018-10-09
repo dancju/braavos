@@ -57,7 +57,7 @@ export abstract class Erc20Withdrawal extends NestSchedule {
   @Cron('*/10 * * * * *')
   public async cron(): Promise<void> {
     if (this.cronLock.withdrawalCron === true) {
-      this.logger.warn('last erc20 withdrawal cron still in handling');
+      this.logger.debug('last erc20 withdrawal cron still in handling');
       return;
     }
     try {
