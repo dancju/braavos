@@ -107,7 +107,7 @@ describe('BTC (e2e)', () => {
     async (done) => {
       const lW = yaml.safeLoad(
         fs.readFileSync(
-          __dirname + '/fixtures/bitcoin-withdrawals.yml',
+          __dirname + '/fixtures/btc-withdrawals.yml',
           'ascii',
         ),
       ) as Array<{ amount: number; recipient: string }>;

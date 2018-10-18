@@ -1,5 +1,3 @@
-import { Injectable } from '@nestjs/common';
-import { isValidChecksumAddress, toChecksumAddress } from 'ethereumjs-util';
 import { EthereumHDKey, fromMasterSeed } from 'ethereumjs-wallet/hdkey';
 import Web3 from 'web3';
 import { ConfigService } from '../config/config.service';
@@ -22,7 +20,7 @@ export class EthereumService extends ChainService {
 
   public async getAddr(clientId: number, path0: string): Promise<string> {
     const path1 = `m/44'/60'/0'/${clientId}/${path0}`;
-    const addr = toChecksumAddress(
+    const addr = this.web3.utils.toChecksumAddress(
       this.hdkey
         .derivePath(path1)
         .getWallet()
@@ -51,13 +49,7 @@ export class EthereumService extends ChainService {
   }
 
   public isValidAddress(addr: string): boolean {
-    if (!/^0x[0-9a-fA-F]{40}$/i.test(addr)) {
-      return false;
-    } else if (/^0x[0-9a-f]{40}$/.test(addr) || /^0x[0-9A-F]{40}$/.test(addr)) {
-      return true;
-    } else {
-      return isValidChecksumAddress(addr);
-    }
+    return this.web3.utils.isAddress(addr);
   }
 
   public getPrivateKey(clientId: number, path0: string): string {
