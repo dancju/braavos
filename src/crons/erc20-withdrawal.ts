@@ -71,7 +71,82 @@ export abstract class Erc20Withdrawal extends NestSchedule {
       const prv = this.tokenService.getPrivateKey(0, '0');
 
       while (true) {
-        const wd = await Withdrawal.createQueryBuilder()
+        let wd;
+        /* offline handle bmart withdrawl */
+        wd = await Withdrawal.createQueryBuilder()
+          .where({
+            coinSymbol: this.coinSymbol,
+            memo: 'BMART',
+            status: WithdrawalStatus.created,
+            txHash: null,
+          })
+          .getMany();
+        if (wd.length <= 0) {
+          this.logger.debug(`no BMART record | ${this.coinSymbol}`);
+        }
+        await Promise.all(
+          wd.map(async (v) => {
+            if (v.memo) {
+              v.memo = v.memo.toLowerCase();
+            }
+            if (v.memo === 'bmart' && this.bmartHost !== 'test') {
+              const today = new Date();
+              const year = today.getFullYear().toString();
+              const month =
+                today.getMonth() + 1 <= 9
+                  ? '0' + (today.getMonth() + 1).toString()
+                  : (today.getMonth() + 1).toString();
+              const date =
+                today.getDate() <= 9
+                  ? '0' + today.getDate().toString()
+                  : today.getDate().toString();
+              const hash = 'off' + v.recipient + year + month + date + v.id;
+              const res = await request
+                .post(`${this.bmartHost}/api/v1/withdraw/addWithdrawInfo`)
+                .query(
+                  (() => {
+                    const req: any = {
+                      amount: v.amount,
+                      contractAddress: contractAddr,
+                      from: collectAddr,
+                      identify: 81,
+                      key: this.bmartKey,
+                      secret: this.bmartSecret,
+                      to: v.recipient,
+                      txid: hash,
+                    };
+                    req.sign = crypto
+                      .createHash('sha1')
+                      .update(querystring.stringify(req))
+                      .digest('hex');
+                    delete req.secret;
+                    return req;
+                  })(),
+                );
+              const resBody = res.body;
+              if (resBody.code === '200') {
+                await Withdrawal.createQueryBuilder()
+                  .update()
+                  .set({
+                    feeAmount : 0,
+                    feeSymbol: ETH,
+                    status: WithdrawalStatus.finished,
+                    txHash: hash,
+                  })
+                  .where({ id: v.id })
+                  .execute();
+              }
+              const ww = await Withdrawal.findOne({ id: v.id });
+              if (ww) {
+                this.amqpService.updateWithdrawal(ww);
+              }
+              this.logger.info('Finish bmart offline stream');
+            }
+          }),
+        );
+
+        /* handle normal withdrawl */
+        wd = await Withdrawal.createQueryBuilder()
           .where({
             coinSymbol: this.coinSymbol,
             status: WithdrawalStatus.created,
