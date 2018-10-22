@@ -354,9 +354,9 @@
     "@types/node" "*"
 
 "@types/jest@^23.3.2":
-  version "23.3.5"
-  resolved "https://registry.yarnpkg.com/@types/jest/-/jest-23.3.5.tgz#870a1434208b60603745bfd214fc3fc675142364"
-  integrity sha512-3LI+vUC3Wju28vbjIjsTKakhMB8HC4l+tMz+Z8WRzVK+kmvezE5jcOvKtBpznWSI5KDLFo+FouUhpTKoekadCA==
+  version "23.3.7"
+  resolved "https://registry.yarnpkg.com/@types/jest/-/jest-23.3.7.tgz#77f9a4332ccf8db680a31818ade3ee454c831a79"
+  integrity sha512-N0p6mHrS0RHC3A9hHN4QH1RM2fGSb2E8rt6ONEK5xKSnyKtn/JAhr1VritkCn6cdyDBephVB80THqJGWzK8FAw==
 
 "@types/js-yaml@^3.0.0":
   version "3.11.2"
@@ -419,9 +419,9 @@
   integrity sha512-vfzZGgZKRFy7KEWcBGfIFk+h6B+thDCLfkD1exMBMRlUsx2icA+J6y4kAbZs/TjSTeY1duw89QUU133TSzr60Q==
 
 "@types/web3@^1.0.0":
-  version "1.0.10"
-  resolved "https://registry.yarnpkg.com/@types/web3/-/web3-1.0.10.tgz#04e8ffe62746de76001b00329b3908fc8c1fc117"
-  integrity sha512-7rje36GsWAz1cow7/2PB4FAvDpMCAmSgDGSAmhB+Qi9pE/ROMQvzlvGAkDSwkKZ+WAK68WreJFwc3PLCawpYXw==
+  version "1.0.11"
+  resolved "https://registry.yarnpkg.com/@types/web3/-/web3-1.0.11.tgz#afe6f382aa5078c06be3f8018ab64d2517efb9ad"
+  integrity sha512-45puQrp3ubVTOa6ezkdgQqaj4nwmvOn1vI1GLfA7Q6cZdIRDpFhmg/Mue9rUTaQuhfeXMCUSZ71zbozHpQJ17w==
   dependencies:
     "@types/bn.js" "*"
     "@types/underscore" "*"
@@ -1715,13 +1715,6 @@ console-control-strings@^1.0.0, console-control-strings@~1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/console-control-strings/-/console-control-strings-1.1.0.tgz#3d7cf4464db6446ea644bf4b39507f9851008e8e"
   integrity sha1-PXz0Rk22RG6mRL9LOVB/mFEAjo4=
-
-consul@^0.34.0:
-  version "0.34.0"
-  resolved "https://registry.yarnpkg.com/consul/-/consul-0.34.0.tgz#06b8727d2d57a20e81d6e3ad7056c9edc95a4d4f"
-  integrity sha512-nMFq+GhTmhEp769U9FNRZplr9JnnngB3Tde3ptTCSt/lGeBGMnvGXjxGRcQyUgrs1z37/au7rUZDH1NZMehreA==
-  dependencies:
-    papi "^0.29.0"
 
 content-disposition@0.5.2:
   version "0.5.2"
@@ -4910,9 +4903,9 @@ minimist@~0.0.1:
   integrity sha1-3j+YVD2/lggr5IrRoMfNqDYwHc8=
 
 minipass@^2.2.1, minipass@^2.3.3:
-  version "2.3.4"
-  resolved "https://registry.yarnpkg.com/minipass/-/minipass-2.3.4.tgz#4768d7605ed6194d6d576169b9e12ef71e9d9957"
-  integrity sha512-mlouk1OHlaUE8Odt1drMtG1bAJA4ZA6B/ehysgV0LUIrDHdKgo1KorZq3pK0b/7Z7LJIQ12MNM6aC+Tn6lUZ5w==
+  version "2.3.5"
+  resolved "https://registry.yarnpkg.com/minipass/-/minipass-2.3.5.tgz#cacebe492022497f656b0f0f51e2682a9ed2d848"
+  integrity sha512-Gi1W4k059gyRbyVUZQ4mEqLm0YIUiGYfvxhF6SIlk3ui1WVxMTGfGdQ2SInh3PDrRTVvPKgULkpJtT4RH10+VA==
   dependencies:
     safe-buffer "^5.1.2"
     yallist "^3.0.0"
@@ -5067,9 +5060,9 @@ negotiator@0.6.1:
   integrity sha1-KzJxhOiZIQEXeyhWP7XnECrNDKk=
 
 nest-schedule@^0.4.0:
-  version "0.4.1"
-  resolved "https://registry.yarnpkg.com/nest-schedule/-/nest-schedule-0.4.1.tgz#ae860daebdaf4bfd2504ce24926a466dc4d5d553"
-  integrity sha512-M7EvQmX4LA4lyWQBPQbMHhYpybRpsv40mX+k82u2N1rRWLIBngM+gh4qoH6/jHS/5KvekpUtjthDf2rZxI7D7A==
+  version "0.4.3"
+  resolved "https://registry.yarnpkg.com/nest-schedule/-/nest-schedule-0.4.3.tgz#b5209c83622933ed51050d6a06f5cc296a6c9046"
+  integrity sha512-/9GFr0l6gJ/DmJrUiQkAVm0yn0GLp5qTKnNoU894o+q6nOrINPt+kf9+cgbOZ1W37oUTB16g6BxTezXZDQZqAA==
   dependencies:
     "@types/lodash" "^4.14.108"
     node-schedule "^1.3.0"
@@ -5436,11 +5429,6 @@ packet-reader@0.3.1:
   resolved "https://registry.yarnpkg.com/packet-reader/-/packet-reader-0.3.1.tgz#cd62e60af8d7fea8a705ec4ff990871c46871f27"
   integrity sha1-zWLmCvjX/qinBexP+ZCHHEaHHyc=
 
-papi@^0.29.0:
-  version "0.29.0"
-  resolved "https://registry.yarnpkg.com/papi/-/papi-0.29.0.tgz#6bbc332f415d1f3563dea2d2fb8df760d939aebd"
-  integrity sha512-NnZp1pBF0Bt8yV+XX6ejuWfpO6YOt6zUKqZLnpYyZz8MHyWa9jvjNH+oi4NDU3+47CAlpivrl0evekamSbOViQ==
-
 parent-require@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/parent-require/-/parent-require-1.0.0.tgz#746a167638083a860b0eef6732cb27ed46c32977"
@@ -5688,9 +5676,9 @@ pify@^3.0.0:
   integrity sha1-5aSs0sEB/fPZpNB/DbxNtJ3SgXY=
 
 pify@^4.0.0:
-  version "4.0.0"
-  resolved "https://registry.yarnpkg.com/pify/-/pify-4.0.0.tgz#db04c982b632fd0df9090d14aaf1c8413cadb695"
-  integrity sha512-zrSP/KDf9DH3K3VePONoCstgPiYJy9z0SCatZuTpOc7YdnWIqwkWdXOuwlr4uDc7em8QZRsFWsT/685x5InjYg==
+  version "4.0.1"
+  resolved "https://registry.yarnpkg.com/pify/-/pify-4.0.1.tgz#4b2cd25c50d598735c50292224fd8c6df41e3231"
+  integrity sha512-uB80kBFb/tfd68bVleG9T5GGsGPjJrLAUpR5PZIrhBnIaRTQRjqdJSsIKkOP6OAIFbj7GOrcudc5pNjZ+geV2g==
 
 pinkie-promise@^2.0.0:
   version "2.0.1"
@@ -6025,9 +6013,9 @@ query-string@^5.0.1:
     strict-uri-encode "^1.0.0"
 
 randomatic@^3.0.0:
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/randomatic/-/randomatic-3.1.0.tgz#36f2ca708e9e567f5ed2ec01949026d50aa10116"
-  integrity sha512-KnGPVE0lo2WoXxIZ7cPR8YBpiol4gsSuOwDSg410oHh80ZMp5EiypNqL2K4Z77vJn6lB5rap7IkAmcUlalcnBQ==
+  version "3.1.1"
+  resolved "https://registry.yarnpkg.com/randomatic/-/randomatic-3.1.1.tgz#b776efc59375984e36c537b2f51a1f0aff0da1ed"
+  integrity sha512-TuDE5KxZ0J461RVjrJZCJc+J+zCkTb1MbH9AQUq68sMhOMcy9jLcb3BrZKgp9q9Ncltdg4QVqWrH02W2EFFVYw==
   dependencies:
     is-number "^4.0.0"
     kind-of "^6.0.0"

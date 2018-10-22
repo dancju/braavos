@@ -13,7 +13,7 @@ services:
       - 5672:5672
       - 15672:15672
   bitcoind:
-    image: ruimarinho/bitcoin-core:0.16-alpine
+    image: ruimarinho/bitcoin-core:0.17-alpine
     tty: true
     ports:
       - 18443:18443

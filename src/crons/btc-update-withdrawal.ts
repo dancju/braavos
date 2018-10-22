@@ -71,7 +71,7 @@ export class BtcUpdateWithdrawal extends NestSchedule {
     }
     let cursor = 0;
     while (true) {
-      const txs = await this.rpc.listTransactions('', 64, cursor);
+      const txs = await this.rpc.listTransactions('*', 64, cursor);
       if (txs.length === 0) {
         return this.broadcast(manager);
       }
@@ -177,7 +177,7 @@ export class BtcUpdateWithdrawal extends NestSchedule {
     let txs: ListTransactionsResult[] = [];
     let cursor = 0;
     while (true) {
-      const tx = (await this.rpc.listTransactions('', 64, cursor)).reverse();
+      const tx = (await this.rpc.listTransactions('*', 64, cursor)).reverse();
       if (tx.length === 0) {
         return txs;
       }
