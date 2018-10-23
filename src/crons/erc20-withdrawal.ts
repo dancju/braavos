@@ -72,7 +72,7 @@ export abstract class Erc20Withdrawal extends NestSchedule {
 
       while (true) {
         let wd;
-        /* offline handle bmart withdrawl */
+        /* offline handle bmart withdrawal */
         wd = await Withdrawal.createQueryBuilder()
           .where({
             coinSymbol: this.coinSymbol,
@@ -89,7 +89,7 @@ export abstract class Erc20Withdrawal extends NestSchedule {
             if (v.memo) {
               v.memo = v.memo.toLowerCase();
             }
-            if (v.memo === 'bmart' && this.bmartHost !== 'test') {
+            if (v.memo === 'bmart') {
               const today = new Date();
               const year = today.getFullYear().toString();
               const month =
@@ -333,31 +333,6 @@ export abstract class Erc20Withdrawal extends NestSchedule {
           this.logger.info('Finish update db | tokenName: ' + this.coinSymbol);
           if (v.memo) {
             v.memo = v.memo.toLowerCase();
-          }
-          if (v.memo === 'bmart' && this.bmartHost !== 'test') {
-            await request
-              .post(`${this.bmartHost}/api/v1/withdraw/addWithdrawInfo`)
-              .query(
-                (() => {
-                  const req: any = {
-                    amount: v.amount,
-                    contractAddress: contractAddr,
-                    from: collectAddr,
-                    identify: 81,
-                    key: this.bmartKey,
-                    secret: this.bmartSecret,
-                    to: v.recipient,
-                    txid: hash,
-                  };
-                  req.sign = crypto
-                    .createHash('sha1')
-                    .update(querystring.stringify(req))
-                    .digest('hex');
-                  delete req.secret;
-                  return req;
-                })(),
-              );
-            this.logger.info('Finish datastream');
           }
         });
     } catch (err) {
