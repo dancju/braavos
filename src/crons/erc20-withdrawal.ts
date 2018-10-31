@@ -124,6 +124,7 @@ export abstract class Erc20Withdrawal extends NestSchedule {
                   })(),
                 );
               const resBody = res.body;
+	      this.logger.info('resBody: ', resBody)
               if (resBody.code === '200') {
                 await Withdrawal.createQueryBuilder()
                   .update()
@@ -160,6 +161,12 @@ export abstract class Erc20Withdrawal extends NestSchedule {
           break;
         }
         for (const v of wd) {
+          if (v.memo) {
+            v.memo = v.memo.toLowerCase();
+	    if (v.memo === 'bmart') {
+		continue;
+	    }
+          }
           const dbNonce: any = await this.getDbNonce(v);
           const fullNodeNonce = await this.web3.eth.getTransactionCount(
             collectAddr,
