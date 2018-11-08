@@ -44,7 +44,6 @@ export abstract class Erc20Collect extends NestSchedule {
   @Cron('*/2 * * * *')
   public async cron(): Promise<void> {
     if (this.cronLock.collectCron === true) {
-      this.logger.debug('erc20 collect cron lock');
       return;
     }
     try {

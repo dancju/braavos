@@ -46,7 +46,6 @@ export abstract class Erc20Confirm extends NestSchedule {
   @Cron('*/30 * * * * *')
   public async confirmCron(): Promise<void> {
     if (this.cronLock.confirmCron === true) {
-      this.logger.debug('erc20 confirm cron lock');
       return;
     }
     try {
@@ -120,7 +119,6 @@ export abstract class Erc20Confirm extends NestSchedule {
   @Cron('*/59 * * * * *')
   public async payPreFee(): Promise<void> {
     if (this.cronLock.payPreFeeCron === true) {
-      this.logger.debug('erc20 pay pre fee cron lock');
       return;
     }
     try {

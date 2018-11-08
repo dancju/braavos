@@ -48,7 +48,6 @@ export abstract class Erc20Deposit extends NestSchedule {
   @Cron('*/20 * * * * *')
   public async cron(): Promise<void> {
     if (this.cronLock.depositCron === true) {
-      this.logger.debug('last erc20 depositCron still in handling');
       return;
     }
     this.cronLock.depositCron = true;
