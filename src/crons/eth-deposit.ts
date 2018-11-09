@@ -46,7 +46,6 @@ export class EthDeposit extends NestSchedule {
   public async cron(): Promise<void> {
     try {
       if (this.cronLock.depositCron === true) {
-        this.logger.debug('last depositCron still in handling');
         return;
       }
       this.cronLock.depositCron = true;
