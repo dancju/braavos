@@ -92,14 +92,8 @@ export abstract class Erc20Deposit extends NestSchedule {
       for (const e of events) {
         const eIndex = e.blockNumber;
         /* catch up eIndex */
-        for (; blockIndex <= eIndex - 1; blockIndex++) {
-          this.logger.debug(
-            'blockIndex: ' + blockIndex + ' | tokenName: ' + this.coinSymbol,
-          );
-          /* update db block index */
-          coin.info.cursor = blockIndex;
-          await coin.save();
-        }
+        coin.info.cursor = eIndex - 1;
+        await coin.save();
         blockIndex = eIndex;
         /* handle this event */
         await this.handleEvent(
@@ -115,14 +109,8 @@ export abstract class Erc20Deposit extends NestSchedule {
         blockIndex += 1;
       }
       /* handle left block */
-      for (; blockIndex <= height; blockIndex++) {
-        this.logger.debug(
-          'blockIndex: ' + blockIndex + ' | tokenName: ' + this.coinSymbol,
-        );
-        /* update db block index */
-        coin.info.cursor = blockIndex;
-        await coin.save();
-      }
+      coin.info.cursor = height;
+      await coin.save();
       this.cronLock.depositCron = false;
       return;
     } catch (err) {
