@@ -76,8 +76,9 @@ export abstract class Erc20Deposit extends NestSchedule {
       blockIndex = blockIndex + 1;
 
       let height = await this.web3.eth.getBlockNumber();
+      height -= 1;
       if (height < blockIndex) {
-        this.logger.warn(
+        this.logger.info(
           'Ethereum full node is lower than db | tokenName: ' + this.coinSymbol,
         );
         this.cronLock.depositCron = false;
@@ -90,11 +91,6 @@ export abstract class Erc20Deposit extends NestSchedule {
       });
       this.logger.debug('erc20 blockIndex: ', blockIndex);
       for (const e of events) {
-        const eIndex = e.blockNumber;
-        /* catch up eIndex */
-        coin.info.cursor = eIndex - 1;
-        await coin.save();
-        blockIndex = eIndex;
         /* handle this event */
         await this.handleEvent(
           e,
@@ -104,13 +100,11 @@ export abstract class Erc20Deposit extends NestSchedule {
           minThreshold,
           decimals,
         );
-        coin.info.cursor = blockIndex;
-        await coin.save();
-        blockIndex += 1;
       }
       /* handle left block */
       coin.info.cursor = height;
       await coin.save();
+      this.logger.debug('erc20 blockIndex: ', height);
       this.cronLock.depositCron = false;
       return;
     } catch (err) {
@@ -143,6 +137,7 @@ export abstract class Erc20Deposit extends NestSchedule {
         if (
           this.web3.utils.toBN(amount).lt(this.web3.utils.toBN(minThreshold))
         ) {
+          this.logger.info('erc20 deposit: Amount is less than threshald');
           return;
         }
         const checkTx = await Deposit.createQueryBuilder()
