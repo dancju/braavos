@@ -6,7 +6,7 @@
     "postinstall": "sed -i.bak 's/var scryptNative = require(\".\\/build\\/Release\\/scrypt\")/var scryptNative = require(\"scrypt\")/' ./node_modules/scrypt/index.js",
     "lint": "tslint --project ./tsconfig.json --fix './{src,test}/**/*.ts' && prettier --write \"**/*.ts\"",
     "start:http": "nodemon -e ts -w ./src -i src/**/*.spec.ts -x ts-node --files src/http.main.ts",
-    "start:crons": "nodemon -e ts -w ./src -i src/**/*.spec.ts -x ts-node --files src/crons.main.ts",
+    "start:crons": "forever -c \"nodemon -e ts -w ./src -i src/**/*.spec.ts --exitcrash -x ts-node --files\" src/crons.main.ts",
     "start:dashboard": "nodemon -e ts -w ./src -i src/**/*.spec.ts -x ts-node --files src/dashboard.main.ts",
     "test:cov": "jest --coverage",
     "test:e2e": "jest --config ./test/jest-e2e.json"
@@ -35,6 +35,7 @@
     "class-validator": "^0.9.0",
     "dotenv": "^6.0.0",
     "ethereumjs-wallet": "^0.6.0",
+    "forever": "^0.15.3",
     "nest-schedule": "^0.4.0",
     "nestjs-amqp": "^0.1.0",
     "passport": "^0.4.0",
