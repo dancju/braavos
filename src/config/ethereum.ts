@@ -9,30 +9,6 @@ export default class EthereumConfig {
     return res;
   }
 
-  public static get bmartHost() {
-    const res = process.env.BMART_HOST;
-    if (!res) {
-      throw new Error();
-    }
-    return res;
-  }
-
-  public static get bmartKey() {
-    const res = process.env.BMART_KEY;
-    if (!res) {
-      throw new Error();
-    }
-    return res;
-  }
-
-  public static get bmartSecret() {
-    const res = process.env.BMART_SECRET;
-    if (!res) {
-      throw new Error();
-    }
-    return res;
-  }
-
   public static get pocketAddr() {
     const res = process.env.POCKET_ADDR;
     if (!res) {
