@@ -1,3 +1,4 @@
+// tslint:disable:bool-param-default
 // tslint:disable:max-classes-per-file
 
 declare module 'ethereumjs-wallet' {

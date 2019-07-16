@@ -1,6 +1,7 @@
 // TypeScript definition for bitcoin-core 2.0.0
 // Contributor: Joe Miyamoto <joemphilps@gmail.com>
 // Contributor: Daniel Zhou <danichau93@gmail.com>
+// tslint:disable:bool-param-default
 // tslint:disable:interface-name
 // tslint:disable:max-union-size
 // tslint:disable:parameters-max-number
