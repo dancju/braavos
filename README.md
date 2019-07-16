@@ -7,4 +7,4 @@
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=braavos&metric=reliability_rating)](https://sonarcloud.io/dashboard?id=braavos)
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=braavos&metric=security_rating)](https://sonarcloud.io/dashboard?id=braavos)
 
-Braavos is a cryptocurrency wallet micro-service that supports Bitcoin, Ether, and ERC20 tokens.
+Braavos is a cryptocurrency wallet microservice that supports Bitcoin, Ether, and ERC20 tokens.

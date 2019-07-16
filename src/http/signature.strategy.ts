@@ -9,7 +9,8 @@ export class SignatureStrategy extends PassportStrategy(Strategy, 'signature') {
     keyId: string,
     done: (_: null, client: Client, publicKey: string) => void,
   ) {
-    const { name } = (await new Promise((resolve, reject) => {
+    // tslint:disable-next-line: no-dead-store
+    const { name, fingerprint } = await new Promise((resolve, reject) => {
       keyId.replace(
         /^\/(\w+)\/keys\/([0-9a-f:]+)$/,
         (_: string, n: string, f: string): string => {
@@ -18,7 +19,7 @@ export class SignatureStrategy extends PassportStrategy(Strategy, 'signature') {
         },
       );
       reject(new UnauthorizedException('Bad keyId Format'));
-    })) as { name: string; fingerprint: string };
+    });
     const client = await Client.findOne({ name });
     if (!client) {
       throw new UnauthorizedException('Client Name Not Found');
