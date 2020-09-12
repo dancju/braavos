@@ -67,10 +67,10 @@ declare module 'bitcoin-core' {
   interface AddedNodeInfo {
     addednode: string;
     connected: boolean;
-    addresses: Array<{
+    addresses: {
       address: string;
       connected: 'inbound' | 'outbound';
-    }>;
+    }[];
   }
 
   interface MemoryStats {
@@ -93,20 +93,20 @@ declare module 'bitcoin-core' {
     timeoffset: number;
     connections: number;
     networkactive: boolean;
-    networks: Array<{
+    networks: {
       name: string;
       limited: boolean;
       reachable: boolean;
       proxy: string;
       proxy_randomize_credentials: boolean;
-    }>;
+    }[];
     relayfee: number;
     incrementalfee: number;
-    localaddresses: Array<{
+    localaddresses: {
       address: string;
       port: number;
       score: number;
-    }>;
+    }[];
     warnings?: string;
   }
 
@@ -172,13 +172,13 @@ declare module 'bitcoin-core' {
     pruneheight: number;
     automatic_pruning: boolean;
     prune_target_size: number;
-    softforks: Array<{
+    softforks: {
       id: string;
       version: number;
       reject: {
         status: boolean;
       };
-    }>;
+    }[];
     bip9_softforks: {
       [key: string]: {
         status: 'defined' | 'started' | 'locked_in' | 'active' | 'failed';
@@ -423,7 +423,7 @@ declare module 'bitcoin-core' {
     time: number;
     timereceived: number;
     'bip125-replaceable': 'yes' | 'no' | 'unknown';
-    details: Array<{
+    details: {
       account: string;
       address: string;
       category: 'send' | 'receive';
@@ -432,7 +432,7 @@ declare module 'bitcoin-core' {
       vout: number;
       fee: number;
       abandoned: number;
-    }>;
+    }[];
     hex: string;
   }
 
@@ -462,13 +462,13 @@ declare module 'bitcoin-core' {
   interface SignRawTxResult {
     hex: string;
     complete: boolean;
-    errors?: Array<{
+    errors?: {
       txid: string;
       vout: number;
       scriptSig: string;
       sequence: number;
       error: string;
-    }>;
+    }[];
   }
 
   interface ValidateAddressResult {
@@ -986,7 +986,7 @@ declare module 'bitcoin-core' {
       requests: ImportMultiRequest[],
       options?: { rescan?: boolean },
     ): Promise<
-      Array<{ success: boolean; error?: { code: string; message: string } }>
+      { success: boolean; error?: { code: string; message: string } }[]
     >;
 
     public importPrivKey(
@@ -1019,7 +1019,7 @@ declare module 'bitcoin-core' {
 
     public listBanned(): Promise<any>;
 
-    public listLockUnspent(): Promise<Array<{ txid: string; vout: number }>>;
+    public listLockUnspent(): Promise<{ txid: string; vout: number }[]>;
 
     public listReceivedByAccount(
       minconf?: number,
@@ -1059,7 +1059,7 @@ declare module 'bitcoin-core' {
 
     public lockUnspent(
       unlock: boolean,
-      transactions?: Array<{ txid: string; vout: number }>,
+      transactions?: { txid: string; vout: number }[],
     ): Promise<boolean>;
 
     /**

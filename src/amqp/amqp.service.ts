@@ -69,9 +69,10 @@ export class AmqpService {
       if (!msg) {
         throw new Error();
       }
-      const body = plainToClass(CreateWithdrawalDto, JSON.parse(
-        msg.content.toString(),
-      ) as object);
+      const body = plainToClass(
+        CreateWithdrawalDto,
+        JSON.parse(msg.content.toString()) as object,
+      );
       // TODO check this out
       await validate(body);
       const clientId = 0;

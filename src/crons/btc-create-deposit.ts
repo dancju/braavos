@@ -39,11 +39,9 @@ export class BtcCreateDeposit extends NestSchedule {
         .txid;
       let cursor = 0;
       while (true) {
-        const txs = (await this.rpc.listTransactions(
-          '*',
-          64,
-          cursor,
-        )).reverse();
+        const txs = (
+          await this.rpc.listTransactions('*', 64, cursor)
+        ).reverse();
         if (await this.bazainga(txs, lastMilestone)) {
           break;
         }

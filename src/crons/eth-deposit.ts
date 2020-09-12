@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
 import Web3 from 'web3';
-import { Transaction } from 'web3/eth/types';
+import { Transaction } from 'web3-core';
 import { AmqpService } from '../amqp/amqp.service';
 import { ChainEnum } from '../chains';
 import { CoinEnum, EthService } from '../coins';
@@ -89,7 +89,7 @@ export class EthDeposit extends NestSchedule {
             if (cond === false) {
               return;
             }
-            const user = await Addr.findOne({ addr: tx.to, chain: ethereum });
+            const user = await Addr.findOne({ addr: tx.to!, chain: ethereum });
             if (!user) {
               return;
             }

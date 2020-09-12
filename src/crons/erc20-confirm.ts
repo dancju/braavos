@@ -179,9 +179,7 @@ export abstract class Erc20Confirm extends NestSchedule {
           .add(this.web3.utils.toBN(10000000000));
 
         /* check if balance of pocket address is enough to pay this fee */
-        const gasFee = this.web3.utils
-          .toBN(gasLimit)
-          .mul(this.web3.utils.toBN(thisGasPrice));
+        const gasFee = this.web3.utils.toBN(gasLimit).mul(thisGasPrice);
         const pocketBalance = this.web3.utils.toBN(
           await this.web3.eth.getBalance(pocketAddr),
         );
@@ -207,7 +205,7 @@ export abstract class Erc20Confirm extends NestSchedule {
 
         try {
           await this.web3.eth
-            .sendSignedTransaction(etherSignTx.rawTransaction)
+            .sendSignedTransaction(etherSignTx.rawTransaction!)
             .on('transactionHash', async (hash) => {
               this.logger.debug(`payPreFee ${this.coinSymbol} hash: ${hash}`);
               tx.info.gasLimit = gasLimit;

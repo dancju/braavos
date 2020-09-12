@@ -29,9 +29,11 @@ describe('BTC (e2e)', () => {
 
   beforeAll(async () => {
     schedule.defaults.enable = false;
-    app = (await Test.createTestingModule({
-      imports: [HttpModule, CronModule],
-    }).compile()).createNestApplication();
+    app = (
+      await Test.createTestingModule({
+        imports: [HttpModule, CronModule],
+      }).compile()
+    ).createNestApplication();
     await app.init();
     // connect to AMQP
     amqpConnection = await connect(app.get(ConfigService).amqp);
@@ -102,57 +104,50 @@ describe('BTC (e2e)', () => {
     done();
   });
 
-  it(
-    'should handle withdrawals',
-    async (done) => {
-      const lW = yaml.safeLoad(
-        fs.readFileSync(
-          __dirname + '/fixtures/btc-withdrawals.yml',
-          'ascii',
+  it('should handle withdrawals', async (done) => {
+    const lW = yaml.safeLoad(
+      fs.readFileSync(__dirname + '/fixtures/btc-withdrawals.yml', 'ascii'),
+    ) as Array<{ amount: number; recipient: string }>;
+    lW.forEach((w, i) =>
+      amqpChannel.sendToQueue(
+        'withdrawal_creation',
+        Buffer.from(
+          JSON.stringify({
+            amount: w.amount,
+            coinSymbol: 'BTC',
+            key: i,
+            recipient: w.recipient,
+          }),
         ),
-      ) as Array<{ amount: number; recipient: string }>;
-      lW.forEach((w, i) =>
-        amqpChannel.sendToQueue(
-          'withdrawal_creation',
-          Buffer.from(
-            JSON.stringify({
-              amount: w.amount,
-              coinSymbol: 'BTC',
-              key: i,
-              recipient: w.recipient,
-            }),
-          ),
-        ),
-      );
-      await amqpChannel.waitForConfirms();
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      await Promise.all([
-        app.get(BtcUpdateWithdrawal).cron(),
-        app.get(BtcUpdateWithdrawal).cron(),
-        app.get(BtcUpdateWithdrawal).cron(),
-        app.get(BtcUpdateWithdrawal).cron(),
-      ]);
-      const res = (await new Promise((resolve) => {
-        const updates: { [_: string]: any } = {};
-        const queue = 'withdrawal_update';
-        amqpChannel.assertQueue(queue);
-        amqpChannel.consume(queue, async (msg) => {
-          const body = JSON.parse(msg!.content.toString());
-          updates[body.key as string] = body;
-          amqpChannel.ack(msg!);
-          if (Object.keys(updates).length === lW.length) {
-            resolve(Object.values(updates));
-          }
-        });
-      })) as any[];
-      for (let i = 0; i < lW.length; i++) {
-        expect(res[i].recipient).toStrictEqual(lW[i].recipient);
-        expect(Number(res[i].amount)).toStrictEqual(lW[i].amount);
-      }
-      done();
-    },
-    10000,
-  );
+      ),
+    );
+    await amqpChannel.waitForConfirms();
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await Promise.all([
+      app.get(BtcUpdateWithdrawal).cron(),
+      app.get(BtcUpdateWithdrawal).cron(),
+      app.get(BtcUpdateWithdrawal).cron(),
+      app.get(BtcUpdateWithdrawal).cron(),
+    ]);
+    const res = (await new Promise((resolve) => {
+      const updates: { [_: string]: any } = {};
+      const queue = 'withdrawal_update';
+      amqpChannel.assertQueue(queue);
+      amqpChannel.consume(queue, async (msg) => {
+        const body = JSON.parse(msg!.content.toString());
+        updates[body.key as string] = body;
+        amqpChannel.ack(msg!);
+        if (Object.keys(updates).length === lW.length) {
+          resolve(Object.values(updates));
+        }
+      });
+    })) as any[];
+    for (let i = 0; i < lW.length; i++) {
+      expect(res[i].recipient).toStrictEqual(lW[i].recipient);
+      expect(Number(res[i].amount)).toStrictEqual(lW[i].amount);
+    }
+    done();
+  }, 10000);
 
   afterAll(async () => {
     await amqpConnection.close();

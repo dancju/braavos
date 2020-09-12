@@ -3,7 +3,7 @@ import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
 import { getManager } from 'typeorm';
 import Web3 from 'web3';
-import { TxSignature } from 'web3/eth/accounts';
+import { SignedTransaction } from 'web3-core';
 import { AmqpService } from '../amqp/amqp.service';
 import { CoinEnum, EthService } from '../coins';
 import { ConfigService } from '../config/config.service';
@@ -145,7 +145,7 @@ export class EthWithdrawal extends NestSchedule {
           where key = 'ethWithdrawalNonce'
           returning value as nonce
         `);
-        dbNonce = uu[0].nonce;
+        dbNonce = uu[0][0].nonce;
         dbNonce = dbNonce - 1;
         await manager.query(`
           update withdrawal
@@ -159,10 +159,13 @@ export class EthWithdrawal extends NestSchedule {
     return dbNonce;
   }
 
-  private async broadcastTx(signTx: TxSignature, wdId: number): Promise<void> {
+  private async broadcastTx(
+    signTx: SignedTransaction,
+    wdId: number,
+  ): Promise<void> {
     try {
       await this.web3.eth
-        .sendSignedTransaction(signTx.rawTransaction)
+        .sendSignedTransaction(signTx.rawTransaction!)
         .on('transactionHash', async (hash) => {
           this.logger.info('withdrawTxHash: ' + hash);
           await Withdrawal.createQueryBuilder()

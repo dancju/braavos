@@ -3,7 +3,7 @@ import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
 import { getManager } from 'typeorm';
 import Web3 from 'web3';
-import Contract from 'web3/eth/contract';
+import { Contract } from 'web3-eth-contract';
 import { ChainEnum } from '../chains';
 import { CoinEnum } from '../coins';
 import { ConfigService } from '../config/config.service';
@@ -177,7 +177,7 @@ export abstract class Erc20Collect extends NestSchedule {
     );
     try {
       await this.web3.eth
-        .sendSignedTransaction(signTx.rawTransaction)
+        .sendSignedTransaction(signTx.rawTransaction!)
         .on('transactionHash', async (hash) => {
           this.logger.debug(`collect ${this.coinSymbol} hash: ${hash}`);
           await Deposit.createQueryBuilder()
@@ -208,7 +208,7 @@ export abstract class Erc20Collect extends NestSchedule {
           and "clientId" = ${tx.clientId} and path = '${tx.addrPath}'
           returning info->'nonce' as nonce
         `);
-        dbNonce = uu[0].nonce;
+        dbNonce = uu[0][0].nonce;
         dbNonce = dbNonce - 1;
         await manager.query(`
           update deposit

@@ -56,26 +56,23 @@ export class EthCollect extends NestSchedule {
           if (tx.info.nonce === undefined || tx.info.nonce === null) {
             await getManager().transaction(async (manager) => {
               await manager.query(`
-              select * from addr
-              where chain = '${ethereum}' and "clientId" = ${
-                tx.clientId
-              } and path = '${tx.addrPath}'
-              for update
-            `);
+                select * from addr
+                where chain = '${ethereum}' and "clientId" = ${tx.clientId} and path = '${tx.addrPath}'
+                for update
+              `);
               const uu = await manager.query(`
-              update addr
-              set info = (info || ('{"nonce":' || ((info->>'nonce')::int + 1) || '}')::jsonb)
-              where chain = '${ethereum}' and "clientId" = ${
-                tx.clientId
-              } and path = '${tx.addrPath}'
-              returning info->'nonce' as nonce`);
-              dbNonce = uu[0].nonce;
+                update addr
+                set info = (info || ('{"nonce":' || ((info->>'nonce')::int + 1) || '}')::jsonb)
+                where chain = '${ethereum}' and "clientId" = ${tx.clientId} and path = '${tx.addrPath}'
+                returning info->'nonce' as nonce
+              `);
+              dbNonce = uu[0][0].nonce;
               dbNonce = dbNonce - 1;
               await manager.query(`
-              update deposit
-              set info = (info || ('{"nonce":' || (${dbNonce}) || '}')::jsonb)
-              where id = ${tx.id}
-            `);
+                update deposit
+                set info = (info || ('{"nonce":' || (${dbNonce}) || '}')::jsonb)
+                where id = ${tx.id}
+              `);
             });
           } else {
             dbNonce = tx.info.nonce;
@@ -117,7 +114,7 @@ export class EthCollect extends NestSchedule {
             this.logger.debug('collect signTx' + signTx.rawTransaction);
             try {
               await this.web3.eth
-                .sendSignedTransaction(signTx.rawTransaction)
+                .sendSignedTransaction(signTx.rawTransaction!)
                 .on('transactionHash', async (hash) => {
                   this.logger.debug('collect hash: ' + hash);
                   await Deposit.createQueryBuilder()

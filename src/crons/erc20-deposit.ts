@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import bunyan from 'bunyan';
 import { Cron, NestSchedule } from 'nest-schedule';
 import Web3 from 'web3';
-import { EventLog } from 'web3/types';
+import { EventData } from 'web3-eth-contract';
 import { AmqpService } from '../amqp/amqp.service';
 import { ChainEnum } from '../chains';
 import { CoinEnum } from '../coins';
@@ -114,7 +114,7 @@ export abstract class Erc20Deposit extends NestSchedule {
   }
 
   private async handleEvent(
-    e: EventLog,
+    e: EventData,
     abiFrom: string,
     abiTo: string,
     abiValue: string,

@@ -6,8 +6,8 @@ import querystring from 'querystring';
 import request from 'superagent';
 import { getManager } from 'typeorm';
 import Web3 from 'web3';
-import { TxSignature } from 'web3/eth/accounts';
-import Contract from 'web3/eth/contract';
+import { SignedTransaction } from 'web3-eth-accounts';
+import { Contract } from 'web3-eth-contract';
 import { AmqpService } from '../amqp/amqp.service';
 import { CoinEnum } from '../coins';
 import { ConfigService } from '../config/config.service';
@@ -217,7 +217,7 @@ export abstract class Erc20Withdrawal extends NestSchedule {
           where key = 'ethWithdrawalNonce'
           returning value as nonce
         `);
-        dbNonce = uu[0].nonce;
+        dbNonce = uu[0][0].nonce;
         dbNonce = dbNonce - 1;
         await manager.query(`
           update withdrawal
@@ -232,14 +232,14 @@ export abstract class Erc20Withdrawal extends NestSchedule {
   }
 
   private async broadcastTx(
-    signTx: TxSignature,
+    signTx: SignedTransaction,
     v: Withdrawal,
     contractAddr: string,
     collectAddr: any,
   ): Promise<void> {
     try {
       const tx = await this.web3.eth
-        .sendSignedTransaction(signTx.rawTransaction)
+        .sendSignedTransaction(signTx.rawTransaction!)
         .on('transactionHash', async (hash) => {
           this.logger.info(`withdrawTxHash ${this.coinSymbol}: ${hash}`);
           await Withdrawal.createQueryBuilder()

@@ -1,5 +1,5 @@
 import { TypeOrmModuleOptions, TypeOrmOptionsFactory } from '@nestjs/typeorm';
-import { mnemonicToSeed } from 'bip39';
+import { mnemonicToSeedSync } from 'bip39';
 import dotenv from 'dotenv';
 import bitcoinConfig from './bitcoin';
 import ethereumConfig from './ethereum';
@@ -30,7 +30,7 @@ export class ConfigService implements TypeOrmOptionsFactory {
   }
 
   get seed(): Buffer {
-    return mnemonicToSeed(this.mnemonic);
+    return mnemonicToSeedSync(this.mnemonic);
   }
 
   public createTypeOrmOptions(): TypeOrmModuleOptions {

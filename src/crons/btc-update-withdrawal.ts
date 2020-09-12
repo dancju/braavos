@@ -62,7 +62,7 @@ export class BtcUpdateWithdrawal extends NestSchedule {
       .createQueryBuilder(Withdrawal, 'w')
       .where({
         status: WithdrawalStatus.created,
-        symbol: BTC,
+        coinSymbol: BTC,
       })
       .orderBy('id', 'ASC')
       .getOne();

@@ -1,5 +1,5 @@
 {
-  "extends": ["tslint:latest", "tslint-sonarts"],
+  "extends": ["tslint:latest"],
   "rules": {
     "no-implicit-dependencies": false,
     "no-submodule-imports": false,

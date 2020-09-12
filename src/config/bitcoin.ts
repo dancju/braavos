@@ -1,4 +1,4 @@
-export default class EthereumConfig {
+export default class BitcoinConfig {
   public static bech32 = false;
 
   static get rpc() {

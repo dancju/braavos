@@ -1,4 +1,4 @@
-import { BIP32, fromBase58, fromSeed } from 'bip32';
+import { BIP32Interface, fromBase58, fromSeed } from 'bip32';
 import BtcRpc from 'bitcoin-core';
 import { Network, payments } from 'bitcoinjs-lib';
 import { ConfigService } from '../config/config.service';
@@ -26,7 +26,7 @@ const TESTNET: Network = {
 
 export class BitcoinService extends ChainService {
   protected readonly rpc: BtcRpc;
-  private readonly prvNode: BIP32;
+  private readonly prvNode: BIP32Interface;
   private readonly bech32: boolean;
   private readonly network: Network;
   private readonly rAddr: RegExp;
@@ -86,7 +86,7 @@ export class BitcoinService extends ChainService {
         pubkey: this.prvNode.derivePath(derivePath).publicKey,
       }),
     });
-    return address;
+    return address!;
   }
 
   // pay to witness public key hash
@@ -95,6 +95,6 @@ export class BitcoinService extends ChainService {
       network: this.network,
       pubkey: this.prvNode.derivePath(derivePath).publicKey,
     });
-    return address;
+    return address!;
   }
 }
