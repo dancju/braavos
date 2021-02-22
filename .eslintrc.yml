@@ -1,0 +1,36 @@
+extends:
+  - eslint:all
+  - plugin:@typescript-eslint/recommended
+parser: '@typescript-eslint/parser'
+parserOptions:
+  ecmaVersion: 2020
+  project: ./tsconfig.json
+  sourceType: module
+plugins:
+  - '@typescript-eslint'
+rules:
+  array-element-newline: off
+  comma-dangle: [error, always-multiline]
+  dot-location: [error, property]
+  function-call-argument-newline: off
+  function-paren-newline: [error, consistent]
+  id-length: off
+  implicit-arrow-linebreak: off
+  indent: [error, 2]
+  lines-between-class-members: [error, always, { exceptAfterSingleLine: true }]
+  max-params: off
+  max-statements: off
+  multiline-ternary: [error, always-multiline]
+  new-cap: [error, { capIsNew: false, newIsCap: false }]
+  no-magic-numbers: off
+  no-ternary: off
+  nonblock-statement-body-position: [error, below]
+  object-curly-spacing: off
+  object-property-newline: off
+  one-var: off
+  padded-blocks: off
+  prefer-named-capture-group: off
+  quote-props: off
+  quotes: [error, single, { avoidEscape: true }]
+  sort-imports: off
+  space-before-function-paren: [error, { named: never }]

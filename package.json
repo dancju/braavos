@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "lint": "tslint --project ./tsconfig.json --fix './{src,test}/**/*.ts' && prettier --write \"**/*.ts\"",
+    "lint": "eslint . --ext .ts",
     "start:http": "nodemon -e ts -w ./src -i src/**/*.spec.ts -x ts-node --files src/http.main.ts",
     "start:crons": "forever -c \"nodemon -e ts -w ./src -i src/**/*.spec.ts --exitcrash -x ts-node --files\" src/crons.main.ts",
     "start:dashboard": "nodemon -e ts -w ./src -i src/**/*.spec.ts -x ts-node --files src/dashboard.main.ts",
@@ -48,15 +48,16 @@
     "@types/jest": "^26.0.0",
     "@types/js-yaml": "^3.0.0",
     "@types/supertest": "^2.0.0",
+    "@typescript-eslint/eslint-plugin": "^4.0.0",
+    "@typescript-eslint/parser": "^4.0.0",
+    "eslint": "^7.0.0",
     "jest": "^26.0.0",
     "jest-sonar-reporter": "^2.0.0",
     "nodemon": "^2.0.0",
-    "prettier": "^2.0.0",
     "superagent-http-signature": "^0.2.0",
     "supertest": "^4.0.0",
     "ts-jest": "^26.0.0",
-    "ts-node": "^9.0.0",
-    "tslint": "^6.0.0"
+    "ts-node": "^9.0.0"
   },
   "jest": {
     "coverageDirectory": "../coverage",
